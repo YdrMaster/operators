@@ -1,14 +1,12 @@
 ﻿#ifndef __DATA_TYPE_H__
 #define __DATA_TYPE_H__
 
-#include <stdint.h>
-
 struct DataLayout {
-    int mantissa : 16,
+    unsigned short
+        mantissa : 16,
         exponent : 15,
         sign : 1;
 };
-
 
 // clang-format off
 const static struct DataLayout

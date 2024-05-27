@@ -1,13 +1,26 @@
-﻿#include "cpu/cpu.h"
-#include "internal.h"
+﻿#include "internal.h"
 #include <stdio.h>
+
+#ifdef ENABLE_CPU
+#include "cpu/cpu.h"
+#endif
+
+#ifdef ENABLE_NV_GPU
+#include "nv_gpu/nv_gpu.cuh"
+#endif
 
 Op op_create(Device dev, Optype opty, void *config) {
     char *err = NULL;
     int err_len = SIZE_MAX;
     switch (dev) {
+#ifdef ENABLE_CPU
         case DevCpu:
             return op_create_cpu(opty, config);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            return op_create_nv_gpu(opty, config);
+#endif
         default:
             PANIC(UnsupportedDevice);
             return NULL;

@@ -1,5 +1,4 @@
-﻿#include "cpu.h"
-#include "rms_norm.h"
+﻿#include "nv_gpu.cuh"
 #include <cstdio>
 
 static void kn_drop(Kn kn) {
@@ -10,9 +9,9 @@ static Kn load(Op op, void *rt_ctx) {
     switch (op->optype) {
         case OpRmsNorm: {
             auto kn = new Kernel{
-                DevCpu,
+                DevNvGpu,
                 OpRmsNorm,
-                rms_norm_cpu_f16,
+                nullptr,
                 kn_drop,
             };
             return kn;
@@ -36,11 +35,11 @@ static void op_drop(Op op) {
     delete op;
 }
 
-Op op_create_cpu(Optype opty, void *config) {
+Op op_create_nv_gpu(Optype opty, void *config) {
     switch (opty) {
         case OpRmsNorm: {
             auto op = new Operator{
-                DevCpu,
+                DevNvGpu,
                 OpRmsNorm,
                 load,
                 op_drop,
