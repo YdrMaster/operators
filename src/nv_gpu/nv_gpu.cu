@@ -3,15 +3,18 @@
 #include <cstdio>
 
 static void kn_drop(Kn kn) {
+    delete reinterpret_cast<NvGpuRtCtx *>(kn->rt_ctx);
     delete kn;
 }
 
 static Kn load(Op op, void *rt_ctx) {
+    auto ctx = new NvGpuRtCtx(*reinterpret_cast<NvGpuRtCtx *>(rt_ctx));
     switch (op->optype) {
         case OpRmsNorm: {
             auto kn = new Kernel{
                 DevNvGpu,
                 OpRmsNorm,
+                ctx,
                 rms_norm_nv_gpu_f16,
                 kn_drop,
             };
@@ -36,12 +39,13 @@ static void op_drop(Op op) {
     delete op;
 }
 
-Op op_create_nv_gpu(Optype opty, void *config) {
+Op op_create_nv_gpu(Optype opty, void *) {
     switch (opty) {
         case OpRmsNorm: {
             auto op = new Operator{
                 DevNvGpu,
                 OpRmsNorm,
+                nullptr,
                 load,
                 op_drop,
             };

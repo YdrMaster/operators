@@ -26,7 +26,7 @@ uint16_t f32_to_f16(float val) {
            (static_cast<uint16_t>(x.u32 >> 13) & mask_low(10));
 }
 
-void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
+void rms_norm_cpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
     // assert_eq!(y.layout.ndim, 2);
     // assert_eq!(x.layout.ndim, 2);
     // assert_eq!(w.layout.ndim, 1);

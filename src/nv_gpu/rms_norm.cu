@@ -1,4 +1,5 @@
-﻿#include "rms_norm.cuh"
+﻿#include "nv_gpu.cuh"
+#include "rms_norm.cuh"
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 
@@ -79,7 +80,7 @@ constexpr static int
     BLOCK_SIZE = 1024,
     ITEMS_PER_THREAD = (HIDDEN_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
+void rms_norm_cpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
     // assert_eq!(y.layout.ndim, 2);
     // assert_eq!(x.layout.ndim, 2);
     // assert_eq!(w.layout.ndim, 1);
@@ -105,9 +106,13 @@ void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon) 
     auto stride_y = y.layout.pattern[0];
     auto stride_x = x.layout.pattern[0];
 
+    auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
+
     if (d <= BLOCK_SIZE) {
-        padding<BLOCK_SIZE><<<n, d>>>(y_, stride_y, x_, stride_x, w_, epsilon);
+        padding<BLOCK_SIZE>
+            <<<n, d, 0, stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
     } else {
-        folding<BLOCK_SIZE, ITEMS_PER_THREAD><<<n, BLOCK_SIZE>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        folding<BLOCK_SIZE, ITEMS_PER_THREAD>
+            <<<n, BLOCK_SIZE, 0, stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
     }
 }

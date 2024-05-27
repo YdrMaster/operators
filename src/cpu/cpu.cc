@@ -6,12 +6,13 @@ static void kn_drop(Kn kn) {
     delete kn;
 }
 
-static Kn load(Op op, void *rt_ctx) {
+static Kn load(Op op, void *) {
     switch (op->optype) {
         case OpRmsNorm: {
             auto kn = new Kernel{
                 DevCpu,
                 OpRmsNorm,
+                nullptr,
                 rms_norm_cpu_f16,
                 kn_drop,
             };
@@ -36,12 +37,13 @@ static void op_drop(Op op) {
     delete op;
 }
 
-Op op_create_cpu(Optype opty, void *config) {
+Op op_create_cpu(Optype opty, void *) {
     switch (opty) {
         case OpRmsNorm: {
             auto op = new Operator{
                 DevCpu,
                 OpRmsNorm,
+                nullptr,
                 load,
                 op_drop,
             };

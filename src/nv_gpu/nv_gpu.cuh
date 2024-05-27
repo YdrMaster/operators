@@ -3,6 +3,10 @@
 
 #include "../internal.h"
 
+struct NvGpuRtCtx {
+    cudaStream_t stream;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
