@@ -1,4 +1,5 @@
 ﻿#include "nv_gpu.cuh"
+#include "rms_norm.cuh"
 #include <cstdio>
 
 static void kn_drop(Kn kn) {
@@ -11,7 +12,7 @@ static Kn load(Op op, void *rt_ctx) {
             auto kn = new Kernel{
                 DevNvGpu,
                 OpRmsNorm,
-                nullptr,
+                rms_norm_nv_gpu_f16,
                 kn_drop,
             };
             return kn;

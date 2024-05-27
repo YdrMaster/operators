@@ -47,7 +47,6 @@ void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon) 
 
     auto stride_y = y.layout.pattern[0];
     auto stride_x = x.layout.pattern[0];
-    auto stride_w = w.layout.pattern[0];
 
     for (size_t i = 0; i < n; ++i) {
         auto y_ = reinterpret_cast<uint16_t *>(reinterpret_cast<char *>(y.data) + i * stride_y);
