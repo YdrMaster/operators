@@ -1,5 +1,6 @@
 ﻿#include "internal.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef ENABLE_CPU
 #include "cpu/cpu.h"

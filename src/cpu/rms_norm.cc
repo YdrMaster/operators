@@ -59,7 +59,7 @@ void rms_norm_cpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w,
             sum_sq += x__ * x__;
         }
 
-        auto k = std::powf(sum_sq / d + epsilon, -.5);
+        auto k = std::pow(sum_sq / d + epsilon, -.5);
         for (size_t j = 0; j < d; ++j) {
             auto x__ = f16_to_f32(x_[j]);
             auto w__ = f16_to_f32(w_[j]);

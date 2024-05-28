@@ -13,7 +13,7 @@ static Kn load(Op op, void *) {
                 DevCpu,
                 OpRmsNorm,
                 nullptr,
-                rms_norm_cpu_f16,
+                (Fn) rms_norm_cpu_f16,
                 kn_drop,
             };
             return kn;

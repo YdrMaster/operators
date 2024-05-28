@@ -12,6 +12,8 @@ enum OptypeEnum {
     OpSwiglu,
 };
 
+struct Kernel;
+
 typedef void (*RmsNormFn)(struct Kernel const *, MutTensor y, ConstTensor x, ConstTensor w, float epsilon);
 typedef void (*MatMulFn)(struct Kernel const *, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha);
 typedef void (*RotaryEmbeddingFn)(struct Kernel const *, MutTensor, ConstTensor pos, float theta);
