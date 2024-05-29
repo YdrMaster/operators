@@ -2,6 +2,7 @@
 #define __NV_GPU_CUH__
 
 #include "../internal.h"
+#include <cuda_runtime.h>
 
 struct NvGpuRtCtx {
     cudaStream_t stream;

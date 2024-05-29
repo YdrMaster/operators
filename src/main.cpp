@@ -13,7 +13,8 @@ int main(int argc, char **argv) {
     auto fn = reinterpret_cast<RmsNormFn>(fn_get(kn));
     printf("fn: %p\n", fn);
 
-    fn(MutTensor{TensorLayout{}, nullptr},
+    fn(kn,
+       MutTensor{TensorLayout{}, nullptr},
        ConstTensor{TensorLayout{}, nullptr},
        ConstTensor{TensorLayout{}, nullptr},
        1e-4);

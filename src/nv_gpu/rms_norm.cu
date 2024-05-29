@@ -1,5 +1,6 @@
 ﻿#include "nv_gpu.cuh"
 #include "rms_norm.cuh"
+#include "../utils.h"
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 
@@ -81,23 +82,23 @@ constexpr static int
     ITEMS_PER_THREAD = (HIDDEN_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
 void rms_norm_cpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
-    // assert_eq!(y.layout.ndim, 2);
-    // assert_eq!(x.layout.ndim, 2);
-    // assert_eq!(w.layout.ndim, 1);
+    ASSERT_EQ(y.layout.ndim, 2);
+    ASSERT_EQ(x.layout.ndim, 2);
+    ASSERT_EQ(w.layout.ndim, 1);
 
     auto n = y.layout.shape[0],
          d = y.layout.shape[1];
 
-    // assert_eq!(x.layout.shape[0], n);
-    // assert_eq!(x.layout.shape[1], d);
-    // assert_eq!(w.layout.shape[0], d);
+    ASSERT_EQ(x.layout.shape[0], n);
+    ASSERT_EQ(x.layout.shape[1], d);
+    ASSERT_EQ(w.layout.shape[0], d);
 
-    // assert_eq!(y.layout.pattern[1], 2);
-    // assert_eq!(y.layout.pattern[2], 2);
-    // assert_eq!(x.layout.pattern[1], 2);
-    // assert_eq!(x.layout.pattern[2], 2);
-    // assert_eq!(w.layout.pattern[0], 2);
-    // assert_eq!(w.layout.pattern[1], 2);
+    ASSERT_EQ(y.layout.pattern[1], 2);
+    ASSERT_EQ(y.layout.pattern[2], 2);
+    ASSERT_EQ(x.layout.pattern[1], 2);
+    ASSERT_EQ(x.layout.pattern[2], 2);
+    ASSERT_EQ(w.layout.pattern[0], 2);
+    ASSERT_EQ(w.layout.pattern[1], 2);
 
     auto y_ = reinterpret_cast<half *>(y.data);
     auto x_ = reinterpret_cast<half const *>(x.data);

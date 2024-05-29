@@ -15,7 +15,7 @@ static Kn load(Op op, void *rt_ctx) {
                 DevNvGpu,
                 OpRmsNorm,
                 ctx,
-                rms_norm_nv_gpu_f16,
+               (Fn) rms_norm_nv_gpu_f16,
                 kn_drop,
             };
             return kn;
