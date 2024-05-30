@@ -1,21 +1,19 @@
-﻿#include "nv_gpu.cuh"
-#include "rms_norm.cuh"
+﻿#include "cpu.h"
+#include "../../rms_norm/cpu/rms_norm.h"
 #include <cstdio>
 
 static void kn_drop(Kn kn) {
-    delete reinterpret_cast<NvGpuRtCtx *>(kn->rt_ctx);
     delete kn;
 }
 
-static Kn load(Op op, void *rt_ctx) {
-    auto ctx = new NvGpuRtCtx(*reinterpret_cast<NvGpuRtCtx *>(rt_ctx));
+static Kn load(Op op, void *) {
     switch (op->optype) {
         case OpRmsNorm: {
             auto kn = new Kernel{
-                DevNvGpu,
+                DevCpu,
                 OpRmsNorm,
-                ctx,
-               (Fn) rms_norm_nv_gpu_f16,
+                nullptr,
+                (Fn) rms_norm_cpu_f16,
                 kn_drop,
             };
             return kn;
@@ -39,11 +37,11 @@ static void op_drop(Op op) {
     delete op;
 }
 
-Op op_create_nv_gpu(Optype opty, void *) {
+Op op_create_cpu(Optype opty, void *) {
     switch (opty) {
         case OpRmsNorm: {
             auto op = new Operator{
-                DevNvGpu,
+                DevCpu,
                 OpRmsNorm,
                 nullptr,
                 load,

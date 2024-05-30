@@ -1,6 +1,6 @@
-﻿#include "nv_gpu.cuh"
+﻿#include "../../../utils.h"
+#include "../../c_interface/cuda/nv_gpu.cuh"
 #include "rms_norm.cuh"
-#include "../utils.h"
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 
@@ -81,7 +81,7 @@ constexpr static int
     BLOCK_SIZE = 1024,
     ITEMS_PER_THREAD = (HIDDEN_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-void rms_norm_cpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
+void rms_norm_nv_gpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);

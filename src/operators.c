@@ -3,11 +3,11 @@
 #include <stdlib.h>
 
 #ifdef ENABLE_CPU
-#include "cpu/cpu.h"
+#include "ops/c_interface/cpu/cpu.h"
 #endif
 
 #ifdef ENABLE_NV_GPU
-#include "nv_gpu/nv_gpu.cuh"
+#include "ops/c_interface/cuda/nv_gpu.cuh"
 #endif
 
 Op op_create(Device dev, Optype opty, void *config) {

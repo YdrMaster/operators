@@ -1,6 +1,6 @@
 ﻿#include "rms_norm.h"
 #include <cmath>
-#include "../utils.h"
+#include "../../../utils.h"
 
 constexpr static uint16_t mask_low(int bits) noexcept {
     return (1 << bits) - 1;

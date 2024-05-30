@@ -1,7 +1,7 @@
 ﻿#ifndef __CPU_H__
 #define __CPU_H__
 
-#include "../internal.h"
+#include "../../../internal.h"
 
 #ifdef __cplusplus
 extern "C" {

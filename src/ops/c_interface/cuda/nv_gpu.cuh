@@ -1,7 +1,7 @@
 ﻿#ifndef __NV_GPU_CUH__
 #define __NV_GPU_CUH__
 
-#include "../internal.h"
+#include "../../../internal.h"
 #include <cuda_runtime.h>
 
 struct NvGpuRtCtx {
