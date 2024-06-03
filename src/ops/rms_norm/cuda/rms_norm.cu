@@ -93,13 +93,6 @@ void rms_norm_nv_gpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTens
     ASSERT_EQ(x.layout.shape[1], d);
     ASSERT_EQ(w.layout.shape[0], d);
 
-    ASSERT_EQ(y.layout.pattern[1], 2);
-    ASSERT_EQ(y.layout.pattern[2], 2);
-    ASSERT_EQ(x.layout.pattern[1], 2);
-    ASSERT_EQ(x.layout.pattern[2], 2);
-    ASSERT_EQ(w.layout.pattern[0], 2);
-    ASSERT_EQ(w.layout.pattern[1], 2);
-
     auto y_ = reinterpret_cast<half *>(y.data);
     auto x_ = reinterpret_cast<half const *>(x.data);
     auto w_ = reinterpret_cast<half const *>(w.data);

@@ -39,13 +39,6 @@ void rms_norm_cpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w,
     ASSERT_EQ(x.layout.shape[1], d);
     ASSERT_EQ(w.layout.shape[0], d);
 
-    ASSERT_EQ(y.layout.pattern[1], 2);
-    ASSERT_EQ(y.layout.pattern[2], 2);
-    ASSERT_EQ(x.layout.pattern[1], 2);
-    ASSERT_EQ(x.layout.pattern[2], 2);
-    ASSERT_EQ(w.layout.pattern[0], 2);
-    ASSERT_EQ(w.layout.pattern[1], 2);
-
     auto stride_y = y.layout.pattern[0];
     auto stride_x = x.layout.pattern[0];
 
