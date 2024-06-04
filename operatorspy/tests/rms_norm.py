@@ -1,17 +1,21 @@
 import ctypes
-from .. import (
+from ctypes import c_float, POINTER
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from operatorspy import (
     open_lib,
-    DeviceEnum,
-    OptypeEnum,
     to_tensor,
     MutableTensor,
     ConstTensor,
-    Kn,
+    Kernel,
+    DeviceEnum,
+    OptypeEnum
 )
 import torch
 
 optype = OptypeEnum.OpRmsNorm
-Fn = ctypes.CFUNCTYPE(None, Kn, MutableTensor, ConstTensor, ConstTensor, ctypes.c_float)
+Fn = ctypes.CFUNCTYPE(None, POINTER(Kernel), MutableTensor, ConstTensor, ConstTensor, c_float)
 
 
 def rms_norm(x, w, eps):
@@ -30,8 +34,6 @@ def test_cpu(lib):
     kn = lib.kn_load(op, rt_ctx)
     fn = lib.fn_get(kn)
     fn = ctypes.cast(fn, Fn)
-
-    import torch
 
     y = torch.zeros((5, 16), dtype=torch.float16)
     x = torch.rand((5, 16), dtype=torch.float16)
