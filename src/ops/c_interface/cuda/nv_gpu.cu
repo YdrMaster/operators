@@ -1,6 +1,7 @@
-﻿#include "nv_gpu.cuh"
+﻿#include "../../../utils.h"
 #include "../../rms_norm/cuda/rms_norm.cuh"
-#include "../../../utils.h"
+#include "../../rotary_embedding/cuda/rotary_embedding.cuh"
+#include "nv_gpu.cuh"
 #include <cstdio>
 
 static void kn_drop(Kn kn) {
@@ -24,8 +25,16 @@ static Kn load(Op op, void *rt_ctx) {
         }
         case OpMatMul:
             return nullptr;
-        case OpRotaryEmbedding:
-            return nullptr;
+        case OpRotaryEmbedding: {
+            auto kn = new Kernel{
+                DevNvGpu,
+                OpRotaryEmbedding,
+                ctx,
+                (Fn) rotary_embedding_nv_gpu_f16,
+                kn_drop,
+            };
+            return kn;
+        }
         case OpReform:
             return nullptr;
         case OpCausalSoftmax:
@@ -55,8 +64,16 @@ Op op_create_nv_gpu(Optype opty, void *) {
         }
         case OpMatMul:
             return nullptr;
-        case OpRotaryEmbedding:
-            return nullptr;
+        case OpRotaryEmbedding: {
+            auto op = new Operator{
+                DevNvGpu,
+                OpRotaryEmbedding,
+                nullptr,
+                load,
+                op_drop,
+            };
+            return op;
+        }
         case OpReform:
             return nullptr;
         case OpCausalSoftmax:
