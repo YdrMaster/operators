@@ -19,6 +19,6 @@ typedef void (*MatMulFn)(struct Kernel const *, MutTensor c, float beta, ConstTe
 typedef void (*RotaryEmbeddingFn)(struct Kernel const *, MutTensor t, ConstTensor pos, float theta);
 typedef void (*ReformFn)(struct Kernel const *, MutTensor dst, ConstTensor src);
 typedef void (*CausalSoftmaxFn)(struct Kernel const *, MutTensor);
-typedef void (*SwigluFn)(struct Kernel const *, MutTensor, ConstTensor);
+typedef void (*SwigluFn)(struct Kernel const *, MutTensor gate, ConstTensor up);
 
 #endif// __OPTYPE_H__
