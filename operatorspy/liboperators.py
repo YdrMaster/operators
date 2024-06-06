@@ -55,10 +55,21 @@ Kernel._fields_ = [
 ]
 
 
-# Open operators library given directory path
-def open_lib(library_path):
+# Open operators library
+def open_lib():
+    def find_library_in_ld_path(library_name):
+        ld_library_path = os.environ.get("LD_LIBRARY_PATH", "")
+        paths = ld_library_path.split(os.pathsep)
+        for path in paths:
+            full_path = os.path.join(path, library_name)
+            if os.path.isfile(full_path):
+                return full_path
+        return None
+
     # Load the library
-    lib = ctypes.CDLL(os.path.join(library_path, "liboperators.so"))
+    library_path = find_library_in_ld_path("liboperators.so")
+    assert library_path is not None, "Cannot find liboperators.so in LD_LIBRARY_PATH"
+    lib = ctypes.CDLL(library_path)
     # Define functions
     lib.op_create.argtypes = [Device, Optype, c_void_p]
     lib.op_create.restype = Op

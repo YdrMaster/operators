@@ -13,6 +13,8 @@ from operatorspy import (
     DeviceEnum,
     OptypeEnum,
 )
+
+from operatorspy.tests.test_utils import get_args
 import torch
 
 optype = OptypeEnum.OpRmsNorm
@@ -68,5 +70,9 @@ def test_cuda(lib):
 
 
 if __name__ == "__main__":
-    lib = open_lib("/data1/shared/panzezhong/operators/build/linux/x86_64/release")
-    test_cuda(lib)
+    args = get_args()
+    lib = open_lib()
+    if args.cpu:
+        test_cpu(lib)
+    if args.cuda:
+        test_cuda(lib)
