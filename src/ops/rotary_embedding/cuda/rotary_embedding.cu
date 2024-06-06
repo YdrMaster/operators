@@ -3,10 +3,9 @@
 #include "rotary_embedding.cuh"
 #include <cuda_fp16.h>
 
-template<class Tdata1, class Tdata2>
 static __global__ void padding(
-    Tdata1 *__restrict__ x_,
-    Tdata2 const *__restrict__ pos_,
+    half2 *__restrict__ x_,
+    unsigned int const *__restrict__ pos_,
     float const theta,
     unsigned int const leading_dim) {
     auto dh = blockDim.x;
@@ -36,10 +35,9 @@ void rotary_embedding_nv_gpu_f16(struct Kernel const *kn, MutTensor t, ConstTens
     ASSERT(dh < BLOCK_SIZE);
 
     auto t_ptr = reinterpret_cast<half2 *>(t.data);
-    auto pos_ptr = reinterpret_cast<half const *>(pos.data);
-    auto leading_dim = t.layout.strides[0];
+    auto pos_ptr = reinterpret_cast<unsigned int const *>(pos.data);
+    auto leading_dim = t.layout.strides[0] / 4;
 
     auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
-
-    padding<<<dim3(nh, nt), dh / 2, 0, stream>>>(t_ptr, pos_ptr, theta, leading_dim);
+    padding<<<dim3(nt, nh), dh / 2, 0, stream>>>(t_ptr, pos_ptr, theta, leading_dim);
 }

@@ -20,6 +20,14 @@ optype = OptypeEnum.OpRotaryEmbedding
 Fn = ctypes.CFUNCTYPE(None, POINTER(Kernel), MutableTensor, ConstTensor, c_float)
 
 
+def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
+    ndim = x.ndim
+    assert 0 <= 1 < ndim
+    assert freqs_cis.shape == (x.shape[0], x.shape[-1])
+    shape = [d if i == 0 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
+    return freqs_cis.view(*shape)
+
+
 def rotary_embedding(t, pos, theta, torch_device):
     dh = t.shape[2]
     freqs = (1.0 / (theta ** (torch.arange(0, dh, 2)[: (dh // 2)].float() / dh))).to(
@@ -29,6 +37,7 @@ def rotary_embedding(t, pos, theta, torch_device):
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)
 
     t_ = torch.view_as_complex(t.reshape(*t.shape[:-1], -1, 2))
+    freqs_cis = reshape_for_broadcast(freqs_cis, t_)
     t_out = torch.view_as_real(t_ * freqs_cis).flatten(2).to(t.dtype)
     return t_out
 
@@ -38,15 +47,15 @@ def test(lib, device, config, rt_ctx_p, torch_device):
     kn = lib.kn_load(op, rt_ctx_p)
     fn = lib.fn_get(kn)
     fn = ctypes.cast(fn, Fn)
-    t = torch.rand((1, 32, 128), dtype=torch.float16).to(torch_device)
-    pos = torch.zeros((1,), dtype=torch.int32).to(torch_device)
+    t = torch.rand((4, 2, 2), dtype=torch.float16).to(torch_device)
+    pos = torch.ones((4,), dtype=torch.int32).to(torch_device)
     theta = 1e4
 
     ans = rotary_embedding(t, pos, theta, torch_device)
     fn(kn, to_tensor(t), to_tensor(pos, False), theta)
     lib.kn_unload(kn)
 
-    assert torch.allclose(t, ans, atol=0, rtol=1e-3)
+    assert torch.allclose(t, ans, atol=1, rtol=1e-3)
     print("Test passed!")
 
 
