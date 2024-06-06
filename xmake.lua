@@ -21,8 +21,8 @@ end
 
 target("common")
     set_kind("static")
-    set_languages("c11")
-    add_files("src/utils.c")
+    set_languages("cxx17")
+    add_files("src/utils.cc")
     add_cxflags("-fPIC")
 target_end()
 
