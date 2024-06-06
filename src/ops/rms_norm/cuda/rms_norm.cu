@@ -97,8 +97,9 @@ void rms_norm_nv_gpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTens
     auto x_ = reinterpret_cast<half const *>(x.data);
     auto w_ = reinterpret_cast<half const *>(w.data);
 
-    auto stride_y = y.layout.pattern[0];
-    auto stride_x = x.layout.pattern[0];
+    // Get strides in terms of elements
+    auto stride_y = y.layout.strides[0] / sizeof(half);
+    auto stride_x = x.layout.strides[0] / sizeof(half);
 
     auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
 

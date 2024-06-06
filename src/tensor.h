@@ -2,11 +2,14 @@
 #define __TENSOR_H__
 
 #include <stdint.h>
+#include "data_type.h"
 
 struct TensorLayout {
+    struct DataLayout dt;
     uint64_t ndim;
-    uint64_t *shape; // [num subtensors of dim      ; ndim], bytes of item
-    int64_t *pattern;// [num bytes to next subtensor; ndim], num bytes to first item
+    uint64_t offset;
+    uint64_t *shape; 
+    int64_t *strides;
 };
 
 struct ConstTensorTuple {

@@ -39,8 +39,8 @@ void rms_norm_cpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w,
     ASSERT_EQ(x.layout.shape[1], d);
     ASSERT_EQ(w.layout.shape[0], d);
 
-    auto stride_y = y.layout.pattern[0];
-    auto stride_x = x.layout.pattern[0];
+    auto stride_y = y.layout.strides[0];
+    auto stride_x = x.layout.strides[0];
 
     for (size_t i = 0; i < n; ++i) {
         auto y_ = reinterpret_cast<uint16_t *>(reinterpret_cast<char *>(y.data) + i * stride_y);
