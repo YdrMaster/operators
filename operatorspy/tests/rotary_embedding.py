@@ -13,6 +13,8 @@ from operatorspy import (
     DeviceEnum,
     OptypeEnum,
 )
+
+from operatorspy.tests.test_utils import get_args
 import torch
 
 optype = OptypeEnum.OpRotaryEmbedding
@@ -47,8 +49,8 @@ def test(lib, device, config, rt_ctx_p, torch_device):
     kn = lib.kn_load(op, rt_ctx_p)
     fn = lib.fn_get(kn)
     fn = ctypes.cast(fn, Fn)
-    t = torch.rand((4, 2, 2), dtype=torch.float16).to(torch_device)
-    pos = torch.ones((4,), dtype=torch.int32).to(torch_device)
+    t = torch.rand((1, 32, 128), dtype=torch.float16).to(torch_device)
+    pos = torch.ones((1,), dtype=torch.int32).to(torch_device)
     theta = 1e4
 
     ans = rotary_embedding(t, pos, theta, torch_device)
@@ -79,6 +81,9 @@ def test_cuda(lib):
 
 
 if __name__ == "__main__":
-    lib = open_lib("/home/duanchenjie/workspace/operators/build/linux/x86_64/release")
-    test_cpu(lib)
-    test_cuda(lib)
+    args = get_args()
+    lib = open_lib()
+    if args.cpu:
+        test_cpu(lib)
+    if args.cuda:
+        test_cuda(lib)
