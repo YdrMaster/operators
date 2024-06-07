@@ -41,7 +41,7 @@ void swiglu_nv_gpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up) 
          di = gate.layout.shape[1];
 
     dim3 block_dims = gcd(BLOCK_SIZE, di);
-    dim3 grid_dims = dim3(seq_len, di / block_dims.x);
+    dim3 grid_dims = dim3(di / block_dims.x, seq_len);
 
     auto gate_ptr = reinterpret_cast<half *>(gate.data);
     auto up_ptr = reinterpret_cast<half const *>(up.data);
@@ -49,5 +49,5 @@ void swiglu_nv_gpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up) 
     auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
 
     swiglu<<<grid_dims, block_dims, 0, stream>>>(
-        gate_ptr, gate.layout.strides[0], up_ptr, up.layout.strides[0]);
+        gate_ptr, gate.layout.strides[0] / 2, up_ptr, up.layout.strides[0] / 2);
 }
