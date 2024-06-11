@@ -2,24 +2,24 @@
 
 跨平台高性能通用算子库。形式为C接口动态库。
 
-采用三段式算子设计:
+采用二段式算子设计，每个算子都实现并对外暴露以下的C接口:
 
-- 第一阶段：构造Operator。用户提供的算子名称、硬件、以及算子配置（如计算的数据类型、计算排布等）
+- 第一阶段：构造算子Descriptor。用户提供的算子名称、硬件、以及算子配置（如计算的数据类型、计算排布等），相应模组会被load到硬件上。
 
 ```C
-Op op_create(Device, Optype, void *config);
+void* createOpDescriptor(Device, void *config);
 ```
 
-- 第二阶段：构造Kernel。根据一阶段的Operator，用户提供的运行时相关参数（如cuda stream等）
+- 第二阶段：计算。根据一阶段的Descriptor，执行相应计算，用户需要提供输入输出张量，以及硬件计算流（CPU为NULL）。
 
 ```C
-Kn kn_load(Op, void *rt_ctx);
+void op(void *descriptor, MutableTensor output, ConstTensor input, void *stream);
 ```
 
-- 第三阶段：构造函数。根据二阶段的Kernel，返回算子计算的C函数指针
+- 销毁Descriptor。
 
 ```C
-void *fn_get(Kn);
+void destroyOpDescriptor(void *descriptor);
 ```
 
 ## 一、使用说明
@@ -78,20 +78,19 @@ python operator_name.py
 ### 目录结构
 
 ```bash
-operatorspy
 ├── xmake.lua  # xmake 构建脚本
 ├── src
+│   ├── devices
+│   │   ├── [device_name] 
+│   │       ├── *.cc/.h # 特定硬件（如cpu、英伟达）通用代码
 │   ├── ops
-│   │   ├── c_interface  # 算子c接口
-│   │   │   ├── [device_name]
-│   │   │   |   ├── *.cc/.h/..  # 特定硬件的c接口代码
+│   │   ├── utils.h  # 全算子通用代码 (如assert)
 │   │   ├── [operator_name]  # 算子实现目录
+│   │       ├── operator_name.cc/.h # 算子C接口
 │   │       ├── [device_name]
-│   │       |   ├── *.cc/.h/... # 特定硬件的实现代码
-│   │       ├── *.cc/.h/...  # 通用代码
-│   ├──  utils.cc/.h  # common工具代码
-│   ├──  *.cc/.h  # operators库接口
-|
+│   │       │   ├── *.cc/.h/... # 特定硬件的算子实现代码
+│   ├── *.h  # 核心结构体定义
+│   
 ├── operatorspy  # Python封装以及测试脚本
     ├── tests    
     │   ├── operator_name.py  # 测试脚本
@@ -102,13 +101,11 @@ operatorspy
 
 - 在 `src/device.h` 和`operatorspy/devices.py`中增加新的硬件类型。注意两者需要一一对应。
 - 在 `xmake.lua` 中增加新硬件的编译选项以及编译方式。
-- 在 `src/ops/c_interface/[device_name]` 下编写特定硬件的c接口代码。
-- 在 `src/operators.c` 中增加新硬件的c接口调用。
+- 在 `src/ops/devices/[device_name]` 下编写特定硬件的通用代码。
+- 实现该硬件的算子。
 
 ### 增加新的算子
 
-- 在 `src/optype.h` 和`operatorspy/operators.py`中增加新的硬件类型。注意两者需要一一对应。
-- 在 `src/optype.h` 中定义算子计算函数的签名。
-- 在 `src/ops/c_interface/[device_name]` 的c接口代码中增加该算子Operator和Kernel的构建方式。
+- 在 `src/ops/[operator_name]` 增加创建/销毁算子描述符、算子计算的C接口。
 - 在 `src/ops/[operator_name]/[device_name]` 增加算子在各硬件的实现代码。
-- 在 `operatorspy/tests/` 增加算子测试。
+- 在 `operatorspy/tests/[operator_name].py` 增加算子测试。

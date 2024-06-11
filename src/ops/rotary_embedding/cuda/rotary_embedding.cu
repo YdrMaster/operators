@@ -1,5 +1,4 @@
-#include "../../../utils.h"
-#include "../../c_interface/cuda/nv_gpu.cuh"
+#include "../../utils.h"
 #include "rotary_embedding.cuh"
 #include <cuda_fp16.h>
 
@@ -23,7 +22,7 @@ static __global__ void padding(
 constexpr static int
     BLOCK_SIZE = 1024;
 
-void rotary_embedding_nv_gpu_f16(struct Kernel const *kn, MutTensor t, ConstTensor pos, float theta) {
+void rotary_embedding_nv_gpu_f16(MutTensor t, ConstTensor pos, float theta, void *stream) {
     ASSERT_EQ(t.layout.ndim, 3);
     ASSERT_EQ(pos.layout.ndim, 1);
 
@@ -38,6 +37,6 @@ void rotary_embedding_nv_gpu_f16(struct Kernel const *kn, MutTensor t, ConstTens
     auto pos_ptr = reinterpret_cast<unsigned int const *>(pos.data);
     auto leading_dim = t.layout.strides[0] / 4;
 
-    auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
-    padding<<<dim3(nt, nh), dh / 2, 0, stream>>>(t_ptr, pos_ptr, theta, leading_dim);
+    auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
+    padding<<<dim3(nt, nh), dh / 2, 0, cuda_stream>>>(t_ptr, pos_ptr, theta, leading_dim);
 }

@@ -25,36 +25,6 @@ class MutableTensor(Structure):
     _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
 
 
-class Kernel(Structure):
-    pass
-
-
-class Operator(Structure):
-    pass
-
-
-Op = POINTER(Operator)
-Kn = POINTER(Kernel)
-
-# Define Operator structure with function pointers
-Operator._fields_ = [
-    ("device", Device),
-    ("optype", Optype),
-    ("config", c_void_p),
-    ("load", ctypes.CFUNCTYPE(Kn, POINTER(Operator), c_void_p)),
-    ("drop", ctypes.CFUNCTYPE(None, POINTER(Operator))),
-]
-
-# Define Kernel structure with function pointers
-Kernel._fields_ = [
-    ("device", Device),
-    ("optype", Optype),
-    ("rt_ctx", c_void_p),
-    ("fn", c_void_p),
-    ("drop", ctypes.CFUNCTYPE(None, POINTER(Kernel))),
-]
-
-
 # Open operators library
 def open_lib():
     def find_library_in_ld_path(library_name):
@@ -70,21 +40,6 @@ def open_lib():
     library_path = find_library_in_ld_path("liboperators.so")
     assert library_path is not None, "Cannot find liboperators.so in LD_LIBRARY_PATH"
     lib = ctypes.CDLL(library_path)
-    # Define functions
-    lib.op_create.argtypes = [Device, Optype, c_void_p]
-    lib.op_create.restype = Op
-
-    lib.op_destroy.argtypes = [Op]
-    lib.op_destroy.restype = None
-
-    lib.kn_load.argtypes = [Op, c_void_p]
-    lib.kn_load.restype = Kn
-
-    lib.kn_unload.argtypes = [Kn]
-    lib.kn_unload.restype = None
-
-    lib.fn_get.argtypes = [Kn]
-    lib.fn_get.restype = c_void_p
     return lib
 
 

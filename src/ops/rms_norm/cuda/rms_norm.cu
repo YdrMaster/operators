@@ -1,5 +1,4 @@
-﻿#include "../../../utils.h"
-#include "../../c_interface/cuda/nv_gpu.cuh"
+﻿#include "../../utils.h"
 #include "rms_norm.cuh"
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
@@ -81,7 +80,7 @@ constexpr static int
     BLOCK_SIZE = 1024,
     ITEMS_PER_THREAD = (HIDDEN_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-void rms_norm_nv_gpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
+void rms_norm_nv_gpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);
@@ -101,13 +100,13 @@ void rms_norm_nv_gpu_f16(Kernel const *kn, MutTensor y, ConstTensor x, ConstTens
     auto stride_y = y.layout.strides[0] / sizeof(half);
     auto stride_x = x.layout.strides[0] / sizeof(half);
 
-    auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
+    auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
     if (d <= BLOCK_SIZE) {
         padding<BLOCK_SIZE>
-            <<<n, d, 0, stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
+            <<<n, d, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
     } else {
         folding<BLOCK_SIZE, ITEMS_PER_THREAD>
-            <<<n, BLOCK_SIZE, 0, stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+            <<<n, BLOCK_SIZE, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
     }
 }

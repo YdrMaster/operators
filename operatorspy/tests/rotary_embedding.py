@@ -9,17 +9,11 @@ from operatorspy import (
     to_tensor,
     MutableTensor,
     ConstTensor,
-    Kernel,
     DeviceEnum,
-    OptypeEnum,
 )
 
 from operatorspy.tests.test_utils import get_args
 import torch
-
-optype = OptypeEnum.OpRotaryEmbedding
-
-Fn = ctypes.CFUNCTYPE(None, POINTER(Kernel), MutableTensor, ConstTensor, c_float)
 
 
 def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
@@ -44,18 +38,15 @@ def rotary_embedding(t, pos, theta, torch_device):
     return t_out
 
 
-def test(lib, device, config, rt_ctx_p, torch_device):
-    op = lib.op_create(device, optype, config)
-    kn = lib.kn_load(op, rt_ctx_p)
-    fn = lib.fn_get(kn)
-    fn = ctypes.cast(fn, Fn)
+def test(lib, descriptor, torch_device):
     t = torch.rand((1, 32, 128), dtype=torch.float16).to(torch_device)
     pos = torch.ones((1,), dtype=torch.int32).to(torch_device)
     theta = 1e4
 
     ans = rotary_embedding(t, pos, theta, torch_device)
-    fn(kn, to_tensor(t), to_tensor(pos, False), theta)
-    lib.kn_unload(kn)
+    lib.rotaryEmbedding(
+        descriptor, to_tensor(t), to_tensor(pos, False), c_float(theta), None
+    )
 
     assert torch.allclose(t, ans, atol=1, rtol=1e-3)
     print("Test passed!")
@@ -64,25 +55,31 @@ def test(lib, device, config, rt_ctx_p, torch_device):
 def test_cpu(lib):
     device = DeviceEnum.DEVICE_CPU
     config = None
-    rt_ctx_p = None
-    test(lib, device, config, rt_ctx_p, "cpu")
+    descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
+    test(lib, descriptor, "cpu")
+    lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 
 def test_cuda(lib):
     device = DeviceEnum.DEVICE_CUDA
-
-    class CudaContext(ctypes.Structure):
-        _fields_ = [("stream", c_void_p)]
-
     config = None
-    rt_ctx_p = ctypes.byref(CudaContext(None))
-
-    test(lib, device, config, rt_ctx_p, "cuda")
+    descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
+    test(lib, descriptor, "cuda")
+    lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 
 if __name__ == "__main__":
     args = get_args()
     lib = open_lib()
+    lib.createRotaryEmbeddingDescriptor.restype = c_void_p
+    lib.destroyRotaryEmbeddingDescriptor.argtypes = [c_void_p]
+    lib.rotaryEmbedding.argtypes = [
+        c_void_p,
+        MutableTensor,
+        ConstTensor,
+        c_float,
+        c_void_p,
+    ]
     if args.cpu:
         test_cpu(lib)
     if args.cuda:

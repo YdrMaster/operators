@@ -1,8 +1,9 @@
-﻿#include "rms_norm.h"
+﻿#include "rms_norm_cpu.h"
 #include <cmath>
-#include "../../../utils.h"
+#include "../../utils.h"
+#include "../../../devices/cpu/common_cpu.h"
 
-void rms_norm_cpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
+void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);
