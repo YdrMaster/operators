@@ -52,6 +52,13 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRMSNormDescriptor(descriptor)
 
+def test_cnnl(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_MLU
+    descriptor = lib.createRMSNormDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroyRMSNormDescriptor(descriptor)
+
 
 if __name__ == "__main__":
     args = get_args()
@@ -70,3 +77,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.cnnl:
+        test_cnnl(lib)

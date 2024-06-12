@@ -6,6 +6,9 @@
 #ifdef ENABLE_NV_GPU
 #include "cuda/rms_norm.cuh"
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "cnnl/rms_norm.h"
+#endif
 
 #include "../utils.h"
 
@@ -30,6 +33,11 @@ extern "C" void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTenso
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             rms_norm_nv_gpu_f16(y, x, w, epsilon, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevNvGpu:
+            rms_norm_cambricon_mlu_f16(y, x, w, epsilon, stream);
             break;
 #endif
         default:
