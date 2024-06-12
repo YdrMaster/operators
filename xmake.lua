@@ -20,36 +20,41 @@ if is_mode("debug") then
 end
 
 if has_config("cpu") then
-add_defines("ENABLE_CPU")
-target("cpu")
-    set_kind("static")
 
-    set_languages("cxx17")
-    add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
-target_end()
+    add_defines("ENABLE_CPU")
+    target("cpu")
+        set_kind("static")
+
+        if not is_plat("windows") then
+            add_cxflags("-fPIC")
+        end
+
+        set_languages("cxx17")
+        add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
+    target_end()
 
 end
 
 if has_config("nv-gpu") then
 
-add_defines("ENABLE_NV_GPU")
-target("nv-gpu")
-    set_kind("static")
-    set_policy("build.cuda.devlink", true)
+    add_defines("ENABLE_NV_GPU")
+    target("nv-gpu")
+        set_kind("static")
+        set_policy("build.cuda.devlink", true)
 
-    set_toolchains("cuda")
-    add_cugencodes("native")
+        set_toolchains("cuda")
+        add_cugencodes("native")
 
-    if is_plat("windows") then
-        add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
-    else
-        add_cuflags("-Xcompiler=-fPIC")
-        add_culdflags("-Xcompiler=-fPIC")
-    end
+        if is_plat("windows") then
+            add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
+        else
+            add_cuflags("-Xcompiler=-fPIC")
+            add_culdflags("-Xcompiler=-fPIC")
+        end
 
-    set_languages("cxx17")
-    add_files("src/ops/*/cuda/*.cu")
-target_end()
+        set_languages("cxx17")
+        add_files("src/ops/*/cuda/*.cu")
+    target_end()
 
 end
 
@@ -64,7 +69,7 @@ target("operators")
     end
 
     set_languages("cxx17")
-    add_files("src/ops/**/*.cc")
+    add_files("src/ops/*/operator.cc")
 target_end()
 
 target("main")

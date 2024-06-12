@@ -1,4 +1,6 @@
+#include "../utils.h"
 #include "swiglu.h"
+
 #ifdef ENABLE_CPU
 #include "cpu/swiglu_cpu.h"
 #endif
@@ -6,19 +8,18 @@
 #include "cuda/swiglu.cuh"
 #endif
 
-#include "../utils.h"
 
-extern "C" void *createSwigluDescriptor(Device device, void *config) {
+__C void *createSwigluDescriptor(Device device, void *config) {
     SwigluDescriptor *desc = new SwigluDescriptor{device};
     return (void *) desc;
 };
 
-extern "C" void destroySwigluDescriptor(void *descriptor) {
+__C void destroySwigluDescriptor(void *descriptor) {
     SwigluDescriptor *desc = (SwigluDescriptor *) descriptor;
     delete desc;
 }
 
-extern "C" void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream) {
+__C void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream) {
     auto desc = reinterpret_cast<SwigluDescriptor *>(descriptor);
     switch (desc->device) {
 #ifdef ENABLE_CPU
