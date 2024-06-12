@@ -19,14 +19,13 @@ if is_mode("debug") then
     add_defines("DEBUG_MODE")
 end
 
-
 if has_config("cpu") then
 add_defines("ENABLE_CPU")
 target("cpu")
-    set_kind("shared")
+    set_kind("static")
+
     set_languages("cxx17")
-    add_files("src/devices/cpu/*.cc")
-    add_files("src/ops/*/cpu/*.cc")
+    add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
 target_end()
 
 end
@@ -35,31 +34,36 @@ if has_config("nv-gpu") then
 
 add_defines("ENABLE_NV_GPU")
 target("nv-gpu")
-    set_kind("shared")
-    set_languages("cxx17")
-    add_cuflags("-arch=sm_80", "--expt-relaxed-constexpr", "--allow-unsupported-compiler",{force = true})
-    add_files("src/ops/*/cuda/*.cu")
+    set_kind("static")
+
     set_toolchains("cuda")
+    add_cuflags("-arch=sm_80", "--expt-relaxed-constexpr", "--allow-unsupported-compiler", {force = true})
     set_policy("build.cuda.devlink", true)
+
+    set_languages("cxx17")
+    add_files("src/ops/*/cuda/*.cu")
 target_end()
 
 end
 
 target("operators")
     set_kind("shared")
+
+    if has_config("cpu") then
+        add_deps("cpu")
+    end
+    if has_config("nv-gpu") then
+        add_deps("nv-gpu")
+    end
+
     set_languages("cxx17")
-    add_files("src/ops/*/*.cc")
-if has_config("cpu") then
-    add_deps("cpu")
-end
-if has_config("nv-gpu") then
-    add_deps("nv-gpu")
-end
+    add_files("src/ops/**/*.cc")
 target_end()
 
 target("main")
     set_kind("binary")
+    add_deps("operators")
+
     set_languages("c11")
     add_files("src/main.c")
-    add_deps("operators")
 target_end()

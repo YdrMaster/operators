@@ -3,8 +3,11 @@
 #include <stdio.h>
 
 void test_rms_norm() {
-    RotaryEmbeddingDescriptor *descriptor = createRotaryEmbeddingDescriptor(DevNvGpu, NULL);
-    rotaryEmbedding(descriptor, (MutTensor){.layout = {}, .data = NULL}, (ConstTensor){.layout = {}, .data = NULL}, 10000.0, NULL);
+    void *descriptor = createRotaryEmbeddingDescriptor(DevNvGpu, NULL);
+    struct TensorLayout l;
+    MutTensor t = {l, NULL};
+    ConstTensor t2 = {l, NULL};
+    rotaryEmbedding(descriptor, t, t2, 10000.0, NULL);
     destroyRotaryEmbeddingDescriptor(descriptor);
 }
 
