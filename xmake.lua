@@ -35,10 +35,13 @@ if has_config("nv-gpu") then
 add_defines("ENABLE_NV_GPU")
 target("nv-gpu")
     set_kind("static")
+    set_policy("build.cuda.devlink", true)
 
     set_toolchains("cuda")
-    add_cuflags("-arch=sm_80", "--expt-relaxed-constexpr", "--allow-unsupported-compiler", {force = true})
-    set_policy("build.cuda.devlink", true)
+    add_cugencodes("native")
+
+    add_cuflags("-Xcompiler=-fPIC", "--expt-relaxed-constexpr", "--allow-unsupported-compiler", {force = true})
+    add_culdflags("-Xcompiler=-fPIC")
 
     set_languages("cxx17")
     add_files("src/ops/*/cuda/*.cu")
