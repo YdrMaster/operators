@@ -1,12 +1,13 @@
-#include "swiglu.h"
-#include "../../../utils.h"
+#include "swiglu_cpu.h"
+#include "../../../devices/cpu/common_cpu.h"
+#include "../../utils.h"
 #include <cmath>
 
 inline float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
 }
 
-void swiglu_cpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up) {
+void swiglu_cpu_f16(MutTensor gate, ConstTensor up) {
     ASSERT_EQ(gate.layout.ndim, 2);
     ASSERT_EQ(up.layout.ndim, 2);
     ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);

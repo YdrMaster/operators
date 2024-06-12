@@ -1,5 +1,4 @@
-#include "../../../utils.h"
-#include "../../c_interface/cuda/nv_gpu.cuh"
+#include "../../utils.h"
 #include "swiglu.cuh"
 #include <cuda_fp16.h>
 
@@ -31,7 +30,7 @@ static __global__ void swiglu(
 
 constexpr static int BLOCK_SIZE = 1024;
 
-void swiglu_nv_gpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up) {
+void swiglu_nv_gpu_f16(MutTensor gate, ConstTensor up, void *stream) {
     ASSERT_EQ(gate.layout.ndim, 2);
     ASSERT_EQ(up.layout.ndim, 2);
     ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);
@@ -46,8 +45,8 @@ void swiglu_nv_gpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up) 
     auto gate_ptr = reinterpret_cast<half *>(gate.data);
     auto up_ptr = reinterpret_cast<half const *>(up.data);
 
-    auto stream = reinterpret_cast<NvGpuRtCtx const *>(kn->rt_ctx)->stream;
+    auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
-    swiglu<<<grid_dims, block_dims, 0, stream>>>(
+    swiglu<<<grid_dims, block_dims, 0, cuda_stream>>>(
         gate_ptr, gate.layout.strides[0] / 2, up_ptr, up.layout.strides[0] / 2);
 }

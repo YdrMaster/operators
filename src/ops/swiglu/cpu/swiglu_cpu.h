@@ -3,6 +3,6 @@
 
 #include "../../../operators.h"
 
-void swiglu_cpu_f16(struct Kernel const *kn, MutTensor gate, ConstTensor up);
+void swiglu_cpu_f16(MutTensor gate, ConstTensor up);
 
 #endif// __CPU_SWIGLU_H__
