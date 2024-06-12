@@ -1,5 +1,4 @@
-import ctypes
-from ctypes import c_float, POINTER, c_void_p
+from ctypes import c_float, c_void_p
 import sys
 import os
 
@@ -9,19 +8,11 @@ from operatorspy import (
     to_tensor,
     MutableTensor,
     ConstTensor,
-    Kernel,
     DeviceEnum,
-    OptypeEnum,
 )
 
 from operatorspy.tests.test_utils import get_args
 import torch
-
-optype = OptypeEnum.OpRmsNorm
-
-Fn = ctypes.CFUNCTYPE(
-    None, POINTER(Kernel), MutableTensor, ConstTensor, ConstTensor, c_float
-)
 
 
 def rms_norm(x, w, eps):
@@ -32,19 +23,17 @@ def rms_norm(x, w, eps):
     return w * hidden_states.to(input_dtype)
 
 
-def test(lib, device, config, rt_ctx_p, torch_device):
-    op = lib.op_create(device, optype, config)
-    kn = lib.kn_load(op, rt_ctx_p)
-    fn = lib.fn_get(kn)
-    fn = ctypes.cast(fn, Fn)
+def test(lib, descriptor, torch_device):
+
     y = torch.zeros((5, 16), dtype=torch.float16).to(torch_device)
     x = torch.rand((5, 16), dtype=torch.float16).to(torch_device)
     w = torch.ones((16,), dtype=torch.float16).to(torch_device)
 
     eps = 1e-5
     ans = rms_norm(x, w, eps)
-    fn(kn, to_tensor(y), to_tensor(x, False), to_tensor(w, False), eps)
-    lib.kn_unload(kn)
+    lib.rmsNorm(
+        descriptor, to_tensor(y), to_tensor(x, False), to_tensor(w, False), eps, None
+    )
 
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     print("Test passed!")
@@ -52,26 +41,31 @@ def test(lib, device, config, rt_ctx_p, torch_device):
 
 def test_cpu(lib):
     device = DeviceEnum.DEVICE_CPU
-    config = None
-    rt_ctx_p = None
-    test(lib, device, config, rt_ctx_p, "cpu")
+    descriptor = lib.createRMSNormDescriptor(device, None)
+    test(lib, descriptor, "cpu")
+    lib.destroyRMSNormDescriptor(descriptor)
 
 
 def test_cuda(lib):
     device = DeviceEnum.DEVICE_CUDA
-
-    class CudaContext(ctypes.Structure):
-        _fields_ = [("stream", c_void_p)]
-
-    config = None
-    rt_ctx_p = ctypes.byref(CudaContext(None))
-
-    test(lib, device, config, rt_ctx_p, "cuda")
+    descriptor = lib.createRMSNormDescriptor(device, None)
+    test(lib, descriptor, "cuda")
+    lib.destroyRMSNormDescriptor(descriptor)
 
 
 if __name__ == "__main__":
     args = get_args()
     lib = open_lib()
+    lib.createRMSNormDescriptor.restype = c_void_p
+    lib.destroyRMSNormDescriptor.argtypes = [c_void_p]
+    lib.rmsNorm.argtypes = [
+        c_void_p,
+        MutableTensor,
+        ConstTensor,
+        ConstTensor,
+        c_float,
+        c_void_p,
+    ]
     if args.cpu:
         test_cpu(lib)
     if args.cuda:

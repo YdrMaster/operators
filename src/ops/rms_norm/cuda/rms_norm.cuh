@@ -3,6 +3,6 @@
 
 #include "../../../operators.h"
 
-void rms_norm_nv_gpu_f16(Kernel const *, MutTensor y, ConstTensor x, ConstTensor w, float epsilon);
+void rms_norm_nv_gpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream);
 
 #endif// __NV_GPU_RMS_NORM_H__
