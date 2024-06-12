@@ -40,8 +40,12 @@ target("nv-gpu")
     set_toolchains("cuda")
     add_cugencodes("native")
 
-    add_cuflags("-Xcompiler=-fPIC", "--expt-relaxed-constexpr", "--allow-unsupported-compiler", {force = true})
-    add_culdflags("-Xcompiler=-fPIC")
+    if is_plat("windows") then
+        add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
+    else
+        add_cuflags("-Xcompiler=-fPIC")
+        add_culdflags("-Xcompiler=-fPIC")
+    end
 
     set_languages("cxx17")
     add_files("src/ops/*/cuda/*.cu")

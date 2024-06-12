@@ -35,7 +35,7 @@ xmake f -v
 #### 配置 CPU （默认配置）
 
 ```xmake
-xmake f --cpu=true -c -v
+xmake f --cpu=true -cv
 ```
 
 #### 配置 GPU
@@ -43,13 +43,7 @@ xmake f --cpu=true -c -v
 需要指定 CUDA 路径， 一般为 `CUDA_HOME` 或者 `CUDA_ROOT`。
 
 ```xmake
-xmake f --nv-gpu=true --cuda=$CUDA_HOME -c -v
-```
-
-**根据实际硬件修改 [arch](/xmake.lua#L32)。**
-
-```lua
-add_cuflags("-arch=sm_xx")
+xmake f --nv-gpu=true --cuda=$CUDA_HOME -cv
 ```
 
 ### 编译
