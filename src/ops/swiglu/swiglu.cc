@@ -5,6 +5,9 @@
 #ifdef ENABLE_NV_GPU
 #include "cuda/swiglu.cuh"
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "cnnl/swiglu.h"
+#endif
 
 #include "../utils.h"
 
@@ -29,6 +32,11 @@ extern "C" void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *s
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             swiglu_nv_gpu_f16(gate, up, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            swiglu_cambricon_mlu_f16(gate, up, stream);
             break;
 #endif
         default:

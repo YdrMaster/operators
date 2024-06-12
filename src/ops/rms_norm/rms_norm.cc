@@ -36,7 +36,7 @@ extern "C" void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTenso
             break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevNvGpu:
+        case DevCambriconMlu:
             rms_norm_cambricon_mlu_f16(y, x, w, epsilon, stream);
             break;
 #endif

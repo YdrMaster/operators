@@ -5,7 +5,17 @@
 #include "cnnl_extra.h"
 
 void rms_norm_cambricon_mlu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void* stream) {
+    ASSERT_EQ(y.layout.ndim, 2);
+    ASSERT_EQ(x.layout.ndim, 2);
+    ASSERT_EQ(w.layout.ndim, 1);
 
+    auto n = y.layout.shape[0],
+         d = y.layout.shape[1];
+
+    ASSERT_EQ(x.layout.shape[0], n);
+    ASSERT_EQ(x.layout.shape[1], d);
+    ASSERT_EQ(w.layout.shape[0], d);
+    
     cnnlTensorDescriptor_t yDesc, xDesc, wDesc;
     cnnlCreateTensorDescriptor(&yDesc);
     cnnlCreateTensorDescriptor(&xDesc);
