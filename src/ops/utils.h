@@ -1,13 +1,8 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include <execinfo.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <cstdio>  
-#include <cstdlib>
 
 #ifdef ENABLE_CAMBRICON_MLU
 #include "cnnl.h"
@@ -22,24 +17,17 @@
 inline void assert_true(int expr, const char *msg, const char *file, int line) {
     if (!expr) {
         fprintf(stderr, "\033[31mAssertion failed:\033[0m %s at file %s, line %d\n", msg, file, line);
-
-        void *array[MAX_BACKTRACE_DEPTH];
-        size_t size = backtrace(array, MAX_BACKTRACE_DEPTH);
-        fprintf(stderr, "    Stack trace (most recent call first):\n");
-        backtrace_symbols_fd(array, size, STDERR_FILENO);
-
         exit(EXIT_FAILURE);
     }
 }
 
-
 #define ASSERT(expr) assert_true(expr, #expr " is false", __FILE__, __LINE__)
-#define ASSERT_EQ(a, b) assert_true((a) == (b), #a " != "#b, __FILE__, __LINE__)
-#define ASSERT_VALID_PTR(a) assert_true((a)!= nullptr, #a " is nullptr",__FILE__, __LINE__)
+#define ASSERT_EQ(a, b) assert_true((a) == (b), #a " != " #b, __FILE__, __LINE__)
+#define ASSERT_VALID_PTR(a) assert_true((a) != nullptr, #a " is nullptr", __FILE__, __LINE__)
 
 #define PANIC(EXPR)                                             \
     printf("Error at %s:%d - %s\n", __FILE__, __LINE__, #EXPR); \
-    exit(1)
+    exit(EXIT_FAILURE)
 
 #ifdef ENABLE_CAMBRICON_MLU
 inline void setCnnlTensor(cnnlTensorDescriptor_t desc, TensorLayout layout) {

@@ -26,29 +26,42 @@ if is_mode("debug") then
     add_defines("DEBUG_MODE")
 end
 
-
 if has_config("cpu") then
-add_defines("ENABLE_CPU")
-target("cpu")
-    set_kind("shared")
-    set_languages("cxx17")
-    add_files("src/devices/cpu/*.cc")
-    add_files("src/ops/*/cpu/*.cc")
-target_end()
+
+    add_defines("ENABLE_CPU")
+    target("cpu")
+        set_kind("static")
+
+        if not is_plat("windows") then
+            add_cxflags("-fPIC")
+        end
+
+        set_languages("cxx17")
+        add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
+    target_end()
 
 end
 
 if has_config("nv-gpu") then
 
-add_defines("ENABLE_NV_GPU")
-target("nv-gpu")
-    set_kind("shared")
-    set_languages("cxx17")
-    add_cuflags("-arch=sm_80", "--expt-relaxed-constexpr", "--allow-unsupported-compiler",{force = true})
-    add_files("src/ops/*/cuda/*.cu")
-    set_toolchains("cuda")
-    set_policy("build.cuda.devlink", true)
-target_end()
+    add_defines("ENABLE_NV_GPU")
+    target("nv-gpu")
+        set_kind("static")
+        set_policy("build.cuda.devlink", true)
+
+        set_toolchains("cuda")
+        add_cugencodes("native")
+
+        if is_plat("windows") then
+            add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
+        else
+            add_cuflags("-Xcompiler=-fPIC")
+            add_culdflags("-Xcompiler=-fPIC")
+        end
+
+        set_languages("cxx17")
+        add_files("src/ops/*/cuda/*.cu")
+    target_end()
 
 end
 
@@ -72,22 +85,24 @@ end
 
 target("operators")
     set_kind("shared")
+
+    if has_config("cpu") then
+        add_deps("cpu")
+    end
+    if has_config("nv-gpu") then
+        add_deps("nv-gpu")
+    end
+    if has_config("cambricon-mlu") then
+        add_deps("cambricon-mlu")
+    end
     set_languages("cxx17")
-    add_files("src/ops/*/*.cc")
-if has_config("cpu") then
-    add_deps("cpu")
-end
-if has_config("nv-gpu") then
-    add_deps("nv-gpu")
-end
-if has_config("cambricon-mlu") then
-    add_deps("cambricon-mlu")
-end
+    add_files("src/ops/*/operator.cc")
 target_end()
 
 target("main")
     set_kind("binary")
+    add_deps("operators")
+
     set_languages("c11")
     add_files("src/main.c")
-    add_deps("operators")
 target_end()

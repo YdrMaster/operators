@@ -1,3 +1,4 @@
+#include "../utils.h"
 #include "rms_norm.h"
 
 #ifdef ENABLE_CPU
@@ -10,19 +11,15 @@
 #include "cnnl/rms_norm.h"
 #endif
 
-#include "../utils.h"
-
-extern "C" void *createRMSNormDescriptor(Device device, void *config) {
-    auto desc = new RMSNormDescriptor{device};
-    return (void *) desc;
+__C void *createRMSNormDescriptor(Device device, void *config) {
+    return new RMSNormDescriptor{device};
 }
 
-extern "C" void destroyRMSNormDescriptor(void *descriptor) {
-    auto desc = (RMSNormDescriptor *) descriptor;
-    delete desc;
+__C void destroyRMSNormDescriptor(void *descriptor) {
+    delete (RMSNormDescriptor *) descriptor;
 }
 
-extern "C" void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
+__C void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
     auto desc = (RMSNormDescriptor *) descriptor;
     switch (desc->device) {
 #ifdef ENABLE_CPU

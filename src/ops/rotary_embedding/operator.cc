@@ -1,4 +1,6 @@
+#include "../utils.h"
 #include "rotary_embedding.h"
+
 #ifdef ENABLE_CPU
 #include "cpu/rotary_embedding_cpu.h"
 #endif
@@ -6,19 +8,15 @@
 #include "cuda/rotary_embedding.cuh"
 #endif
 
-#include "../utils.h"
-
-extern "C" void *createRotaryEmbeddingDescriptor(Device device, void *config) {
-    RotaryEmbeddingDescriptor *desc = new RotaryEmbeddingDescriptor{device};
-    return (void *) desc;
+__C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
+    return new RotaryEmbeddingDescriptor{device};
 };
 
-extern "C" void destroyRotaryEmbeddingDescriptor(void *descriptor) {
-    RotaryEmbeddingDescriptor *desc = (RotaryEmbeddingDescriptor *) descriptor;
-    delete desc;
+__C void destroyRotaryEmbeddingDescriptor(void *descriptor) {
+    delete (RotaryEmbeddingDescriptor *) descriptor;
 }
 
-extern "C" void rotaryEmbedding(void *descriptor, MutTensor t, ConstTensor pos, float theta, void *stream) {
+__C void rotaryEmbedding(void *descriptor, MutTensor t, ConstTensor pos, float theta, void *stream) {
     auto desc = reinterpret_cast<RotaryEmbeddingDescriptor *>(descriptor);
     switch (desc->device) {
 #ifdef ENABLE_CPU
