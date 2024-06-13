@@ -1,7 +1,7 @@
 #ifndef __BLAS_H__
 #define __BLAS_H__
 
-#include "../../c_interface/cuda/nv_gpu.cuh"
+#include "../../operators.h"
 #include <stdint.h>
 
 struct BlasMatrix {
@@ -11,30 +11,32 @@ struct BlasMatrix {
     int cols;
     int row_stride;
     int col_stride;
-    void *data;
+    void const *data;
 
     BlasMatrix(TensorLayout layout, void const *data) {
         if (layout.ndim == 2) {
-            return BlasMatrix(1,
-                              0,
-                              layout.shape[0],
-                              layout.shape[1],
-                              layout.strides[0] / layout.dt.size,
-                              layout.strides[1] / layout.dt.size,
-                              data);
+            this->batch = 1;
+            this->stride = 0;
+            this->rows = layout.shape[0];
+            this->cols = layout.shape[1];
+            this->row_stride = layout.strides[0] / layout.dt.size;
+            this->col_stride = layout.strides[1] / layout.dt.size;
+            this->data = data;
         } else if (layout.ndim == 3) {
-            return BlasMatrix(layout.shape[0],
-                              layout.strides[0] / layout.dt.size,
-                              layout.shape[1], layout.shape[2],
-                              layout.strides[1] / layout.dt.size,
-                              layout.strides[2] / layout.dt.size,
-                              data);
+            this->batch = layout.shape[0];
+            this->stride = layout.strides[0] / layout.dt.size;
+            this->rows = layout.shape[1];
+            this->cols = layout.shape[2];
+            this->row_stride = layout.strides[1] / layout.dt.size;
+            this->col_stride = layout.strides[2] / layout.dt.size;
+            this->data = data;
         } else {
-            ASSERT(false);
+            PANIC(InvalidMatrixShape);
         }
 
         if (this->row_stride != 1 && this->col_stride != 1) {
             ASSERT(false);
+            PANIC(MatrixIsNotContiguous);
         }
     }
 

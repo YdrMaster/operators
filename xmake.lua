@@ -43,6 +43,7 @@ if has_config("nv-gpu") then
         set_policy("build.cuda.devlink", true)
 
         set_toolchains("cuda")
+        add_links("cublas")
         add_cugencodes("native")
 
         if is_plat("windows") then

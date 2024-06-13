@@ -1,9 +1,10 @@
-#include "matmul.h"
+#include "../../utils.h"
 #include "../blas.h"
+#include "matmul_cuda.h"
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
 
-void matmul_nv_gpu_f16(struct Kernel const *kn, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha) {
+void matmul_nv_gpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
     auto a_matrix = BlasMatrix(a.layout, a.data);
     auto b_matrix = BlasMatrix(b.layout, b.data);
     auto c_matrix = BlasMatrix(c.layout, c.data);
@@ -46,16 +47,16 @@ void matmul_nv_gpu_f16(struct Kernel const *kn, MutTensor c, float beta, ConstTe
         n,
         k,
         &alpha_f16,
-        a_matrix.data,
+        a.data,
         CUDA_R_16F,
         a_matrix.ld(),
         a_matrix.stride,
-        b_matrix.data,
+        b.data,
         CUDA_R_16F,
         b_matrix.ld(),
         b_matrix.stride,
         &beta_f16,
-        c_matrix.data,
+        c.data,
         CUDA_R_16F,
         c_matrix.ld(),
         c_matrix.stride,
