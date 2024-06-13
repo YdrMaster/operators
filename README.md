@@ -52,6 +52,12 @@ xmake f --nv-gpu=true --cuda=$CUDA_HOME -cv
 xmake
 ```
 
+### 将编译好的算子库添加至环境变量 `INFINI_ROOT`
+
+```bash
+export INFINI_ROOT=[PATH_TO_LIBRARY]
+```
+
 ### 运行算子测试
 
 ```bash
@@ -72,7 +78,8 @@ python operator_name.py
 │   ├── ops
 │   │   ├── utils.h  # 全算子通用代码 (如assert)
 │   │   ├── [operator_name]  # 算子实现目录
-│   │       ├── operator_name.cc/.h # 算子C接口
+│   │       ├── operator.cc # 算子C接口实现 (根据descriptor调用不同的算子实现)
+│   │       ├── [operator_name].h # 算子C接口定义，descriptor定义
 │   │       ├── [device_name]
 │   │       │   ├── *.cc/.h/... # 特定硬件的算子实现代码
 │   ├── *.h  # 核心结构体定义
@@ -92,6 +99,6 @@ python operator_name.py
 
 ### 增加新的算子
 
-- 在 `src/ops/[operator_name]` 增加创建/销毁算子描述符、算子计算的C接口；
+- 在 `src/ops/[operator_name]` 增加创建/销毁算子描述符、算子计算的C接口，注意C接口header使用`__C __export`前缀；
 - 在 `src/ops/[operator_name]/[device_name]` 增加算子在各硬件的实现代码；
 - 在 `operatorspy/tests/[operator_name].py` 增加算子测试；
