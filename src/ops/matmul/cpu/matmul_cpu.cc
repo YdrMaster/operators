@@ -5,33 +5,19 @@
 #include <cmath>
 
 void matmul_cpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha) {
-    auto a_matrix = BlasMatrix(a.layout, a.data);
-    auto b_matrix = BlasMatrix(b.layout, b.data);
-    auto c_matrix = BlasMatrix(c.layout, c.data);
+    auto info = MatmulInfo(c, a, b);
 
-    ASSERT_EQ(c_matrix.rows, a_matrix.rows);// m
-    ASSERT_EQ(c_matrix.cols, b_matrix.cols);// n
-    ASSERT_EQ(a_matrix.cols, b_matrix.rows);// k
-
-    auto batch = c_matrix.batch;
-    ASSERT_EQ(batch, a_matrix.batch);
-    ASSERT_EQ(batch, b_matrix.batch);
-
-    auto m = c_matrix.rows;
-    auto n = c_matrix.cols;
-    auto k = a_matrix.cols;
-
-    for (int i = 0; i < batch; ++i) {
-        for (int m_ = 0; m_ < m; ++m_) {
-            for (int n_ = 0; n_ < n; ++n_) {
-                auto c_ptr = reinterpret_cast<uint16_t *>(c.data) + i * m * n + m_ * m;
-                auto a_ptr = reinterpret_cast<uint16_t const *>(a_matrix.data) + i * a_matrix.stride + m_ * a_matrix.row_stride;
-                auto b_ptr = reinterpret_cast<uint16_t const *>(b_matrix.data) + i * b_matrix.stride + n_ * b_matrix.col_stride;
-                for (int k_ = 0; k_ < k; ++k_) {
-                    auto a_ = f16_to_f32(a_ptr[k_]);
-                    auto b_ = f16_to_f32(b_ptr[k_]);
-                    c_ptr[n_] = f32_to_f16(beta * f16_to_f32(c_ptr[n_]) + alpha * a_ * b_);
+    for (int i = 0; i < info.batch; ++i) {
+        for (int m_ = 0; m_ < info.m; ++m_) {
+            for (int n_ = 0; n_ < info.n; ++n_) {
+                auto c_ = reinterpret_cast<uint16_t *>(info.c_ptr) + i * info.c_matrix.stride + m_ * info.c_matrix.row_stride + n_ * info.c_matrix.col_stride;
+                float sum = 0;
+                for (int k_ = 0; k_ < info.k; ++k_) {
+                    auto a_ = reinterpret_cast<uint16_t const *>(info.a_ptr) + i * info.a_matrix.stride + m_ * info.a_matrix.row_stride + k_ * info.a_matrix.col_stride;
+                    auto b_ = reinterpret_cast<uint16_t const *>(info.b_ptr) + i * info.b_matrix.stride + n_ * info.b_matrix.col_stride + k_ * info.b_matrix.row_stride;
+                    sum += f16_to_f32(*a_) * f16_to_f32(*b_);
                 }
+                *c_ = f32_to_f16(beta * f16_to_f32(*c_) + alpha * sum);
             }
         }
     }

@@ -11,9 +11,10 @@ struct BlasMatrix {
     int cols;
     int row_stride;
     int col_stride;
-    void const *data;
 
-    BlasMatrix(TensorLayout layout, void const *data) {
+    BlasMatrix() {}
+
+    BlasMatrix(TensorLayout layout) {
         if (layout.ndim == 2) {
             this->batch = 1;
             this->stride = 0;
@@ -21,15 +22,13 @@ struct BlasMatrix {
             this->cols = layout.shape[1];
             this->row_stride = layout.strides[0] / layout.dt.size;
             this->col_stride = layout.strides[1] / layout.dt.size;
-            this->data = data;
         } else if (layout.ndim == 3) {
             this->batch = layout.shape[0];
-            this->stride = layout.strides[0] / layout.dt.size;
+            this->stride = this->batch == 1 ? 0 : layout.strides[0] / layout.dt.size;
             this->rows = layout.shape[1];
             this->cols = layout.shape[2];
             this->row_stride = layout.strides[1] / layout.dt.size;
             this->col_stride = layout.strides[2] / layout.dt.size;
-            this->data = data;
         } else {
             PANIC(InvalidMatrixShape);
         }
@@ -55,6 +54,51 @@ struct BlasMatrix {
         } else {
             return this->row_stride;
         }
+    }
+};
+
+struct MatmulInfo {
+    BlasMatrix a_matrix;
+    BlasMatrix b_matrix;
+    BlasMatrix c_matrix;
+
+    void const *a_ptr;
+    void const *b_ptr;
+    void *c_ptr;
+
+    int m, n, k, batch;
+
+    MatmulInfo(MutTensor c, ConstTensor a, ConstTensor b) {
+        a_matrix = BlasMatrix(a.layout);
+        b_matrix = BlasMatrix(b.layout);
+        c_matrix = BlasMatrix(c.layout);
+
+        a_ptr = a.data;
+        b_ptr = b.data;
+        c_ptr = c.data;
+
+        ASSERT_EQ(c_matrix.rows, a_matrix.rows);// m
+        ASSERT_EQ(c_matrix.cols, b_matrix.cols);// n
+        ASSERT_EQ(a_matrix.cols, b_matrix.rows);// k
+
+        batch = c_matrix.batch;
+        if (!a_matrix.match_batch(batch) || !b_matrix.match_batch(batch)) {
+            PANIC(InvalidBatchSize);
+        }
+
+        if (c_matrix.row_stride == 1) {
+            // Nothing to do
+        } else {
+            c_matrix.transpose();
+            b_matrix.transpose();
+            a_matrix.transpose();
+            std::swap(a_matrix, b_matrix);
+            std::swap(a_ptr, b_ptr);
+        }
+
+        m = c_matrix.rows;
+        n = c_matrix.cols;
+        k = a_matrix.cols;
     }
 };
 
