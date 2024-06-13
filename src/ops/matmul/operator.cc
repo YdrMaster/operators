@@ -5,12 +5,20 @@
 #endif
 #ifdef ENABLE_NV_GPU
 #include "cuda/matmul_cuda.h"
+#include <cublas_v2.h>
 #endif
 
 #include "../utils.h"
 
 extern "C" void *createMatmulDescriptor(Device device, void *config) {
-    auto desc = new MatmulDescriptor{device};
+    auto desc = new MatmulDescriptor{device, nullptr};
+#ifdef ENABLE_NV_GPU
+    if (device == DevNvGpu) {
+        cublasHandle_t handle;
+        cublasCreate(&handle);
+        desc->handle = handle;
+    }
+#endif
     return (void *) desc;
 }
 
@@ -29,7 +37,8 @@ extern "C" void matmul(void *descriptor, MutTensor c, float beta, ConstTensor a,
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            matmul_nv_gpu_f16(c, beta, a, b, alpha, stream);
+            cublasSetStream((cublasHandle_t) desc->handle, (cudaStream_t) stream);
+            matmul_nv_gpu_f16(desc->handle, c, beta, a, b, alpha, stream);
             break;
 #endif
         default:

@@ -4,7 +4,7 @@
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
 
-void matmul_nv_gpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
+void matmul_nv_gpu_f16(void *handle, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
     auto info = MatmulInfo(c, a, b);
 
     auto alpha_f16 = __float2half(alpha);
@@ -13,11 +13,8 @@ void matmul_nv_gpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, fl
     auto op_a = info.a_matrix.row_stride == 1 ? CUBLAS_OP_N : CUBLAS_OP_T;
     auto op_b = info.b_matrix.row_stride == 1 ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-    cublasHandle_t handle;
-    cublasCreate(&handle);
-
     cublasGemmStridedBatchedEx(
-        handle,
+        (cublasHandle_t) handle,
         op_a,
         op_b,
         info.m,
