@@ -1,9 +1,14 @@
-#include "../../../devices/nv-gpu/handle_pool.h"
+#include "../../../devices/cuda/handle_pool.h"
 #include "../../utils.h"
 #include "../blas.h"
 #include "matmul_cuda.h"
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
+
+MatmulCudaDescriptor::MatmulCudaDescriptor(Device device) {
+    this->device = device;
+    get_cublas_pool();
+}
 
 void matmul_nv_gpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
     auto info = MatmulInfo(c, a, b);

@@ -21,7 +21,7 @@ __C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return (MatmulDescriptor *) (new MatmulCudaDescriptor{device});
+            return (MatmulDescriptor *) (new MatmulCudaDescriptor(device));
         }
 
 #endif
