@@ -13,12 +13,12 @@ inline int indices(int i, int ndim, int64_t *strides, uint64_t *shape) {
     return ans;
 }
 
-template<typename T>
-void copy_contiguous(void *dst_ptr, void const *src_ptr, int n, MutTensor y, ConstTensor x) {
+void copy_contiguous(uint8_t *dst_ptr, uint8_t const *src_ptr, int n, MutTensor y, ConstTensor x) {
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        auto dst_offset = indices(i, y.layout.ndim, y.layout.strides, y.layout.shape) / y.layout.dt.size;
-        auto src_offset = indices(i, y.layout.ndim, x.layout.strides, x.layout.shape) / x.layout.dt.size;
-        std::memcpy((T *) dst_ptr + dst_offset, (T *) src_ptr + src_offset, y.layout.shape[y.layout.ndim - 1]);
+        auto dst_offset = indices(i, y.layout.ndim, y.layout.strides, y.layout.shape);
+        auto src_offset = indices(i, y.layout.ndim, x.layout.strides, x.layout.shape);
+        std::memcpy(dst_ptr + dst_offset, src_ptr + src_offset, y.layout.shape[y.layout.ndim - 1] * y.layout.dt.size);
     }
 }
 
@@ -26,7 +26,6 @@ union DataLayout_ {
     DataLayout i;
     unsigned short u;
 };
-
 
 void reform_cpu(MutTensor y, ConstTensor x) {
     DataLayout_ dl_y, dl_x;
@@ -53,18 +52,8 @@ void reform_cpu(MutTensor y, ConstTensor x) {
         }
         r = std::accumulate(y.layout.shape, y.layout.shape + ndim - 1, 1, std::multiplies<unsigned int>());
     }
-    auto dst_ptr = static_cast<void *>(reinterpret_cast<uint8_t *>(y.data) + y.layout.offset);
-    auto src_ptr = static_cast<void const *>(reinterpret_cast<uint8_t const *>(x.data) + x.layout.offset);
+    auto dst_ptr = reinterpret_cast<uint8_t *>(y.data) + y.layout.offset;
+    auto src_ptr = reinterpret_cast<uint8_t const *>(x.data) + x.layout.offset;
 
-    if (y.layout.dt.size == 1) {
-        copy_contiguous<uint8_t>(dst_ptr, src_ptr, r, y, x);
-    } else if (y.layout.dt.size == 2) {
-        copy_contiguous<uint16_t>(dst_ptr, src_ptr, r, y, x);
-    } else if (y.layout.dt.size == 4) {
-        copy_contiguous<uint32_t>(dst_ptr, src_ptr, r, y, x);
-    } else if (y.layout.dt.size == 8) {
-        copy_contiguous<uint64_t>(dst_ptr, src_ptr, r, y, x);
-    } else {
-        ASSERT(false);
-    }
+    copy_contiguous(dst_ptr, src_ptr, r, y, x);
 }

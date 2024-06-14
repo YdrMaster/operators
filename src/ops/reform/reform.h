@@ -7,7 +7,6 @@ typedef struct ReformDescriptor ReformDescriptor;
 
 __C __export ReformDescriptor *createReformDescriptor(Device, void *config);
 __C __export void destroyReformDescriptor(ReformDescriptor *descriptor);
-__C __export void reform(void *descriptor, MutTensor y, ConstTensor x, void *stream);
-
+__C __export void reform(ReformDescriptor *descriptor, MutTensor y, ConstTensor x, void *stream);
 
 #endif

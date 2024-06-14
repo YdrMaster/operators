@@ -14,13 +14,17 @@ from operatorspy import (
 
 from operatorspy.tests.test_utils import get_args
 import torch
+import time
 
 
 def test(lib, descriptor, torch_device):
-    x = torch.rand((2, 3, 4, 32, 128), dtype=torch.float16).to(torch_device)
+    x = torch.rand((120, 10, 12, 32, 128), dtype=torch.float16).to(torch_device)
     y = torch.zeros_like(x)
 
+    start = time.time()
     lib.reform(descriptor, to_tensor(y), to_tensor(x, False), None)
+    end = time.time()
+    print(f"Time elapsed: {(end - start) *1000} ms")
 
     assert torch.allclose(y, x, atol=1, rtol=1e-3)
     print("Test passed!")

@@ -24,10 +24,6 @@ static __global__ void reform(
     reinterpret_cast<Tmem *>(dst)[i] = reinterpret_cast<Tmem const *>(src)[j];
 }
 
-constexpr static int
-    MAX_WRAP_PER_BLOCK = 32,
-    WARP_SIZE = 32;
-
 union DataLayout_ {
     DataLayout i;
     unsigned short u;
@@ -86,7 +82,7 @@ void reform_nv_gpu(MutTensor y, ConstTensor x, void *stream) {
     rsb /= b;
     csb /= b;
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
-    dim3 grid_dims = dim3((c + MAX_WRAP_PER_BLOCK - 1) / MAX_WRAP_PER_BLOCK, r);
+    dim3 grid_dims = dim3((c + MAX_WARP_PER_BLOCK - 1) / MAX_WARP_PER_BLOCK, r);
     dim3 block_dims = dim3(WARP_SIZE, (c + grid_dims.x - 1) / grid_dims.x);
     switch (bytes_per_thread) {
         case 1:
