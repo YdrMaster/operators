@@ -1,3 +1,4 @@
+#include "../utils.h"
 #include "matmul.h"
 
 #ifdef ENABLE_CPU
@@ -8,21 +9,47 @@
 #include <cublas_v2.h>
 #endif
 
-#include "../utils.h"
+struct MatmulDescriptor {
+    Device device;
+};
 
-extern "C" void *createMatmulDescriptor(Device device, void *config) {
-    auto desc = new MatmulDescriptor{device};
-    return (void *) desc;
+__C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
+    switch (device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return (MatmulDescriptor *) (new MatmulCpuDescriptor{device});
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return (MatmulDescriptor *) (new MatmulCudaDescriptor{device});
+        }
+
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
+    return nullptr;
 }
 
-extern "C" void destroyMatmulDescriptor(void *descriptor) {
-    auto desc = (MatmulDescriptor *) descriptor;
-    delete desc;
+__C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
+    switch (descriptor->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            delete (MatmulCpuDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            delete (MatmulCudaDescriptor *) (descriptor);
+            break;
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
 }
 
-extern "C" void matmul(void *descriptor, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
-    auto desc = (MatmulDescriptor *) descriptor;
-    switch (desc->device) {
+__C void matmul(MatmulDescriptor *descriptor, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
+    switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
             matmul_cpu_f16(c, beta, a, b, alpha);
