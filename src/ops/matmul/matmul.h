@@ -19,7 +19,6 @@ void matmul(void *descriptor, MutTensor c, float beta, ConstTensor a, ConstTenso
 
 typedef struct MatmulDescriptor {
     Device device;
-    void *handle;
 } MatmulDescriptor;
 
 #endif
