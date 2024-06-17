@@ -11,16 +11,14 @@ public:
 
     Pool(const Pool &) = delete;
 
-    Pool(Pool &&pool) {
-        _head.store(pool._head.load());
-    }
+    Pool(Pool &&pool) noexcept : _head(std::move(pool._head.load())) {}
 
     ~Pool() {
         while (this->pop()) {}
     }
 
     void push(T &&val) const {
-        Node<T> *new_node = new Node<T>(val);
+        Node<T> *new_node = new Node<T>(std::move(val));
         new_node->next = _head.load();
         while (!_head.compare_exchange_weak(new_node->next, new_node));
     }
@@ -42,7 +40,7 @@ private:
     struct Node {
         U data;
         Node<U> *next;
-        Node(const U &data) : data(data), next(nullptr) {}
+        Node(U &&data) : data(data), next(nullptr) {}
     };
 
     mutable std::atomic<Node<T> *> _head;
@@ -63,7 +61,8 @@ const Pool<cublasHandle_t> &get_cublas_pool() {
             cublasCreate(&handle);
             pool.push(std::move(handle));
             cublas_pool.emplace_back(std::move(pool));
-        } });
+        }
+    });
     return cublas_pool[device_id];
 }
 
