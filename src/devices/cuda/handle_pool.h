@@ -1,6 +1,5 @@
 #include <atomic>
 #include <cublas_v2.h>
-#include <iostream>
 #include <mutex>
 #include <optional>
 #include <vector>
@@ -17,22 +16,20 @@ public:
     }
 
     ~Pool() {
-        while (_head.load()) {
-            this->pop();
-        }
+        while (this->pop()) {}
     }
 
-    void push(T &&val) {
+    void push(T &&val) const {
         Node<T> *new_node = new Node<T>(val);
         new_node->next = _head.load();
         while (!_head.compare_exchange_weak(new_node->next, new_node));
     }
 
-    std::optional<T> pop() {
+    std::optional<T> pop() const {
         Node<T> *top = _head.load();
         Node<T> *new_head = nullptr;
         do {
-            if (top == nullptr) {
+            if (!top) {
                 return std::nullopt;
             }
             new_head = top->next;
@@ -48,17 +45,18 @@ private:
         Node(const U &data) : data(data), next(nullptr) {}
     };
 
-    std::atomic<Node<T> *> _head;
+    mutable std::atomic<Node<T> *> _head;
 };
 
 
-Pool<cublasHandle_t> &get_cublas_pool() {
-    int device_count, device_id;
-    cudaGetDeviceCount(&device_count);
+const Pool<cublasHandle_t> &get_cublas_pool() {
+    int device_id;
     cudaGetDevice(&device_id);
     static std::once_flag flag;
     static std::vector<Pool<cublasHandle_t>> cublas_pool;
     std::call_once(flag, [&]() {
+        int device_count;
+        cudaGetDeviceCount(&device_count);
         for (int i = 0; i < device_count; i++) {
             auto pool = Pool<cublasHandle_t>();
             cublasHandle_t handle;
