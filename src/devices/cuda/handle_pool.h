@@ -11,7 +11,7 @@ public:
 
     Pool(const Pool &) = delete;
 
-    Pool(Pool &&pool) noexcept : _head(std::move(pool._head.load())) {}
+    Pool(Pool &&pool) noexcept : _head(pool._head.exchange(nullptr)) {}
 
     ~Pool() {
         while (this->pop()) {}
