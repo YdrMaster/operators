@@ -67,8 +67,30 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
+def test_cnnl(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_MLU
+    config = None
+    descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
+    
+    # Note: CNNL does not support complex calculation, compare with cpu results 
+    t = torch.rand((1, 32, 128), dtype=torch.float16)
+    pos = torch.ones((1,), dtype=torch.int32)
+    theta = 1e4
+    ans = rotary_embedding(t, pos, theta, "cpu")
+
+    t = t.to("mlu")
+    pos = pos.to("mlu")
+    lib.rotaryEmbedding(
+        descriptor, to_tensor(t), to_tensor(pos, False), c_float(theta), None
+    )
+    assert torch.allclose(t.cpu(), ans, atol=1, rtol=1e-3)
+    print("Test passed!")
+
+    lib.createRotaryEmbeddingDescriptor(descriptor)
 
 if __name__ == "__main__":
+    torch.manual_seed(99)
     args = get_args()
     lib = open_lib()
     lib.createRotaryEmbeddingDescriptor.restype = c_void_p
@@ -84,3 +106,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.cnnl:
+        test_cnnl(lib)

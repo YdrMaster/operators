@@ -7,6 +7,9 @@
 #ifdef ENABLE_NV_GPU
 #include "cuda/rotary_embedding.cuh"
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "cnnl/rotary_embedding.h"
+#endif
 
 __C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
     return new RotaryEmbeddingDescriptor{device};
@@ -27,6 +30,11 @@ __C void rotaryEmbedding(void *descriptor, MutTensor t, ConstTensor pos, float t
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             rotary_embedding_nv_gpu_f16(t, pos, theta, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            rotary_embedding_cambricon_mlu_f16(t, pos, theta, stream);
             break;
 #endif
         default:

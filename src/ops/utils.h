@@ -7,8 +7,6 @@
 #ifdef ENABLE_CAMBRICON_MLU
 #include "../tensor.h"
 #include "cnnl.h"
-#include <iostream>
-#include <utility>
 #include <vector>
 #endif
 
@@ -57,25 +55,6 @@ inline std::pair<cnnlHandle_t, cnrtQueue_t> getCnnlHandle(void *stream) {
     return std::make_pair(handle, queue);
 }
 
-template<class T>
-inline void printData(const void* ptr, int count) {
-    T* host = (T*)malloc(count * sizeof(T));
-    cnrtMemcpy(host, (void*)ptr, count * sizeof(T), cnrtMemcpyDevToHost);
-    for (int i = 0; i < count; i++) {
-        std::cout << host[i] << std::endl;
-    }
-    free(host);
-    return;
-}
-
-inline void checkQueue(cnnlHandle_t handle) {
-    cnrtQueue_t queue;
-    if (handle != nullptr) {
-        cnnlGetQueue(handle, &queue);
-    } else {
-        std::cout << "No Queue" << std::endl;
-    }
-}
 #endif
 
 #endif// __UTILS_H__
