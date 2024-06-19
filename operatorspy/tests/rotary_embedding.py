@@ -90,7 +90,6 @@ def test_cnnl(lib):
     lib.createRotaryEmbeddingDescriptor(descriptor)
 
 if __name__ == "__main__":
-    torch.manual_seed(99)
     args = get_args()
     lib = open_lib()
     lib.createRotaryEmbeddingDescriptor.restype = c_void_p
@@ -108,4 +107,3 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.cnnl:
         test_cnnl(lib)
-        
