@@ -108,3 +108,4 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.cnnl:
         test_cnnl(lib)
+        

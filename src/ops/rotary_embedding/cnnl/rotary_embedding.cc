@@ -93,7 +93,7 @@ void rotary_embedding_cambricon_mlu_f16(MutTensor t, ConstTensor pos, float thet
     cnrtMalloc(&concatWorkspace, concatWorkspaceSize);
 
     cnnlTensorDescriptor_t concatDescs[2] = {freqDesc, freqDesc};
-    void* const concatData[2] = {freqData, freqData};
+    void *const concatData[2] = {freqData, freqData};
 
     cnnlConcat(handle, 2, -1, concatDescs, concatData,
                concatWorkspace, concatWorkspaceSize,
