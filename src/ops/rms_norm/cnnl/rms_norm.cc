@@ -31,7 +31,7 @@ void rms_norm_cambricon_mlu_f16(MutTensor y, ConstTensor x, ConstTensor w, float
                               false, false, false, false,
                               CNNL_DTYPE_HALF, CNNL_TRANSFORMER_RMSNORM);
 
-    auto handle = getCnnlHandle(stream);
+    auto [handle, queue] = getCnnlHandle(stream);
 
     size_t wsSize;
     cnnlGetFuseNormWorkspaceSize(handle, opDesc, xDesc, &wsSize);

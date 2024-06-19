@@ -67,19 +67,19 @@ end
 
 if has_config("cambricon-mlu") then
 
-add_defines("ENABLE_CAMBRICON_MLU")
-add_includedirs("/usr/local/neuware/include")
-add_linkdirs("/usr/local/neuware/lib64")
-add_links("libcnrt.so")
-add_links("libcnnl.so")
-add_links("libcnnl_extra.so")
+    add_defines("ENABLE_CAMBRICON_MLU")
+    add_includedirs("/usr/local/neuware/include")
+    add_linkdirs("/usr/local/neuware/lib64")
+    add_links("libcnrt.so")
+    add_links("libcnnl.so")
+    add_links("libcnnl_extra.so")
 
-target("cambricon-mlu")
-    set_kind("shared")
-    set_languages("cxx17")
-    add_cxflags("-lstdc++ -Wall -Werror")
-    add_files("src/ops/*/cnnl/*.cc")
-target_end()
+    target("cambricon-mlu")
+        set_kind("static")
+        set_languages("cxx17")
+        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
+        add_files("src/ops/*/cnnl/*.cc")
+    target_end()
 
 end
 

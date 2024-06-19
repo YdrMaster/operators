@@ -5,7 +5,10 @@
 #include <stdlib.h>
 
 #ifdef ENABLE_CAMBRICON_MLU
+#include "../tensor.h"
 #include "cnnl.h"
+#include <iostream>
+#include <utility>
 #include <vector>
 #endif
 
@@ -39,18 +42,39 @@ inline void setCnnlTensor(cnnlTensorDescriptor_t desc, TensorLayout layout) {
                             dims.size(), dims.data());
 }
 
-inline cnnlHandle_t getCnnlHandle(void* stream) {
+inline std::pair<cnnlHandle_t, cnrtQueue_t> getCnnlHandle(void *stream) {
     cnnlHandle_t handle;
+    cnrtQueue_t queue;
     if (stream != nullptr) {
         handle = reinterpret_cast<cnnlHandle_t>(stream);
+        cnnlGetQueue(handle, &queue);
     } else {
         cnrtSetDevice(0);
         cnnlCreate(&handle);
-        cnrtQueue_t queue;
         cnrtQueueCreate(&queue);
         cnnlSetQueue(handle, queue);
     }
-    return handle;
+    return std::make_pair(handle, queue);
+}
+
+template<class T>
+inline void printData(const void* ptr, int count) {
+    T* host = (T*)malloc(count * sizeof(T));
+    cnrtMemcpy(host, (void*)ptr, count * sizeof(T), cnrtMemcpyDevToHost);
+    for (int i = 0; i < count; i++) {
+        std::cout << host[i] << std::endl;
+    }
+    free(host);
+    return;
+}
+
+inline void checkQueue(cnnlHandle_t handle) {
+    cnrtQueue_t queue;
+    if (handle != nullptr) {
+        cnnlGetQueue(handle, &queue);
+    } else {
+        std::cout << "No Queue" << std::endl;
+    }
 }
 #endif
 

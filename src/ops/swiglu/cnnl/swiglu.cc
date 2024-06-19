@@ -29,7 +29,7 @@ void swiglu_cambricon_mlu_f16(MutTensor gate, ConstTensor up, void *stream) {
     void *input;
     cnrtMalloc(&input, inputSizeInBytes);
 
-    auto handle = getCnnlHandle(stream);
+    auto [handle, queue] = getCnnlHandle(stream);
 
     size_t concatWorkspaceSize;
     cnnlGetConcatWorkspaceSize(handle, 2, &concatWorkspaceSize);
