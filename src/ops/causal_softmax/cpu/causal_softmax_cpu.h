@@ -4,8 +4,8 @@
 #include "../../../operators.h"
 typedef struct CausalSoftmaxCpuDescriptor {
     Device device;
-}CausalSoftmaxCpuDescriptor;
+} CausalSoftmaxCpuDescriptor;
 
-void causal_softmax_cpu_f16(MutTensor);
+void causal_softmax_cpu_f16(Tensor);
 
 #endif

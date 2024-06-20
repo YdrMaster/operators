@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 
-void causal_softmax_cpu_f16(MutTensor y) {
+void causal_softmax_cpu_f16(Tensor y) {
     ASSERT(y.layout.ndim >= 2);
     uint64_t total_seq_len = y.layout.shape[y.layout.ndim - 1];
     uint64_t seq_len = y.layout.shape[y.layout.ndim - 2];

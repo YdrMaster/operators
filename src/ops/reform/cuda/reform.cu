@@ -29,7 +29,7 @@ union DataLayout_ {
     unsigned short u;
 };
 
-void reform_nv_gpu(MutTensor y, ConstTensor x, void *stream) {
+void reform_nv_gpu(Tensor y, Tensor x, void *stream) {
     DataLayout_ dl_y, dl_x;
     dl_y.i = y.layout.dt;
     dl_x.i = x.layout.dt;

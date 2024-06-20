@@ -6,8 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    MutableTensor,
-    ConstTensor,
+    CTensor,
     DeviceEnum,
 )
 
@@ -36,8 +35,8 @@ def test(lib, descriptor, torch_device):
         descriptor,
         to_tensor(c),
         beta,
-        to_tensor(a, False),
-        to_tensor(b, False),
+        to_tensor(a),
+        to_tensor(b),
         alpha,
         None,
     )
@@ -68,10 +67,10 @@ if __name__ == "__main__":
     lib.destroyMatmulDescriptor.argtypes = [c_void_p]
     lib.matmul.argtypes = [
         c_void_p,
-        MutableTensor,
+        CTensor,
         c_float,
-        ConstTensor,
-        ConstTensor,
+        CTensor,
+        CTensor,
         c_float,
         c_void_p,
     ]

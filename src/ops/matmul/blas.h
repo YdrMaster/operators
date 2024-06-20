@@ -68,7 +68,7 @@ struct MatmulInfo {
 
     int m, n, k, batch;
 
-    MatmulInfo(MutTensor c, ConstTensor a, ConstTensor b) {
+    MatmulInfo(Tensor c, Tensor a, Tensor b) {
         a_matrix = BlasMatrix(a.layout);
         b_matrix = BlasMatrix(b.layout);
         c_matrix = BlasMatrix(c.layout);

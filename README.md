@@ -13,7 +13,7 @@
 - 第二阶段：计算。根据一阶段的 Descriptor，执行相应计算，用户需要提供输入输出张量，以及硬件计算流（CPU 为 NULL）。
 
   ```C
-  void op(void *descriptor, MutableTensor output, ConstTensor input, void *stream);
+  void op(void *descriptor, Tensor output, Tensor input, void *stream);
   ```
 
 - 销毁 Descriptor。

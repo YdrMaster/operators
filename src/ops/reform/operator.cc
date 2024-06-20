@@ -47,7 +47,7 @@ __C void destroyReformDescriptor(ReformDescriptor *descriptor) {
     }
 }
 
-__C void reform(ReformDescriptor *descriptor, MutTensor y, ConstTensor x, void *stream) {
+__C void reform(ReformDescriptor *descriptor, Tensor y, Tensor x, void *stream) {
     switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:

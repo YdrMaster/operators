@@ -8,6 +8,7 @@ Optype = c_int
 
 LIB_OPERATORS_DIR = "INFINI_ROOT"
 
+
 class TensorLayout(Structure):
     _fields_ = [
         ("dt", DataLayout),
@@ -18,11 +19,7 @@ class TensorLayout(Structure):
     ]
 
 
-class ConstTensor(Structure):
-    _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
-
-
-class MutableTensor(Structure):
+class CTensor(Structure):
     _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
 
 
@@ -46,8 +43,8 @@ def open_lib():
     return lib
 
 
-# Convert PyTorch tensor to ConstTensor or MutableTensor
-def to_tensor(tensor, mutable=True):
+# Convert PyTorch tensor to library Tensor
+def to_tensor(tensor):
     import torch
 
     ndim = tensor.ndimension()
@@ -97,7 +94,5 @@ def to_tensor(tensor, mutable=True):
     assert dt is not None
     # Create TensorLayout
     layout = TensorLayout(dt, ndim, 0, shape, strides)
-    # Create MutTensor
-    if mutable:
-        return MutableTensor(layout, ctypes.c_void_p(data_ptr))
-    return ConstTensor(layout, ctypes.c_void_p(data_ptr))
+    # Create Tensor
+    return CTensor(layout, ctypes.c_void_p(data_ptr))

@@ -7,8 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    MutableTensor,
-    ConstTensor,
+    CTensor,
     DeviceEnum,
 )
 
@@ -45,7 +44,7 @@ def test(lib, descriptor, torch_device):
 
     ans = rotary_embedding(t, pos, theta, torch_device)
     lib.rotaryEmbedding(
-        descriptor, to_tensor(t), to_tensor(pos, False), c_float(theta), None
+        descriptor, to_tensor(t), to_tensor(pos), c_float(theta), None
     )
 
     assert torch.allclose(t, ans, atol=1, rtol=1e-3)
@@ -75,8 +74,8 @@ if __name__ == "__main__":
     lib.destroyRotaryEmbeddingDescriptor.argtypes = [c_void_p]
     lib.rotaryEmbedding.argtypes = [
         c_void_p,
-        MutableTensor,
-        ConstTensor,
+        CTensor,
+        CTensor,
         c_float,
         c_void_p,
     ]
