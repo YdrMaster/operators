@@ -47,9 +47,8 @@ __C void destroyReformDescriptor(ReformDescriptor *descriptor) {
     }
 }
 
-__C void reform(void *descriptor, MutTensor y, ConstTensor x, void *stream) {
-    auto desc = reinterpret_cast<ReformDescriptor *>(descriptor);
-    switch (desc->device) {
+__C void reform(ReformDescriptor *descriptor, MutTensor y, ConstTensor x, void *stream) {
+    switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
             reform_cpu(y, x);
