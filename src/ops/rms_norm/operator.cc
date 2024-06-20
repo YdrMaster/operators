@@ -8,7 +8,7 @@
 #include "cuda/rms_norm.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-#include "cnnl/rms_norm.h"
+#include "bang/rms_norm_cnnl.h"
 #endif
 
 __C void *createRMSNormDescriptor(Device device, void *config) {
@@ -34,7 +34,7 @@ __C void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTensor w, fl
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
-            rms_norm_cambricon_mlu_f16(y, x, w, epsilon, stream);
+            rms_norm_cnnl_f16(y, x, w, epsilon, stream);
             break;
 #endif
         default:

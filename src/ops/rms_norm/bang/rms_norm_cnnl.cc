@@ -1,10 +1,10 @@
-﻿#include "rms_norm.h"
+﻿#include "rms_norm_cnnl.h"
 #include "../../utils.h"
 #include "cnrt.h"
 #include "cnnl.h"
 #include "cnnl_extra.h"
 
-void rms_norm_cambricon_mlu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void* stream) {
+void rms_norm_cnnl_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void* stream) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);

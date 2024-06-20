@@ -1,10 +1,10 @@
-﻿#include "swiglu.h"
+﻿#include "swiglu_cnnl.h"
 #include "../../utils.h"
 #include "cnnl.h"
 #include "cnnl_extra.h"
 #include "cnrt.h"
 
-void swiglu_cambricon_mlu_f16(MutTensor gate, ConstTensor up, void *stream) {
+void swiglu_cnnl_f16(MutTensor gate, ConstTensor up, void *stream) {
     ASSERT_EQ(gate.layout.ndim, 2);
     ASSERT_EQ(up.layout.ndim, 2);
     ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);

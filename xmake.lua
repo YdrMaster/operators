@@ -79,7 +79,7 @@ if has_config("cambricon-mlu") then
         set_kind("static")
         set_languages("cxx17")
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
-        add_files("src/ops/*/cnnl/*.cc")
+        add_files("src/ops/*/bang/*.cc")
     target_end()
 
 end

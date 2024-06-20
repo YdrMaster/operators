@@ -8,7 +8,7 @@
 #include "cuda/rotary_embedding.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-#include "cnnl/rotary_embedding.h"
+#include "bang/rotary_embedding_cnnl.h"
 #endif
 
 __C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
@@ -34,7 +34,7 @@ __C void rotaryEmbedding(void *descriptor, MutTensor t, ConstTensor pos, float t
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
-            rotary_embedding_cambricon_mlu_f16(t, pos, theta, stream);
+            rotary_embedding_cnnl_f16(t, pos, theta, stream);
             break;
 #endif
         default:

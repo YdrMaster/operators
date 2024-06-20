@@ -1,10 +1,10 @@
-﻿#include "rotary_embedding.h"
+﻿#include "rotary_embedding_cnnl.h"
 #include "../../utils.h"
 #include "cnnl.h"
 #include "cnnl_extra.h"
 #include "cnrt.h"
 
-void rotary_embedding_cambricon_mlu_f16(MutTensor t, ConstTensor pos, float theta, void *stream) {
+void rotary_embedding_cnnl_f16(MutTensor t, ConstTensor pos, float theta, void *stream) {
     ASSERT_EQ(t.layout.ndim, 3);
     ASSERT_EQ(pos.layout.ndim, 1);
     ASSERT_EQ(pos.layout.shape[0], t.layout.shape[0]);
