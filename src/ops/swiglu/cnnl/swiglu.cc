@@ -16,13 +16,13 @@ void swiglu_cambricon_mlu_f16(MutTensor gate, ConstTensor up, void *stream) {
     setCnnlTensor(gateDesc, gate.layout);
 
     std::vector<int> dims(gate.layout.ndim);
-    size_t inputSizeInBytes = 0;
+    size_t inputSizeInBytes = 1;
     for (uint64_t i = 0; i < gate.layout.ndim; i++) {
         dims[i] = static_cast<int>(gate.layout.shape[i]);
-        inputSizeInBytes += dims[i] * sizeof(uint16_t);
+        inputSizeInBytes *= dims[i];
     }
     dims[gate.layout.ndim - 1] *= 2;
-    inputSizeInBytes *= 2;
+    inputSizeInBytes *= (2 * sizeof(uint16_t));
     cnnlSetTensorDescriptor(inDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF,
                             dims.size(), dims.data());
 
@@ -37,9 +37,9 @@ void swiglu_cambricon_mlu_f16(MutTensor gate, ConstTensor up, void *stream) {
     void *concatWorkspace;
     cnrtMalloc(&concatWorkspace, concatWorkspaceSize);
 
-    cnnlTensorDescriptor_t inputs[2] = {gateDesc, gateDesc};
+    cnnlTensorDescriptor_t inputsDesc[2] = {gateDesc, gateDesc};
     const void *const inputsData[2] = {gate.data, up.data};
-    cnnlConcat(handle, 2, -1, inputs, inputsData,
+    cnnlConcat(handle, 2, -1, inputsDesc, inputsData,
                concatWorkspace, concatWorkspaceSize, inDesc, input);
 
     cnnlActivationDescriptor_t actDesc;
@@ -51,7 +51,7 @@ void swiglu_cambricon_mlu_f16(MutTensor gate, ConstTensor up, void *stream) {
 
     cnnlBiasActivationGluDescriptor_t opDesc;
     cnnlCreateBiasActivationGluDescriptor(&opDesc);
-    cnnlSetBiasActivationGluDescriptor(opDesc, actDesc, CNNL_BIAS_ACTIVATION_GLU_ALGO_V1);
+    cnnlSetBiasActivationGluDescriptor(opDesc, actDesc, CNNL_BIAS_ACTIVATION_GLU_ALGO_V2);
 
     cnnlBiasActivationGluForward_v2(handle, opDesc, inDesc, input,
                                     nullptr, nullptr, gateDesc, gate.data);
