@@ -19,7 +19,7 @@ __C void destroySwigluDescriptor(void *descriptor) {
     delete desc;
 }
 
-__C void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream) {
+__C void swiglu(void *descriptor, Tensor gate, Tensor up, void *stream) {
     auto desc = reinterpret_cast<SwigluDescriptor *>(descriptor);
     switch (desc->device) {
 #ifdef ENABLE_CPU

@@ -8,7 +8,7 @@ typedef struct CausalSoftmaxDescriptor CausalSoftmaxDescriptor;
 
 __C __export CausalSoftmaxDescriptor *createCausalSoftmaxDescriptor(Device, void *config);
 __C __export void destroyCausalSoftmaxDescriptor(CausalSoftmaxDescriptor *descriptor);
-__C __export void causalSoftmax(CausalSoftmaxDescriptor *descriptor, MutTensor y, void *stream);
+__C __export void causalSoftmax(CausalSoftmaxDescriptor *descriptor, Tensor y, void *stream);
 
 
 #endif

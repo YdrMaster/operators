@@ -48,7 +48,7 @@ __C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
     }
 }
 
-__C void matmul(MatmulDescriptor *descriptor, MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
+__C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
     switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:

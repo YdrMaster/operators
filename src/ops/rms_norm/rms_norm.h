@@ -6,7 +6,7 @@
 
 __C __export void *createRMSNormDescriptor(Device, void *config);
 __C __export void destroyRMSNormDescriptor(void *descriptor);
-__C __export void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream);
+__C __export void rmsNorm(void *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream);
 
 typedef struct RMSNormDescriptor {
     Device device;

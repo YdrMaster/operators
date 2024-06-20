@@ -16,7 +16,7 @@ __C void destroyRMSNormDescriptor(void *descriptor) {
     delete (RMSNormDescriptor *) descriptor;
 }
 
-__C void rmsNorm(void *descriptor, MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
+__C void rmsNorm(void *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
     auto desc = (RMSNormDescriptor *) descriptor;
     switch (desc->device) {
 #ifdef ENABLE_CPU

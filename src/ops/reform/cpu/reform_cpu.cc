@@ -13,7 +13,7 @@ inline int indices(int i, int ndim, int64_t *strides, uint64_t *shape) {
     return ans;
 }
 
-void copy_contiguous(uint8_t *dst_ptr, uint8_t const *src_ptr, int n, MutTensor y, ConstTensor x) {
+void copy_contiguous(uint8_t *dst_ptr, uint8_t const *src_ptr, int n, Tensor y, Tensor x) {
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         auto dst_offset = indices(i, y.layout.ndim, y.layout.strides, y.layout.shape);
@@ -27,7 +27,7 @@ union DataLayout_ {
     unsigned short u;
 };
 
-void reform_cpu(MutTensor y, ConstTensor x) {
+void reform_cpu(Tensor y, Tensor x) {
     DataLayout_ dl_y, dl_x;
     dl_y.i = y.layout.dt;
     dl_x.i = x.layout.dt;

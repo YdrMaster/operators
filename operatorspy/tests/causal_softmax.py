@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    MutableTensor,
+    CTensor,
     DeviceEnum,
 )
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     lib.destroyCausalSoftmaxDescriptor.argtypes = [c_void_p]
     lib.causalSoftmax.argtypes = [
         c_void_p,
-        MutableTensor,
+        CTensor,
         c_void_p,
     ]
     if args.cpu:

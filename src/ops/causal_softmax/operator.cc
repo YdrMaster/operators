@@ -6,8 +6,8 @@
 #include "cpu/causal_softmax_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
-#include "cuda/causal_softmax.cuh"
 #include "../../devices/cuda/common_cuda.h"
+#include "cuda/causal_softmax.cuh"
 #endif
 
 struct CausalSoftmaxDescriptor {
@@ -53,7 +53,7 @@ __C void destroyCausalSoftmaxDescriptor(CausalSoftmaxDescriptor *descriptor) {
     }
 }
 
-__C void causalSoftmax(CausalSoftmaxDescriptor *descriptor, MutTensor y, void *stream) {
+__C void causalSoftmax(CausalSoftmaxDescriptor *descriptor, Tensor y, void *stream) {
     switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:

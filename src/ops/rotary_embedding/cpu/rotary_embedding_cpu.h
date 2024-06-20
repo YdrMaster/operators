@@ -3,6 +3,6 @@
 
 #include "../../../operators.h"
 
-void rotary_embedding_cpu_f16(MutTensor t, ConstTensor pos, float theta);
+void rotary_embedding_cpu_f16(Tensor t, Tensor pos, float theta);
 
 #endif// __CPU_RMS_NORM_H__

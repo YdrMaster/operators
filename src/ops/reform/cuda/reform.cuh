@@ -8,6 +8,6 @@ typedef struct ReformCudaDescriptor {
     Device device;
 } ReformCudaDescriptor;
 
-void reform_nv_gpu(MutTensor y, ConstTensor x, void *stream);
+void reform_nv_gpu(Tensor y, Tensor x, void *stream);
 
 #endif// __NV_GPU_REFORM_H__

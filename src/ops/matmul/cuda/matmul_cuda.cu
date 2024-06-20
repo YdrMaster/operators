@@ -10,7 +10,7 @@ MatmulCudaDescriptor::MatmulCudaDescriptor(Device device) {
     get_cublas_pool();
 }
 
-void matmul_nv_gpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha, void *stream) {
+void matmul_nv_gpu_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
     auto info = MatmulInfo(c, a, b);
 
     auto alpha_f16 = __float2half(alpha);

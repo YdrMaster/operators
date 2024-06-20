@@ -7,8 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    MutableTensor,
-    ConstTensor,
+    CTensor,
     DeviceEnum,
 )
 
@@ -22,7 +21,7 @@ def test(lib, descriptor, torch_device):
     y = torch.zeros_like(x)
 
     start = time.time()
-    lib.reform(descriptor, to_tensor(y), to_tensor(x, False), None)
+    lib.reform(descriptor, to_tensor(y), to_tensor(x), None)
     end = time.time()
     print(f"Time elapsed: {(end - start) *1000} ms")
 
@@ -53,8 +52,8 @@ if __name__ == "__main__":
     lib.destroyReformDescriptor.argtypes = [c_void_p]
     lib.reform.argtypes = [
         c_void_p,
-        MutableTensor,
-        ConstTensor,
+        CTensor,
+        CTensor,
         c_void_p,
     ]
     if args.cpu:

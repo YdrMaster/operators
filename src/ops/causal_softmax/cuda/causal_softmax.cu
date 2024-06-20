@@ -153,7 +153,7 @@ __global__ void fused_softmax_folding(
     }
 }
 
-void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor *desc, MutTensor y, void *stream) {
+void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor *desc, Tensor y, void *stream) {
     ASSERT(y.layout.ndim >= 2);
     uint64_t total_seq_len = y.layout.shape[y.layout.ndim - 1];
     uint64_t batch_size = 1;
