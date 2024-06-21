@@ -35,13 +35,30 @@ __C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
     return nullptr;
 };
 
-__C void destroyRotaryEmbeddingDescriptor(void *descriptor) {
-    delete (RotaryEmbeddingDescriptor *) descriptor;
+__C void destroyRotaryEmbeddingDescriptor(RotaryEmbeddingDescriptor *descriptor) {
+    switch (descriptor->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            delete (RotaryEmbeddingCpuDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            delete (RotaryEmbeddingCudaDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            delete (RotaryEmbeddingBangDescriptor *) (descriptor);
+            break;
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
 }
 
-__C void rotaryEmbedding(void *descriptor, Tensor t, Tensor pos, float theta, void *stream) {
-    auto desc = reinterpret_cast<RotaryEmbeddingDescriptor *>(descriptor);
-    switch (desc->device) {
+__C void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor pos, float theta, void *stream) {
+    switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
             rotary_embedding_cpu_f16(t, pos, theta);

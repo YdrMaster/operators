@@ -35,13 +35,30 @@ __C void *createRMSNormDescriptor(Device device, void *config) {
     return nullptr;
 }
 
-__C void destroyRMSNormDescriptor(void *descriptor) {
-    delete (RMSNormDescriptor *) descriptor;
+__C void destroyRMSNormDescriptor(RMSNormDescriptor *descriptor) {
+    switch (descriptor->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            delete (RMSNormCpuDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            delete (RMSNormCudaDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            delete (RMSNormBangDescriptor *) (descriptor);
+            break;
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
 }
 
-__C void rmsNorm(void *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    auto desc = (RMSNormDescriptor *) descriptor;
-    switch (desc->device) {
+__C void rmsNorm(RMSNormDescriptor *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
+    switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
             rms_norm_cpu_f16(y, x, w, epsilon);

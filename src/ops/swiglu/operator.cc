@@ -35,13 +35,30 @@ __C void *createSwigluDescriptor(Device device, void *config) {
     return nullptr;
 };
 
-__C void destroySwigluDescriptor(void *descriptor) {
-    delete (SwigluDescriptor *) descriptor;
+__C void destroySwigluDescriptor(SwigluDescriptor *descriptor) {
+    switch (descriptor->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            delete (SwigluCpuDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            delete (SwigluCudaDescriptor *) (descriptor);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            delete (SwigluBangDescriptor *) (descriptor);
+            break;
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
 }
 
-__C void swiglu(void *descriptor, Tensor gate, Tensor up, void *stream) {
-    auto desc = reinterpret_cast<SwigluDescriptor *>(descriptor);
-    switch (desc->device) {
+__C void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stream) {
+    switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
             swiglu_cpu_f16(gate, up);
