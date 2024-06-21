@@ -1,27 +1,26 @@
 #include "../utils.h"
-#include "matmul.h"
+#include "reform.h"
 
 #ifdef ENABLE_CPU
-#include "cpu/matmul_cpu.h"
+#include "cpu/reform_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
-#include "cuda/matmul_cuda.h"
-#include <cublas_v2.h>
+#include "cuda/reform.cuh"
 #endif
 
-struct MatmulDescriptor {
+struct ReformDescriptor {
     Device device;
 };
 
-__C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
+__C ReformDescriptor *createReformDescriptor(Device device, void *config) {
     switch (device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return (MatmulDescriptor *) (new MatmulCpuDescriptor{device});
+            return (ReformDescriptor *) (new ReformCpuDescriptor{device});
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return (MatmulDescriptor *) (new MatmulCudaDescriptor(device));
+            return (ReformDescriptor *) (new ReformCudaDescriptor{device});
         }
 
 #endif
@@ -31,16 +30,16 @@ __C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
     return nullptr;
 }
 
-__C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
+__C void destroyReformDescriptor(ReformDescriptor *descriptor) {
     switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (MatmulCpuDescriptor *) (descriptor);
+            delete (ReformCpuDescriptor *) (descriptor);
             break;
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            delete (MatmulCudaDescriptor *) (descriptor);
+            delete (ReformCudaDescriptor *) (descriptor);
             break;
 #endif
         default:
@@ -48,19 +47,19 @@ __C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
     }
 }
 
-__C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
+__C void reform(ReformDescriptor *descriptor, Tensor y, Tensor x, void *stream) {
     switch (descriptor->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            matmul_cpu_f16(c, beta, a, b, alpha);
+            reform_cpu(y, x);
             break;
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            matmul_nv_gpu_f16(c, beta, a, b, alpha, stream);
+            reform_nv_gpu(y, x, stream);
             break;
 #endif
         default:
             PANIC(UnsupportedDevice);
     }
-}
+};

@@ -4,7 +4,7 @@
 #include "../blas.h"
 #include <cmath>
 
-void matmul_cpu_f16(MutTensor c, float beta, ConstTensor a, ConstTensor b, float alpha) {
+void matmul_cpu_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha) {
     auto info = MatmulInfo(c, a, b);
 
     for (int i = 0; i < info.batch; ++i) {

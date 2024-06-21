@@ -7,6 +7,6 @@ typedef struct SwigluCpuDescriptor {
     Device device;
 } SwigluCpuDescriptor;
 
-void swiglu_cpu_f16(MutTensor gate, ConstTensor up);
+void swiglu_cpu_f16(Tensor gate, Tensor up);
 
 #endif// __CPU_SWIGLU_H__

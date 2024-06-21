@@ -1,8 +1,13 @@
-// #ifndef __NV_GPU_REFORM_H__
-// #define __NV_GPU_REFORM_H__
+#ifndef __NV_GPU_REFORM_H__
+#define __NV_GPU_REFORM_H__
 
-// #include "../../../operators.h"
+#include "../../../devices/cuda/common_cuda.h"
+#include "../../../operators.h"
 
-// void reform_nv_gpu(Kernel const *, MutTensor y, ConstTensor x);
+typedef struct ReformCudaDescriptor {
+    Device device;
+} ReformCudaDescriptor;
 
-// #endif// __NV_GPU_REFORM_H__
+void reform_nv_gpu(Tensor y, Tensor x, void *stream);
+
+#endif// __NV_GPU_REFORM_H__

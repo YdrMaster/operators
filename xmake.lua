@@ -38,6 +38,8 @@ if has_config("cpu") then
 
         set_languages("cxx17")
         add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
+        add_cxflags("-fopenmp")
+        add_ldflags("-fopenmp")
     target_end()
 
 end

@@ -39,7 +39,7 @@ __C void destroyRotaryEmbeddingDescriptor(void *descriptor) {
     delete (RotaryEmbeddingDescriptor *) descriptor;
 }
 
-__C void rotaryEmbedding(void *descriptor, MutTensor t, ConstTensor pos, float theta, void *stream) {
+__C void rotaryEmbedding(void *descriptor, Tensor t, Tensor pos, float theta, void *stream) {
     auto desc = reinterpret_cast<RotaryEmbeddingDescriptor *>(descriptor);
     switch (desc->device) {
 #ifdef ENABLE_CPU

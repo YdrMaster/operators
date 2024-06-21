@@ -8,6 +8,6 @@ typedef struct SwigluDescriptor SwigluDescriptor;
 
 __C __export void *createSwigluDescriptor(Device, void *config);
 __C __export void destroySwigluDescriptor(void *descriptor);
-__C __export void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream);
+__C __export void swiglu(void *descriptor, Tensor gate, Tensor up, void *stream);
 
 #endif
