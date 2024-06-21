@@ -8,6 +8,6 @@ typedef struct SwigluBangDescriptor {
     SwigluBangDescriptor(Device device);
 } SwigluBangDescriptor;
 
-void swiglu_cnnl_f16(MutTensor gate, ConstTensor up, void *stream);
+void swiglu_cnnl_f16(Tensor gate, Tensor up, void *stream);
 
 #endif// __CNNL_SWIGLU_H__

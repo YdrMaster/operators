@@ -11,7 +11,7 @@ RotaryEmbeddingBangDescriptor::RotaryEmbeddingBangDescriptor(Device device) {
     get_cnnl_pool();
 }
 
-void rotary_embedding_cnnl_f16(MutTensor t, ConstTensor pos, float theta, void *stream) {
+void rotary_embedding_cnnl_f16(Tensor t, Tensor pos, float theta, void *stream) {
     ASSERT_EQ(t.layout.ndim, 3);
     ASSERT_EQ(pos.layout.ndim, 1);
     ASSERT_EQ(pos.layout.shape[0], t.layout.shape[0]);

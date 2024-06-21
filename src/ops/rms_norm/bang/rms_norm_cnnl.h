@@ -8,6 +8,6 @@ typedef struct RMSNormBangDescriptor {
     RMSNormBangDescriptor(Device device);
 } RMSNormBangDescriptor;
 
-void rms_norm_cnnl_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream);
+void rms_norm_cnnl_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream);
 
 #endif// __CNNL_RMS_NORM_H__

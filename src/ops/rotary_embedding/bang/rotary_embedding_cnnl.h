@@ -8,6 +8,6 @@ typedef struct RotaryEmbeddingBangDescriptor {
     RotaryEmbeddingBangDescriptor(Device device);
 } RotaryEmbeddingBangDescriptor;
 
-void rotary_embedding_cnnl_f16(MutTensor t, ConstTensor pos, float theta, void *stream);
+void rotary_embedding_cnnl_f16(Tensor t, Tensor pos, float theta, void *stream);
 
 #endif// __CNNL_ROTARY_EMBEDDING_H__

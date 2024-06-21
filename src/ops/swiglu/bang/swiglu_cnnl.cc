@@ -11,7 +11,7 @@ SwigluBangDescriptor::SwigluBangDescriptor(Device device) {
     get_cnnl_pool();
 }
 
-void swiglu_cnnl_f16(MutTensor gate, ConstTensor up, void *stream) {
+void swiglu_cnnl_f16(Tensor gate, Tensor up, void *stream) {
     ASSERT_EQ(gate.layout.ndim, 2);
     ASSERT_EQ(up.layout.ndim, 2);
     ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);

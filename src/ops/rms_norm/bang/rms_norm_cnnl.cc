@@ -11,7 +11,7 @@ RMSNormBangDescriptor::RMSNormBangDescriptor(Device device) {
     get_cnnl_pool();
 }
 
-void rms_norm_cnnl_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void* stream) {
+void rms_norm_cnnl_f16(Tensor y, Tensor x, Tensor w, float epsilon, void* stream) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);

@@ -81,7 +81,7 @@ def test_cnnl(lib):
     t = t.to("mlu")
     pos = pos.to("mlu")
     lib.rotaryEmbedding(
-        descriptor, to_tensor(t), to_tensor(pos, False), c_float(theta), None
+        descriptor, to_tensor(t), to_tensor(pos), c_float(theta), None
     )
     assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")
