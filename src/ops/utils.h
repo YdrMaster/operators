@@ -23,5 +23,4 @@ inline void assert_true(int expr, const char *msg, const char *file, int line) {
     exit(EXIT_FAILURE)
 
 #define ROUND_UP_DIV(x, y) ((x + y - 1) / y)
-
 #endif// __UTILS_H__

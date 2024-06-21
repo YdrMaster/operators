@@ -13,9 +13,9 @@ def get_args():
         help="Run CUDA test",
     )
     parser.add_argument(
-        "--cnnl",
+        "--bang",
         action="store_true",
-        help="Run MLU CNNL test",
+        help="Run BANG test",
     )
 
     return parser.parse_args()

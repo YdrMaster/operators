@@ -43,9 +43,9 @@ def test_cuda(lib):
     lib.destroySwigluDescriptor(descriptor)
 
 
-def test_cnnl(lib):
+def test_bang(lib):
     import torch_mlu
-    device = DeviceEnum.DEVICE_MLU
+    device = DeviceEnum.DEVICE_BANG
     descriptor = lib.createSwigluDescriptor(device, None)
     test(lib, descriptor, "mlu")
     lib.destroySwigluDescriptor(descriptor)
@@ -66,5 +66,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
-    if args.cnnl:
-        test_cnnl(lib)
+    if args.bang:
+        test_bang(lib)
