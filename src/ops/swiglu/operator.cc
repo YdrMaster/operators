@@ -26,8 +26,11 @@ __C void *createSwigluDescriptor(Device device, void *config) {
         return (SwigluDescriptor *) (new SwigluCudaDescriptor{device});
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu:
-        return (SwigluDescriptor *) (new SwigluBangDescriptor(device));
+    case DevCambriconMlu: {
+        auto bangDescriptor = new SwigluBangDescriptor(device);
+        bangDescriptor->createCnnlDescriptors();
+        return (SwigluDescriptor *) (bangDescriptor);
+    }
 #endif
     default:
         PANIC(UnsupportedDevice);
@@ -48,9 +51,12 @@ __C void destroySwigluDescriptor(SwigluDescriptor *descriptor) {
             break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            delete (SwigluBangDescriptor *) (descriptor);
+        case DevCambriconMlu: {
+            auto bangDescriptor = (SwigluBangDescriptor *) (descriptor);
+            bangDescriptor->destroyCnnlDescriptors();
+            delete bangDescriptor;
             break;
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -71,7 +77,7 @@ __C void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stre
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
-            swiglu_cnnl_f16(gate, up, stream);
+            swiglu_cnnl_f16((SwigluBangDescriptor *) (descriptor), gate, up, stream);
             break;
 #endif
         default:

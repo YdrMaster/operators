@@ -3,9 +3,9 @@
 
 #include "../../../operators.h"
 
-typedef struct SwigluCpuDescriptor {
+struct SwigluCpuDescriptor {
     Device device;
-} SwigluCpuDescriptor;
+};
 
 void swiglu_cpu_f16(Tensor gate, Tensor up);
 
