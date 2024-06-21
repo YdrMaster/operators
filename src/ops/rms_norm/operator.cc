@@ -11,8 +11,28 @@
 #include "bang/rms_norm_cnnl.h"
 #endif
 
+struct RMSNormDescriptor {
+    Device device;
+};
+
 __C void *createRMSNormDescriptor(Device device, void *config) {
-    return new RMSNormDescriptor{device};
+    switch (device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return (RMSNormDescriptor *) (new RMSNormCpuDescriptor{device});
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            return (RMSNormDescriptor *) (new RMSNormCudaDescriptor{device});
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            return (RMSNormDescriptor *) (new RMSNormBangDescriptor(device));
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
+    return nullptr;
 }
 
 __C void destroyRMSNormDescriptor(void *descriptor) {

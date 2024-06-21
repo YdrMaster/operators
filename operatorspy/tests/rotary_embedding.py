@@ -84,10 +84,10 @@ def test_cnnl(lib):
     lib.rotaryEmbedding(
         descriptor, to_tensor(t), to_tensor(pos, False), c_float(theta), None
     )
-    assert torch.allclose(t.cpu(), ans, atol=1, rtol=1e-3)
+    assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")
 
-    lib.createRotaryEmbeddingDescriptor(descriptor)
+    lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()

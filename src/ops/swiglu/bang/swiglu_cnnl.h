@@ -3,6 +3,11 @@
 
 #include "../../../operators.h"
 
+typedef struct SwigluBangDescriptor {
+    Device device;
+    SwigluBangDescriptor(Device device);
+} SwigluBangDescriptor;
+
 void swiglu_cnnl_f16(MutTensor gate, ConstTensor up, void *stream);
 
 #endif// __CNNL_SWIGLU_H__

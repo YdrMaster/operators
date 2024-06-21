@@ -11,8 +11,28 @@
 #include "bang/rotary_embedding_cnnl.h"
 #endif
 
+struct RotaryEmbeddingDescriptor {
+    Device device;
+};
+
 __C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
-    return new RotaryEmbeddingDescriptor{device};
+    switch (device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingCpuDescriptor{device});
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingCudaDescriptor{device});
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingBangDescriptor(device));
+#endif
+        default:
+            PANIC(UnsupportedDevice);
+    }
+    return nullptr;
 };
 
 __C void destroyRotaryEmbeddingDescriptor(void *descriptor) {

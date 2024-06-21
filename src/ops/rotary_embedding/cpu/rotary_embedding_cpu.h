@@ -3,6 +3,10 @@
 
 #include "../../../operators.h"
 
+typedef struct RotaryEmbeddingCpuDescriptor {
+    Device device;
+} RotaryEmbeddingCpuDescriptor;
+
 void rotary_embedding_cpu_f16(MutTensor t, ConstTensor pos, float theta);
 
 #endif// __CPU_RMS_NORM_H__

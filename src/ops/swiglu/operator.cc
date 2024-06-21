@@ -11,15 +11,32 @@
 #include "bang/swiglu_cnnl.h"
 #endif
 
+struct SwigluDescriptor {
+    Device device;
+};
 
 __C void *createSwigluDescriptor(Device device, void *config) {
-    SwigluDescriptor *desc = new SwigluDescriptor{device};
-    return (void *) desc;
+    switch (device) {
+#ifdef ENABLE_CPU
+    case DevCpu:
+        return (SwigluDescriptor *) (new SwigluCpuDescriptor{device});
+#endif
+#ifdef ENABLE_NV_GPU
+    case DevNvGpu:
+        return (SwigluDescriptor *) (new SwigluCudaDescriptor{device});
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+    case DevCambriconMlu:
+        return (SwigluDescriptor *) (new SwigluBangDescriptor(device));
+#endif
+    default:
+        PANIC(UnsupportedDevice);
+    }
+    return nullptr;
 };
 
 __C void destroySwigluDescriptor(void *descriptor) {
-    SwigluDescriptor *desc = (SwigluDescriptor *) descriptor;
-    delete desc;
+    delete (SwigluDescriptor *) descriptor;
 }
 
 __C void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream) {

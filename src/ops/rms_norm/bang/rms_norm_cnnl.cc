@@ -1,8 +1,15 @@
 ﻿#include "rms_norm_cnnl.h"
+#include "../../../devices/bang/common_bang.h"
+#include "../../../devices/bang/handle_pool.h"
 #include "../../utils.h"
-#include "cnrt.h"
 #include "cnnl.h"
 #include "cnnl_extra.h"
+#include "cnrt.h"
+
+RMSNormBangDescriptor::RMSNormBangDescriptor(Device device) {
+    this->device = device;
+    get_cnnl_pool();
+}
 
 void rms_norm_cnnl_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void* stream) {
     ASSERT_EQ(y.layout.ndim, 2);
@@ -31,18 +38,18 @@ void rms_norm_cnnl_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon,
                               false, false, false, false,
                               CNNL_DTYPE_HALF, CNNL_TRANSFORMER_RMSNORM);
 
-    auto [handle, queue] = getCnnlHandle(stream);
-
-    size_t wsSize;
-    cnnlGetFuseNormWorkspaceSize(handle, opDesc, xDesc, &wsSize);
-
     void *workspace;
-    cnrtMalloc(&workspace, wsSize);
 
-    cnnlFuseNorm(handle, opDesc, xDesc, x.data,
-                 wDesc, w.data, nullptr, nullptr,
-                 nullptr, nullptr, nullptr, nullptr,
-                 workspace, wsSize, yDesc, y.data, nullptr, nullptr);
+    use_cnnl((cnrtQueue_t) stream,
+             [&](cnnlHandle_t handle) {
+                 size_t wsSize;
+                 cnnlGetFuseNormWorkspaceSize(handle, opDesc, xDesc, &wsSize);
+                 cnrtMalloc(&workspace, wsSize);
+                 cnnlFuseNorm(handle, opDesc, xDesc, x.data,
+                              wDesc, w.data, nullptr, nullptr,
+                              nullptr, nullptr, nullptr, nullptr,
+                              workspace, wsSize, yDesc, y.data, nullptr, nullptr);
+             });
 
     cnrtFree(workspace);
     cnnlDestroyFuseNormDescriptor(opDesc);
