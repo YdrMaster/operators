@@ -84,11 +84,11 @@ if has_config("cambricon-mlu") then
         set_extensions(".mlu")
         on_build_file(function (target, sourcefile)
             local objectfile = target:objectfile(sourcefile)
-            os.mkdir(path.directory(objectfile))
+            os.mkdir(path.directory(objectfile))        
             local cc = "/usr/local/neuware/bin/cncc"
             print("Compiling " .. sourcefile .. " to " .. objectfile)
             os.execv(cc, {"-c", sourcefile, "-o", objectfile, "-I/usr/local/neuware/include", "--bang-mlu-arch=mtp_592", "-O3", "-fPIC", "-Wall", "-Werror", "-std=c++17", "-pthread"})
-            target:add("objectfiles", objectfile)
+            table.insert(target:objectfiles(), objectfile)
         end)
     rule_end()
 
@@ -98,17 +98,6 @@ if has_config("cambricon-mlu") then
         add_files("src/devices/bang/*.cc", "src/ops/*/bang/*.cc")
         add_files("src/ops/*/bang/*.mlu", {rule = "mlu"})
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
-
-        before_link(function (target)
-            for _, objectfile in ipairs(target:objectfiles()) do
-                print("Linking object file: " .. objectfile)
-            end
-        end)
-
-        after_link(function (target)
-            print("Linking options:")
-            print(table.concat(target:linkflags(), " "))
-        end)
     target_end()
 
 end
