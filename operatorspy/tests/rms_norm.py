@@ -53,6 +53,13 @@ def test_cuda(lib):
     lib.destroyRMSNormDescriptor(descriptor)
 
 
+def test_npu(lib):
+    device = DeviceEnum.DEVICE_NPU
+    descriptor = lib.createRMSNormDescriptor(device, None)
+    test(lib, descriptor, "cpu")
+    lib.destroyRMSNormDescriptor(descriptor)
+
+
 if __name__ == "__main__":
     args = get_args()
     lib = open_lib()
@@ -70,3 +77,7 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.ascend:
+        # import torch_npu
+        # torch_npu.npu.set_device(0)
+        test_npu(lib)

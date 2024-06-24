@@ -12,5 +12,10 @@ def get_args():
         action="store_true",
         help="Run CUDA test",
     )
+    parser.add_argument(
+        "--ascend",
+        action="store_true",
+        help="Run ASCEND NPU test",
+    )
 
     return parser.parse_args()

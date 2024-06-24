@@ -4,6 +4,7 @@
 enum DeviceEnum {
     DevCpu,
     DevNvGpu,
+    DevAscendNpu,
 };
 
 #endif// __DEVICE_H__
