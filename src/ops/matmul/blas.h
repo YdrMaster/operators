@@ -39,7 +39,7 @@ struct BlasMatrix {
         }
     }
 
-    bool match_batch(uint64_t batch) const {
+    bool match_batch(int batch) const {
         return this->batch == batch || this->batch == 1;
     }
 

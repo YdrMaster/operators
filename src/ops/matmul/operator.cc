@@ -8,6 +8,9 @@
 #include "cuda/matmul_cuda.h"
 #include <cublas_v2.h>
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "bang/matmul_cnnl.h"
+#endif
 
 struct MatmulDescriptor {
     Device device;
@@ -23,7 +26,13 @@ __C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
         case DevNvGpu: {
             return (MatmulDescriptor *) (new MatmulCudaDescriptor(device));
         }
-
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            auto bangDescriptor = new MatmulBangDescriptor(device);
+            bangDescriptor->createCnnlDescriptors();
+            return (MatmulDescriptor *) (bangDescriptor);
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -43,6 +52,14 @@ __C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
             delete (MatmulCudaDescriptor *) (descriptor);
             break;
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            auto bangDescriptor = (MatmulBangDescriptor *) (descriptor);
+            bangDescriptor->destroyCnnlDescriptors();
+            delete bangDescriptor;
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -58,6 +75,11 @@ __C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Te
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             matmul_nv_gpu_f16(c, beta, a, b, alpha, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            matmul_cnnl_f16((MatmulBangDescriptor *) (descriptor), c, beta, a, b, alpha, stream);
             break;
 #endif
         default:
