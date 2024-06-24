@@ -1,3 +1,6 @@
+#ifndef __COMMON_BANG_H__
+#define __COMMON_BANG_H__
+
 #include "../../tensor.h"
 #include "cnnl.h"
 #include <vector>
@@ -10,3 +13,5 @@ inline void setCnnlTensor(cnnlTensorDescriptor_t desc, TensorLayout layout) {
     cnnlSetTensorDescriptor(desc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF,
                             dims.size(), dims.data());
 }
+
+#endif  // __COMMON_BANG_H__

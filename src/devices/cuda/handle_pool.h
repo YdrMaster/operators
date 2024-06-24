@@ -1,3 +1,6 @@
+#ifndef __CUDA_HANDLE_POOL_H__
+#define __CUDA_HANDLE_POOL_H__
+
 #include <cublas_v2.h>
 #include <mutex>
 #include <vector>
@@ -33,3 +36,5 @@ void use_cublas(cudaStream_t stream, T const &f) {
     f(*handle);
     pool.push(std::move(*handle));
 }
+
+#endif // __CUDA_HANDLE_POOL_H__

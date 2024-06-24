@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __BANG_HANDLE_POOL_H__
+#define __BANG_HANDLE_POOL_H__
+
 #include "cnnl.h"
 #include "cnrt.h"
 #include "../pool.h"
@@ -16,3 +18,5 @@ void use_cnnl(cnrtQueue_t queue, T const &f) {
     f(*handle);
     pool.push(std::move(*handle));
 }
+
+#endif // __BANG_HANDLE_POOL_H__
