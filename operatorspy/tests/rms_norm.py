@@ -6,8 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    MutableTensor,
-    ConstTensor,
+    CTensor,
     DeviceEnum,
 )
 
@@ -32,7 +31,7 @@ def test(lib, descriptor, torch_device):
     eps = 1e-5
     ans = rms_norm(x, w, eps)
     lib.rmsNorm(
-        descriptor, to_tensor(y), to_tensor(x, False), to_tensor(w, False), eps, None
+        descriptor, to_tensor(y), to_tensor(x), to_tensor(w), eps, None
     )
 
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
@@ -52,6 +51,13 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRMSNormDescriptor(descriptor)
 
+def test_cnnl(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_MLU
+    descriptor = lib.createRMSNormDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroyRMSNormDescriptor(descriptor)
+
 
 def test_npu(lib):
     device = DeviceEnum.DEVICE_NPU
@@ -67,9 +73,9 @@ if __name__ == "__main__":
     lib.destroyRMSNormDescriptor.argtypes = [c_void_p]
     lib.rmsNorm.argtypes = [
         c_void_p,
-        MutableTensor,
-        ConstTensor,
-        ConstTensor,
+        CTensor,
+        CTensor,
+        CTensor,
         c_float,
         c_void_p,
     ]
@@ -77,6 +83,8 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.cnnl:
+        test_cnnl(lib)
     if args.ascend:
         # import torch_npu
         # torch_npu.npu.set_device(0)

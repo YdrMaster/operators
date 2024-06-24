@@ -1,24 +1,13 @@
 #ifndef SWIGLU_H
 #define SWIGLU_H
 
+#include "../../export.h"
 #include "../../operators.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct SwigluDescriptor SwigluDescriptor;
 
-void *createSwigluDescriptor(Device, void *config);
-
-void destroySwigluDescriptor(void *descriptor);
-
-void swiglu(void *descriptor, MutTensor gate, ConstTensor up, void *stream);
-
-#ifdef __cplusplus
-}
-#endif
-
-typedef struct SwigluDescriptor {
-    Device device;
-} SwigluDescriptor;
+__C __export void *createSwigluDescriptor(Device, void *config);
+__C __export void destroySwigluDescriptor(SwigluDescriptor *descriptor);
+__C __export void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stream);
 
 #endif

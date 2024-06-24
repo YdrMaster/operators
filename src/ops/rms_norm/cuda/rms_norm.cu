@@ -1,11 +1,12 @@
-﻿#include "../../utils.h"
+﻿#include "../../../devices/cuda/common_cuda.h"
+#include "../../utils.h"
 #include "rms_norm.cuh"
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
 
 // assert BLOCK_SIZE >= blockDim.x
 template<unsigned int BLOCK_SIZE, class Tdata>
-static __global__ void padding(
+static __global__ void rms_norm_padding(
     Tdata *__restrict__ o_,
     unsigned int const stride_y,
     Tdata const *__restrict__ x_,
@@ -30,7 +31,7 @@ static __global__ void padding(
 }
 
 template<unsigned int BLOCK_SIZE, unsigned int ITEMS_PER_THREAD, class Tdata>
-static __global__ void folding(
+static __global__ void rms_norm_folding(
     Tdata *__restrict__ y,
     unsigned int const stride_y,
     Tdata const *__restrict__ x,
@@ -75,12 +76,48 @@ static __global__ void folding(
     }
 }
 
-constexpr static int
-    HIDDEN_SIZE = 4096,
-    BLOCK_SIZE = 1024,
-    ITEMS_PER_THREAD = (HIDDEN_SIZE + BLOCK_SIZE - 1) / BLOCK_SIZE;
+template<unsigned int BLOCK_SIZE, class Tdata>
+static __global__ void rms_norm_standard(
+    Tdata *__restrict__ y_,
+    unsigned int const stride_y,
+    Tdata const *__restrict__ x_,
+    unsigned int const stride_x,
+    Tdata const *__restrict__ w,
+    float const epsilon,
+    unsigned int const d) {
+    auto y = y_ + blockIdx.x * stride_y;
+    auto x = x_ + blockIdx.x * stride_x;
 
-void rms_norm_nv_gpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
+    __shared__ float partial_sum[BLOCK_SIZE];
+
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < d; i += BLOCK_SIZE) {
+        sum += float(x[i]) * float(x[i]);
+    }
+
+    partial_sum[threadIdx.x] = sum;
+    __syncthreads();
+    for (int stride = BLOCK_SIZE / 2; stride > 0; stride >>= 1) {
+        if (threadIdx.x < stride) {
+            partial_sum[threadIdx.x] += partial_sum[threadIdx.x + stride];
+        }
+        __syncthreads();
+    }
+
+    __shared__ Tdata rms;
+    if (threadIdx.x == 0) {
+        float row_sum = partial_sum[0];
+        rms = Tdata(rsqrtf(row_sum / float(d) + epsilon));
+    }
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < d; i += BLOCK_SIZE) {
+        y[i] = rms * x[i] * w[i];
+    }
+}
+
+
+void rms_norm_nv_gpu_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);
@@ -101,12 +138,15 @@ void rms_norm_nv_gpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilo
     auto stride_x = x.layout.strides[0] / sizeof(half);
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
-
-    if (d <= BLOCK_SIZE) {
-        padding<BLOCK_SIZE>
+    unsigned int items_per_thread = ROUND_UP_DIV(d, MAX_THREADS_PER_BLOCK);
+    if (items_per_thread == 1) {
+        rms_norm_padding<MAX_THREADS_PER_BLOCK>
             <<<n, d, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
+    } else if (items_per_thread <= 16) {
+        rms_norm_folding<MAX_THREADS_PER_BLOCK, 16>
+            <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
     } else {
-        folding<BLOCK_SIZE, ITEMS_PER_THREAD>
-            <<<n, BLOCK_SIZE, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        rms_norm_standard<MAX_THREADS_PER_BLOCK>
+            <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
     }
 }

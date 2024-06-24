@@ -17,5 +17,10 @@ def get_args():
         action="store_true",
         help="Run ASCEND NPU test",
     )
+    parser.add_argument(
+        "--cnnl",
+        action="store_true",
+        help="Run MLU CNNL test",
+    )
 
     return parser.parse_args()

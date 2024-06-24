@@ -30,7 +30,7 @@ static __global__ void swiglu(
 
 constexpr static int BLOCK_SIZE = 1024;
 
-void swiglu_nv_gpu_f16(MutTensor gate, ConstTensor up, void *stream) {
+void swiglu_nv_gpu_f16(Tensor gate, Tensor up, void *stream) {
     ASSERT_EQ(gate.layout.ndim, 2);
     ASSERT_EQ(up.layout.ndim, 2);
     ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);

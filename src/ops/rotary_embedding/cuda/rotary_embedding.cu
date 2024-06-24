@@ -22,7 +22,7 @@ static __global__ void padding(
 constexpr static int
     BLOCK_SIZE = 1024;
 
-void rotary_embedding_nv_gpu_f16(MutTensor t, ConstTensor pos, float theta, void *stream) {
+void rotary_embedding_nv_gpu_f16(Tensor t, Tensor pos, float theta, void *stream) {
     ASSERT_EQ(t.layout.ndim, 3);
     ASSERT_EQ(pos.layout.ndim, 1);
 

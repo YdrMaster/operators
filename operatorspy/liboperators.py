@@ -6,6 +6,8 @@ from .data_layout import *
 Device = c_int
 Optype = c_int
 
+LIB_OPERATORS_DIR = "INFINI_ROOT"
+
 
 class TensorLayout(Structure):
     _fields_ = [
@@ -17,18 +19,14 @@ class TensorLayout(Structure):
     ]
 
 
-class ConstTensor(Structure):
-    _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
-
-
-class MutableTensor(Structure):
+class CTensor(Structure):
     _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
 
 
 # Open operators library
 def open_lib():
     def find_library_in_ld_path(library_name):
-        ld_library_path = os.environ.get("LD_LIBRARY_PATH", "")
+        ld_library_path = os.environ.get(LIB_OPERATORS_DIR, "")
         paths = ld_library_path.split(os.pathsep)
         for path in paths:
             full_path = os.path.join(path, library_name)
@@ -38,13 +36,15 @@ def open_lib():
 
     # Load the library
     library_path = find_library_in_ld_path("liboperators.so")
-    assert library_path is not None, "Cannot find liboperators.so in LD_LIBRARY_PATH"
+    assert (
+        library_path is not None
+    ), f"Cannot find liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
     lib = ctypes.CDLL(library_path)
     return lib
 
 
-# Convert PyTorch tensor to ConstTensor or MutableTensor
-def to_tensor(tensor, mutable=True):
+# Convert PyTorch tensor to library Tensor
+def to_tensor(tensor):
     import torch
 
     ndim = tensor.ndimension()
@@ -94,7 +94,5 @@ def to_tensor(tensor, mutable=True):
     assert dt is not None
     # Create TensorLayout
     layout = TensorLayout(dt, ndim, 0, shape, strides)
-    # Create MutTensor
-    if mutable:
-        return MutableTensor(layout, ctypes.c_void_p(data_ptr))
-    return ConstTensor(layout, ctypes.c_void_p(data_ptr))
+    # Create Tensor
+    return CTensor(layout, ctypes.c_void_p(data_ptr))

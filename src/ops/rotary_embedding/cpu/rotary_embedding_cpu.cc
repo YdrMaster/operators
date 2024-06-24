@@ -1,9 +1,9 @@
 #include "rotary_embedding_cpu.h"
-#include "../../utils.h"
 #include "../../../devices/cpu/common_cpu.h"
+#include "../../utils.h"
 #include <cmath>
 
-void rotary_embedding_cpu_f16(MutTensor t, ConstTensor pos, float theta) {
+void rotary_embedding_cpu_f16(Tensor t, Tensor pos, float theta) {
     ASSERT_EQ(t.layout.ndim, 3);
     ASSERT_EQ(pos.layout.ndim, 1);
 

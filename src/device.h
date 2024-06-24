@@ -4,6 +4,7 @@
 enum DeviceEnum {
     DevCpu,
     DevNvGpu,
+    DevCambriconMlu,
     DevAscendNpu,
 };
 

@@ -3,6 +3,10 @@
 
 #include "../../../operators.h"
 
-void rms_norm_cpu_f16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon);
+typedef struct RMSNormCpuDescriptor {
+    Device device;
+} RMSNormCpuDescriptor;
+
+void rms_norm_cpu_f16(Tensor y, Tensor x, Tensor w, float epsilon);
 
 #endif// __CPU_RMS_NORM_H__
