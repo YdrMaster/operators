@@ -1,0 +1,95 @@
+#include <bang.h>
+#include <bang_device_functions.h>
+#include "reform_bang.h"
+const int GDRAM_MAX_SIZE = 1024 * 1024 * 1024;
+
+template <typename T>
+__mlu_device__ void reformKernel(T *source, T *destination, int *strideSrc, int *strideDest, int *shape, int n, int dimsize, int nDim){
+    if (taskId == 0)
+        printf("Entering device kernel func.\n");
+    if (dimsize * sizeof(T) > GDRAM_MAX_SIZE){
+        int maxNum = GDRAM_MAX_SIZE / sizeof(T);
+        int remain = dimsize % maxNum;
+        int repeat = (dimsize - remain) / maxNum;
+        for (int i = 0; i < n; i += taskDim){
+            int inds = 0;
+            int indd = 0;
+            for (int j = nDim - 2; j >= 0; --j) {
+                inds += (i % shape[j]) * strideSrc[j];
+                indd += (i % shape[j]) * strideDest[j];
+                i /= shape[j];
+            }
+            for (int s = 0; s < repeat; s++){
+                __memcpy(destination + indd + s * maxNum, source + inds + s * maxNum, maxNum * sizeof(T), GDRAM2GDRAM); 
+            }
+            if (remain){
+                __memcpy(destination + indd + repeat * maxNum, source + inds + repeat * maxNum, remain * sizeof(T), GDRAM2GDRAM); 
+            }                              
+        }      
+    }
+    else {
+        for(int i = 0; i < n; i += taskDim){
+            int inds = 0;
+            int indd = 0;
+            for (int j = nDim - 2; j >= 0; --j) {
+                inds += (i % shape[j]) * strideSrc[j];
+                indd += (i % shape[j]) * strideDest[j];
+                i /= shape[j];
+            }
+            __memcpy(destination + indd, source + inds, dimsize * sizeof(T), GDRAM2GDRAM);                                  
+        }      
+    }
+    if (taskId == 0)
+        printf("Leaving device kernel func.\n");
+}
+
+template <typename T>
+__mlu_global__ void reformUnion1(T *source, T *destination, int *strideSrc, int *strideDest, int *shape, int n, int dimsize, int ndim){
+    if (taskId == 0) {
+        printf("Entering global kernel func.\n");
+        printf("Start calling device kernel func.\n");
+    }
+    reformKernel<T>(source, destination, strideSrc, strideDest, shape, n, dimsize, ndim);
+    if (taskId == 0)
+        printf("Finish calling device kernel func.\n");
+}
+
+void reform(cnrtQueue_t queue, void *y, void *x, int *y_stride, int *x_stride, int *shape, int n, int dimsize, int ndim){
+    printf("Entering host kernel func.\n");
+    auto y_ = reinterpret_cast<uint8_t *>(y);
+    auto x_ = reinterpret_cast<uint8_t *>(x);
+
+    cnrtDim3_t dim = {16, 1, 1};
+    cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_UNION1;
+    printf("Start calling global kernel func.\n");
+    reformUnion1<uint8_t><<<dim, ktype, queue>>>(x_, y_, x_stride, y_stride, shape, n, dimsize, ndim);
+    cnrtQueueSync(queue);
+    printf("Finish calling global kernel func.\n");
+}
+
+void reform_bang(Tensor y, Tensor x, void *stream) {
+    ASSERT_EQ(y.layout.ndim, x.layout.ndim);
+    int ndim = y.layout.ndim;
+    ASSERT(ndim >= 2);
+    for (int i = 0; i < ndim; ++i) {
+        ASSERT_EQ(y.layout.shape[i], x.layout.shape[i]);
+    }
+    ASSERT_EQ(y.layout.strides[ndim - 1], y.layout.dt.size);
+    ASSERT_EQ(x.layout.strides[ndim - 1], x.layout.dt.size);
+
+    int x_stride[ndim], y_stride[ndim], shape[ndim];
+    int n = 1;
+    for (int i = 0; i < ndim; i++) {
+        x_stride[i] = static_cast<int>(x.layout.strides[i]);
+        y_stride[i] = static_cast<int>(y.layout.strides[i]);
+        shape[i] = static_cast<int>(y.layout.shape[i]);
+        n *= shape[i];
+    }
+    int dimsize = shape[ndim - 1];
+    n /= dimsize;
+
+    auto queue = reinterpret_cast<cnrtQueue_t>(stream);
+    printf("Start calling host kernel func.\n");
+    reform(queue, y.data, x.data, y_stride, x_stride, shape, n, dimsize, ndim);
+    printf("Finish calling host kernel func.\n");
+}

@@ -291,7 +291,6 @@ void rmsNorm_fp16(cnrtQueue_t queue, void *y, void const *x, void const *w, int 
 }
 
 void rms_norm_bang_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    printf("rms_norm_bang_f16 done\n");
     ASSERT_EQ(y.layout.ndim, 2);
     ASSERT_EQ(x.layout.ndim, 2);
     ASSERT_EQ(w.layout.ndim, 1);

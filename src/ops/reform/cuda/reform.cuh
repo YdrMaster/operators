@@ -4,9 +4,9 @@
 #include "../../../devices/cuda/common_cuda.h"
 #include "../../../operators.h"
 
-typedef struct ReformCudaDescriptor {
+struct ReformCudaDescriptor {
     Device device;
-} ReformCudaDescriptor;
+};
 
 void reform_nv_gpu(Tensor y, Tensor x, void *stream);
 
