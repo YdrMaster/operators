@@ -66,13 +66,13 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
-def test_cnnl(lib):
+def test_bang(lib):
     import torch_mlu
-    device = DeviceEnum.DEVICE_MLU
+    device = DeviceEnum.DEVICE_BANG
     config = None
     descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
     
-    # Note: CNNL does not support complex calculation, compare with cpu results 
+    # Note: BANG does not support complex calculation, compare with cpu results 
     t = torch.rand((1, 32, 128), dtype=torch.float16)
     pos = torch.ones((1,), dtype=torch.int32)
     theta = 1e4
@@ -104,5 +104,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
-    if args.cnnl:
-        test_cnnl(lib)
+    if args.bang:
+        test_bang(lib)

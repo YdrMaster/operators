@@ -3,9 +3,9 @@
 
 #include "../../../operators.h"
 
-typedef struct RMSNormCpuDescriptor {
+struct RMSNormCpuDescriptor {
     Device device;
-} RMSNormCpuDescriptor;
+};
 
 void rms_norm_cpu_f16(Tensor y, Tensor x, Tensor w, float epsilon);
 

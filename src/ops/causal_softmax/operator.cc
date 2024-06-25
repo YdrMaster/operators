@@ -1,6 +1,5 @@
 #include "../utils.h"
 #include "causal_softmax.h"
-#include "causal_softmax_config.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/causal_softmax_cpu.h"
@@ -8,6 +7,9 @@
 #ifdef ENABLE_NV_GPU
 #include "../../devices/cuda/common_cuda.h"
 #include "cuda/causal_softmax.cuh"
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "bang/causal_softmax_cnnl.h"
 #endif
 
 struct CausalSoftmaxDescriptor {
@@ -22,13 +24,16 @@ __C CausalSoftmaxDescriptor *createCausalSoftmaxDescriptor(Device device, void *
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            ASSERT_VALID_PTR(config);
-            CausalSoftmaxCudaConfig *cuda_config = (CausalSoftmaxCudaConfig *) config;
-            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCudaDescriptor{
-                device,
-                ROUND_UP_DIV(cuda_config->max_dim, MAX_THREADS_PER_BLOCK)});
+            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCudaDescriptor{device});
         }
 
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            auto bangDescriptor = new CausalSoftmaxBangDescriptor(device);
+            bangDescriptor->createCnnlDescriptors();
+            return (CausalSoftmaxDescriptor *) (bangDescriptor);
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -48,6 +53,14 @@ __C void destroyCausalSoftmaxDescriptor(CausalSoftmaxDescriptor *descriptor) {
             delete (CausalSoftmaxCudaDescriptor *) (descriptor);
             break;
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            auto bangDescriptor = (CausalSoftmaxBangDescriptor *) (descriptor);
+            bangDescriptor->destroyCnnlDescriptors();
+            delete bangDescriptor;
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -63,6 +76,11 @@ __C void causalSoftmax(CausalSoftmaxDescriptor *descriptor, Tensor y, void *stre
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             causal_softmax_nv_gpu_f16((CausalSoftmaxCudaDescriptor *) descriptor, y, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            causal_softmax_cnnl_f16((CausalSoftmaxBangDescriptor *) (descriptor), y, stream);
             break;
 #endif
         default:

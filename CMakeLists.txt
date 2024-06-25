@@ -37,12 +37,14 @@ endif()
 if (ENABLE_NV_GPU)
     add_definitions(-DENABLE_NV_GPU)
     find_package(CUDA REQUIRED)
+    find_package(CUDAToolkit REQUIRED)
+
     enable_language(CUDA)
 
     file(GLOB SRC_FILES_NV_GPU
         "src/ops/*/cuda/*.cu"
     )
-    target_link_libraries(operators PRIVATE nv_gpu)
+    target_link_libraries(operators PRIVATE nv_gpu CUDA::cublas)
     set_target_properties(operators PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
         CUDA_ARCHITECTURES "70;80"

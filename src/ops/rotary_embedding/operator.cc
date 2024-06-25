@@ -26,8 +26,11 @@ __C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
             return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingCudaDescriptor{device});
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingBangDescriptor(device));
+        case DevCambriconMlu: {
+            auto bangDescriptor = new RotaryEmbeddingBangDescriptor(device);
+            bangDescriptor->createCnnlDescriptors();
+            return (RotaryEmbeddingDescriptor *) (bangDescriptor);
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -48,9 +51,12 @@ __C void destroyRotaryEmbeddingDescriptor(RotaryEmbeddingDescriptor *descriptor)
             break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            delete (RotaryEmbeddingBangDescriptor *) (descriptor);
+        case DevCambriconMlu: {
+            auto bangDescriptor = (RotaryEmbeddingBangDescriptor *) (descriptor);
+            bangDescriptor->destroyCnnlDescriptors();
+            delete bangDescriptor;
             break;
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -71,7 +77,7 @@ __C void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
-            rotary_embedding_cnnl_f16(t, pos, theta, stream);
+            rotary_embedding_cnnl_f16((RotaryEmbeddingBangDescriptor *) (descriptor), t, pos, theta, stream);
             break;
 #endif
         default:

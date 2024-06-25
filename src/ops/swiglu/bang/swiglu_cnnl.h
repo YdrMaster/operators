@@ -2,12 +2,30 @@
 #define __CNNL_SWIGLU_H__
 
 #include "../../../operators.h"
+#include "cnnl.h"
+#include "cnnl_extra.h"
 
-typedef struct SwigluBangDescriptor {
+struct SwigluBangDescriptor {
     Device device;
-    SwigluBangDescriptor(Device device);
-} SwigluBangDescriptor;
+    cnnlTensorDescriptor_t gateDesc, inDesc;
+    cnnlActivationDescriptor_t actDesc;
+    cnnlBiasActivationGluDescriptor_t opDesc;
 
-void swiglu_cnnl_f16(Tensor gate, Tensor up, void *stream);
+    SwigluBangDescriptor(Device device);
+    void createCnnlDescriptors() {
+        cnnlCreateTensorDescriptor(&gateDesc);
+        cnnlCreateTensorDescriptor(&inDesc);
+        cnnlCreateActivationDescriptor(&actDesc);
+        cnnlCreateBiasActivationGluDescriptor(&opDesc);
+    }
+    void destroyCnnlDescriptors() {
+        cnnlDestroyTensorDescriptor(gateDesc);
+        cnnlDestroyTensorDescriptor(inDesc);
+        cnnlDestroyActivationDescriptor(actDesc);
+        cnnlDestroyBiasActivationGluDescriptor(opDesc);
+    }
+};
+
+void swiglu_cnnl_f16(SwigluBangDescriptor *descriptor, Tensor gate, Tensor up, void *stream);
 
 #endif// __CNNL_SWIGLU_H__
