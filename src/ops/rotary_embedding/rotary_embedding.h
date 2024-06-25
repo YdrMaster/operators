@@ -4,12 +4,10 @@
 #include "../../export.h"
 #include "../../operators.h"
 
-__C __export void *createRotaryEmbeddingDescriptor(Device, void *config);
-__C __export void destroyRotaryEmbeddingDescriptor(void *descriptor);
-__C __export void rotaryEmbedding(void *descriptor, Tensor t, Tensor pos, float theta, void *stream);
+typedef struct RotaryEmbeddingDescriptor RotaryEmbeddingDescriptor;
 
-typedef struct RotaryEmbeddingDescriptor {
-    Device device;
-} RotaryEmbeddingDescriptor;
+__C __export void *createRotaryEmbeddingDescriptor(Device, void *config);
+__C __export void destroyRotaryEmbeddingDescriptor(RotaryEmbeddingDescriptor *descriptor);
+__C __export void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor pos, float theta, void *stream);
 
 #endif

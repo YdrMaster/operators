@@ -12,5 +12,10 @@ def get_args():
         action="store_true",
         help="Run CUDA test",
     )
+    parser.add_argument(
+        "--bang",
+        action="store_true",
+        help="Run BANG test",
+    )
 
     return parser.parse_args()

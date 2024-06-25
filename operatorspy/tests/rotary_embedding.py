@@ -66,6 +66,27 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
+def test_bang(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_BANG
+    config = None
+    descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
+    
+    # Note: BANG does not support complex calculation, compare with cpu results 
+    t = torch.rand((1, 32, 128), dtype=torch.float16)
+    pos = torch.ones((1,), dtype=torch.int32)
+    theta = 1e4
+    ans = rotary_embedding(t, pos, theta, "cpu")
+
+    t = t.to("mlu")
+    pos = pos.to("mlu")
+    lib.rotaryEmbedding(
+        descriptor, to_tensor(t), to_tensor(pos), c_float(theta), None
+    )
+    assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
+    print("Test passed!")
+
+    lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -83,3 +104,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.bang:
+        test_bang(lib)

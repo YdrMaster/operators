@@ -14,6 +14,13 @@ option("nv-gpu")
     add_defines("ENABLE_NV_GPU")
 option_end()
 
+option("cambricon-mlu")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable or disable Cambricon MLU kernel")
+    add_defines("ENABLE_CAMBRICON_MLU")
+option_end()
+
 if is_mode("debug") then
     add_cxflags("-g -O0")
     add_defines("DEBUG_MODE")
@@ -61,6 +68,24 @@ if has_config("nv-gpu") then
 
 end
 
+if has_config("cambricon-mlu") then
+
+    add_defines("ENABLE_CAMBRICON_MLU")
+    add_includedirs("/usr/local/neuware/include")
+    add_linkdirs("/usr/local/neuware/lib64")
+    add_links("libcnrt.so")
+    add_links("libcnnl.so")
+    add_links("libcnnl_extra.so")
+
+    target("cambricon-mlu")
+        set_kind("static")
+        set_languages("cxx17")
+        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
+        add_files("src/devices/bang/*.cc", "src/ops/*/bang/*.cc")
+    target_end()
+
+end
+
 target("operators")
     set_kind("shared")
 
@@ -70,7 +95,9 @@ target("operators")
     if has_config("nv-gpu") then
         add_deps("nv-gpu")
     end
-
+    if has_config("cambricon-mlu") then
+        add_deps("cambricon-mlu")
+    end
     set_languages("cxx17")
     add_files("src/ops/*/operator.cc")
 target_end()

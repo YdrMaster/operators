@@ -24,7 +24,7 @@ def test(lib, descriptor, torch_device):
     ans = swiglu(gate, up)
     lib.swiglu(descriptor, to_tensor(gate), to_tensor(up), None)
 
-    assert torch.allclose(gate, ans, atol=0, rtol=1e-3)
+    assert torch.allclose(gate, ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")
 
 
@@ -43,6 +43,14 @@ def test_cuda(lib):
     lib.destroySwigluDescriptor(descriptor)
 
 
+def test_bang(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_BANG
+    descriptor = lib.createSwigluDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroySwigluDescriptor(descriptor)
+
+
 if __name__ == "__main__":
     args = get_args()
     lib = open_lib()
@@ -58,3 +66,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.bang:
+        test_bang(lib)

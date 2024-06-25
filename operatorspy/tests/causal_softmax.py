@@ -28,7 +28,7 @@ def test(lib, descriptor, torch_device):
 
     ans = causal_softmax(x)
     lib.causalSoftmax(descriptor, to_tensor(x), None)
-
+    
     assert torch.allclose(x, ans, atol=1, rtol=1e-3)
     print("Test passed!")
 
@@ -52,6 +52,12 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyCausalSoftmaxDescriptor(descriptor)
 
+def test_bang(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_BANG
+    descriptor = lib.createCausalSoftmaxDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroyCausalSoftmaxDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -67,3 +73,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.bang:
+        test_bang(lib)

@@ -1,51 +1,10 @@
-#include <atomic>
+#ifndef __CUDA_HANDLE_POOL_H__
+#define __CUDA_HANDLE_POOL_H__
+
 #include <cublas_v2.h>
 #include <mutex>
-#include <optional>
 #include <vector>
-
-template<class T>
-class Pool {
-public:
-    Pool() : _head(nullptr) {}
-
-    Pool(const Pool &) = delete;
-
-    Pool(Pool &&pool) noexcept : _head(pool._head.exchange(nullptr)) {}
-
-    ~Pool() {
-        while (this->pop()) {}
-    }
-
-    void push(T &&val) const {
-        Node<T> *new_node = new Node<T>(std::move(val));
-        new_node->next = _head.load();
-        while (!_head.compare_exchange_weak(new_node->next, new_node));
-    }
-
-    std::optional<T> pop() const {
-        Node<T> *top = _head.load();
-        Node<T> *new_head = nullptr;
-        do {
-            if (!top) {
-                return std::nullopt;
-            }
-            new_head = top->next;
-        } while (!_head.compare_exchange_weak(top, new_head));
-        return {std::move(top->data)};
-    }
-
-private:
-    template<class U>
-    struct Node {
-        U data;
-        Node<U> *next;
-        Node(U &&data) : data(data), next(nullptr) {}
-    };
-
-    mutable std::atomic<Node<T> *> _head;
-};
-
+#include "../pool.h"
 
 const Pool<cublasHandle_t> &get_cublas_pool() {
     int device_id;
@@ -77,3 +36,5 @@ void use_cublas(cudaStream_t stream, T const &f) {
     f(*handle);
     pool.push(std::move(*handle));
 }
+
+#endif // __CUDA_HANDLE_POOL_H__
