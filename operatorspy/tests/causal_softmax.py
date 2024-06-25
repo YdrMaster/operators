@@ -43,11 +43,7 @@ def test_cpu(lib):
 
 def test_cuda(lib):
     device = DeviceEnum.DEVICE_CUDA
-
-    class CausalSoftmaxCudaConfig(ctypes.Structure):
-        _fields_ = [("max_dim", ctypes.c_uint)]
-
-    config = ctypes.byref(CausalSoftmaxCudaConfig(max_dim=4096))
+    config = None
     descriptor = lib.createCausalSoftmaxDescriptor(device, config)
     test(lib, descriptor, "cuda")
     lib.destroyCausalSoftmaxDescriptor(descriptor)

@@ -1,6 +1,5 @@
 #include "../utils.h"
 #include "causal_softmax.h"
-#include "causal_softmax_config.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/causal_softmax_cpu.h"
@@ -25,11 +24,7 @@ __C CausalSoftmaxDescriptor *createCausalSoftmaxDescriptor(Device device, void *
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            ASSERT_VALID_PTR(config);
-            CausalSoftmaxCudaConfig *cuda_config = (CausalSoftmaxCudaConfig *) config;
-            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCudaDescriptor{
-                device,
-                ROUND_UP_DIV(cuda_config->max_dim, MAX_THREADS_PER_BLOCK)});
+            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCudaDescriptor{device});
         }
 
 #endif
