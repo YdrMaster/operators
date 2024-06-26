@@ -73,15 +73,30 @@ if has_config("cambricon-mlu") then
     add_defines("ENABLE_CAMBRICON_MLU")
     add_includedirs("/usr/local/neuware/include")
     add_linkdirs("/usr/local/neuware/lib64")
+    add_linkdirs("/usr/local/neuware/lib")
     add_links("libcnrt.so")
     add_links("libcnnl.so")
     add_links("libcnnl_extra.so")
+    add_links("libcnpapi.so")
+
+    rule("mlu")
+        set_extensions(".mlu")
+        on_build_file(function (target, sourcefile)
+            local objectfile = target:objectfile(sourcefile)
+            os.mkdir(path.directory(objectfile))        
+            local cc = "/usr/local/neuware/bin/cncc"
+            print("Compiling " .. sourcefile .. " to " .. objectfile)
+            os.execv(cc, {"-c", sourcefile, "-o", objectfile, "-I/usr/local/neuware/include", "--bang-mlu-arch=mtp_592", "-O3", "-fPIC", "-Wall", "-Werror", "-std=c++17", "-pthread"})
+            table.insert(target:objectfiles(), objectfile)
+        end)
+    rule_end()
 
     target("cambricon-mlu")
         set_kind("static")
         set_languages("cxx17")
-        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
         add_files("src/devices/bang/*.cc", "src/ops/*/bang/*.cc")
+        add_files("src/ops/*/bang/*.mlu", {rule = "mlu"})
+        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
     target_end()
 
 end

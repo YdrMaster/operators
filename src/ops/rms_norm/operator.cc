@@ -9,6 +9,7 @@
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/rms_norm_cnnl.h"
+#include "bang/rms_norm_bang.h"
 #endif
 
 struct RMSNormDescriptor {
@@ -77,6 +78,8 @@ __C void rmsNorm(RMSNormDescriptor *descriptor, Tensor y, Tensor x, Tensor w, fl
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
+            // Using BANGC Kernel
+            // rms_norm_bang_f16(y, x, w, epsilon, stream);
             rms_norm_cnnl_f16((RMSNormBangDescriptor *) (descriptor), y, x, w, epsilon, stream);
             break;
 #endif

@@ -7,6 +7,9 @@
 #ifdef ENABLE_NV_GPU
 #include "cuda/reform.cuh"
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+#include "bang/reform_bang.h"
+#endif
 
 struct ReformDescriptor {
     Device device;
@@ -22,7 +25,11 @@ __C ReformDescriptor *createReformDescriptor(Device device, void *config) {
         case DevNvGpu: {
             return (ReformDescriptor *) (new ReformCudaDescriptor{device});
         }
-
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            return (ReformDescriptor *) (new ReformBangDescriptor{device});
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -42,6 +49,12 @@ __C void destroyReformDescriptor(ReformDescriptor *descriptor) {
             delete (ReformCudaDescriptor *) (descriptor);
             break;
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            delete (ReformBangDescriptor *) (descriptor);
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -57,6 +70,11 @@ __C void reform(ReformDescriptor *descriptor, Tensor y, Tensor x, void *stream) 
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
             reform_nv_gpu(y, x, stream);
+            break;
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu:
+            reform_bang(y, x, stream);
             break;
 #endif
         default:
