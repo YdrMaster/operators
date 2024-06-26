@@ -9,8 +9,8 @@ template<typename T>
 __mlu_device__ void rmsNormKernel(T const *source, T *destination, T const *weight, int othersize, int dimsize, int dimS, float eps) {//axis=-1
     const int nramNum = NRAM_MAX_SIZE / sizeof(T);
     __nram__ half nram_buffer[nramNum];
-    const int SRC_MAX_SIZE = 64 * 1024;//至少大于等于128字节
-    const int maxNum = SRC_MAX_SIZE / sizeof(T);
+    const int srcMaxNum = 64 * 1024;//至少大于等于128字节
+    const int maxNum = srcMaxNum / sizeof(T);
     const int wSize = 128 / sizeof(T);//后续为了针对axis=-1进行规约求和
     
     int segNum = dimS / wSize;
