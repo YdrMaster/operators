@@ -72,7 +72,6 @@ if has_config("cambricon-mlu") then
 
     add_defines("ENABLE_CAMBRICON_MLU")
     add_includedirs("/usr/local/neuware/include")
-    -- add_includedirs("/usr/local/neuware/lib/clang/11.1.0/include")
     add_linkdirs("/usr/local/neuware/lib64")
     add_linkdirs("/usr/local/neuware/lib")
     add_links("libcnrt.so")
