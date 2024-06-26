@@ -2,16 +2,17 @@
 #include "bang_device_functions.h"
 #include "cnrt.h"
 #include "rms_norm_bang.h"
+#include "../../../devices/bang/common_bang.h"
 
-const int NRAM_MAX_SIZE = 1024 * 512;//the maximum NRAM memory is 1024 * 768
-const int nramNum = NRAM_MAX_SIZE / sizeof(float);
-__nram__ half nram_buffer[nramNum];
-const int SRC_MAX_SIZE = 64 * 1024;//至少大于等于128字节
-const int maxNum = SRC_MAX_SIZE / sizeof(float);
-const int wSize = 64;//后续为了针对axis=-1进行规约求和
 
 template<typename T>
 __mlu_device__ void rmsNormKernel(T const *source, T *destination, T const *weight, int othersize, int dimsize, int dimS, float eps) {//axis=-1
+    const int nramNum = NRAM_MAX_SIZE / sizeof(T);
+    __nram__ half nram_buffer[nramNum];
+    const int SRC_MAX_SIZE = 64 * 1024;//至少大于等于128字节
+    const int maxNum = SRC_MAX_SIZE / sizeof(T);
+    const int wSize = 128 / sizeof(T);//后续为了针对axis=-1进行规约求和
+    
     int segNum = dimS / wSize;
     if(dimsize >= maxNum){
         T *src = nram_buffer;//[maxNum]
@@ -259,6 +260,7 @@ __mlu_global__ void rmsNormUnion1(T *mlu_destination, T const *mlu_src, T const 
 
 template<typename T>
 void rmsNorm(cnrtQueue_t queue, void *y, void const *x, void const *w, int n, int d, float eps) {
+    const int wSize = 128 / sizeof(T);
     auto y_ = reinterpret_cast<T *>(y);
     auto x_ = reinterpret_cast<T const *>(x);
     auto w_ = reinterpret_cast<T const *>(w);

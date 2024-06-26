@@ -1,7 +1,7 @@
 #include <bang.h>
 #include <bang_device_functions.h>
 #include "reform_bang.h"
-const int GDRAM_MAX_SIZE = 1024 * 1024 * 1024;
+#include "../../../devices/bang/common_bang.h"
 
 template <typename T>
 __mlu_device__ void reformKernel(T *source, T *destination, int *strideSrc, int *strideDest, int *shape, int n, int dimsize, int nDim){
