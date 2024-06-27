@@ -63,7 +63,7 @@ if has_config("nv-gpu") then
         end
 
         set_languages("cxx17")
-        add_files("src/ops/*/cuda/*.cu")
+        add_files("src/devices/cuda/*.cc", "src/ops/*/cuda/*.cu")
     target_end()
 
 end
