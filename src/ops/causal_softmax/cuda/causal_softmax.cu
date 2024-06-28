@@ -226,15 +226,15 @@ __global__ void fused_softmax_standard(
 
 
 void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor *desc, Tensor y, void *stream) {
-    ASSERT(y.layout.ndim >= 2);
-    uint64_t total_seq_len = y.layout.shape[y.layout.ndim - 1];
+    ASSERT(y.layout->ndim >= 2);
+    uint64_t total_seq_len = y.layout->shape[y.layout->ndim - 1];
     uint64_t batch_size = 1;
     uint64_t stride_x = 1;
-    uint64_t stride_y = y.layout.strides[y.layout.ndim - 2];
-    uint64_t stride_z = y.layout.strides[y.layout.ndim - 1];
-    for (size_t i = 0; i < y.layout.ndim - 2; i++) {
-        batch_size *= y.layout.shape[i];
-        stride_x *= y.layout.strides[i];
+    uint64_t stride_y = y.layout->strides[y.layout->ndim - 2];
+    uint64_t stride_z = y.layout->strides[y.layout->ndim - 1];
+    for (size_t i = 0; i < y.layout->ndim - 2; i++) {
+        batch_size *= y.layout->shape[i];
+        stride_x *= y.layout->strides[i];
     }
     auto max_items_per_thread = ROUND_UP_DIV(total_seq_len, MAX_THREADS_PER_BLOCK);
     if (max_items_per_thread == 1) {

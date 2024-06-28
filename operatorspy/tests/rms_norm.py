@@ -31,7 +31,7 @@ def test(lib, descriptor, torch_device):
     eps = 1e-5
     ans = rms_norm(x, w, eps)
     lib.rmsNorm(
-        descriptor, to_tensor(y), to_tensor(x), to_tensor(w), eps, None
+        descriptor, to_tensor(y, lib), to_tensor(x, lib), to_tensor(w, lib), eps, None
     )
 
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)

@@ -5,12 +5,12 @@
 #include <iostream>
 
 void causal_softmax_cpu_f16(Tensor y) {
-    ASSERT(y.layout.ndim >= 2);
-    uint64_t total_seq_len = y.layout.shape[y.layout.ndim - 1];
-    uint64_t seq_len = y.layout.shape[y.layout.ndim - 2];
+    ASSERT(y.layout->ndim >= 2);
+    uint64_t total_seq_len = y.layout->shape[y.layout->ndim - 1];
+    uint64_t seq_len = y.layout->shape[y.layout->ndim - 2];
     uint64_t batch_size = 1;
-    for (size_t i = 0; i < y.layout.ndim - 2; i++) {
-        batch_size *= y.layout.shape[i];
+    for (size_t i = 0; i < y.layout->ndim - 2; i++) {
+        batch_size *= y.layout->shape[i];
     }
     auto y_ptr = reinterpret_cast<uint16_t *>(y.data);
     for (size_t b = 0; b < batch_size; b++) {

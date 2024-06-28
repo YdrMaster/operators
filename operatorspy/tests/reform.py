@@ -21,7 +21,7 @@ def test(lib, descriptor, torch_device):
     y = torch.zeros_like(x)
 
     start = time.time()
-    lib.reform(descriptor, to_tensor(y), to_tensor(x), None)
+    lib.reform(descriptor, to_tensor(y, lib), to_tensor(x, lib), None)
     end = time.time()
     print(f"Time elapsed: {(end - start) *1000} ms")
 

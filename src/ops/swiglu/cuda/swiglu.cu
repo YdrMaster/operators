@@ -31,13 +31,13 @@ static __global__ void swiglu(
 constexpr static int BLOCK_SIZE = 1024;
 
 void swiglu_nv_gpu_f16(Tensor gate, Tensor up, void *stream) {
-    ASSERT_EQ(gate.layout.ndim, 2);
-    ASSERT_EQ(up.layout.ndim, 2);
-    ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);
-    ASSERT_EQ(gate.layout.shape[1], up.layout.shape[1]);
+    ASSERT_EQ(gate.layout->ndim, 2);
+    ASSERT_EQ(up.layout->ndim, 2);
+    ASSERT_EQ(gate.layout->shape[0], up.layout->shape[0]);
+    ASSERT_EQ(gate.layout->shape[1], up.layout->shape[1]);
 
-    auto seq_len = gate.layout.shape[0],
-         di = gate.layout.shape[1];
+    auto seq_len = gate.layout->shape[0],
+         di = gate.layout->shape[1];
 
     dim3 block_dims = gcd(BLOCK_SIZE, di);
     dim3 grid_dims = dim3(di / block_dims.x, seq_len);
@@ -48,5 +48,5 @@ void swiglu_nv_gpu_f16(Tensor gate, Tensor up, void *stream) {
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
     swiglu<<<grid_dims, block_dims, 0, cuda_stream>>>(
-        gate_ptr, gate.layout.strides[0] / 2, up_ptr, up.layout.strides[0] / 2);
+        gate_ptr, gate.layout->strides[0] / 2, up_ptr, up.layout->strides[0] / 2);
 }

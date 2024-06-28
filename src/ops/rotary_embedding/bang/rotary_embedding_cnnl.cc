@@ -10,13 +10,13 @@ RotaryEmbeddingBangDescriptor::RotaryEmbeddingBangDescriptor(Device device) {
 }
 
 void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor t, Tensor pos, float theta, void *stream) {
-    ASSERT_EQ(t.layout.ndim, 3);
-    ASSERT_EQ(pos.layout.ndim, 1);
-    ASSERT_EQ(pos.layout.shape[0], t.layout.shape[0]);
+    ASSERT_EQ(t.layout->ndim, 3);
+    ASSERT_EQ(pos.layout->ndim, 1);
+    ASSERT_EQ(pos.layout->shape[0], t.layout->shape[0]);
 
-    auto nt = static_cast<int>(t.layout.shape[0]),
-         nh = static_cast<int>(t.layout.shape[1]),
-         dh = static_cast<int>(t.layout.shape[2]);
+    auto nt = static_cast<int>(t.layout->shape[0]),
+         nh = static_cast<int>(t.layout->shape[1]),
+         dh = static_cast<int>(t.layout->shape[2]);
 
     int inDim[4] = {nt, 1, nh, dh};
     int posDim[2] = {nt, 1};
