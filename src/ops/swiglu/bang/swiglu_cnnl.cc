@@ -10,20 +10,20 @@ SwigluBangDescriptor::SwigluBangDescriptor(Device device) {
 }
 
 void swiglu_cnnl_f16(SwigluBangDescriptor *descriptor, Tensor gate, Tensor up, void *stream) {
-    ASSERT_EQ(gate.layout.ndim, 2);
-    ASSERT_EQ(up.layout.ndim, 2);
-    ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);
-    ASSERT_EQ(gate.layout.shape[1], up.layout.shape[1]);
+    ASSERT_EQ(gate.layout->ndim, 2);
+    ASSERT_EQ(up.layout->ndim, 2);
+    ASSERT_EQ(gate.layout->shape[0], up.layout->shape[0]);
+    ASSERT_EQ(gate.layout->shape[1], up.layout->shape[1]);
 
     setCnnlTensor(descriptor->gateDesc, gate.layout);
 
-    std::vector<int> dims(gate.layout.ndim);
+    std::vector<int> dims(gate.layout->ndim);
     size_t inputSizeInBytes = 1;
-    for (uint64_t i = 0; i < gate.layout.ndim; i++) {
-        dims[i] = static_cast<int>(gate.layout.shape[i]);
+    for (uint64_t i = 0; i < gate.layout->ndim; i++) {
+        dims[i] = static_cast<int>(gate.layout->shape[i]);
         inputSizeInBytes *= dims[i];
     }
-    dims[gate.layout.ndim - 1] *= 2;
+    dims[gate.layout->ndim - 1] *= 2;
     inputSizeInBytes *= (2 * sizeof(uint16_t));
     cnnlSetTensorDescriptor(descriptor->inDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF,
                             dims.size(), dims.data());

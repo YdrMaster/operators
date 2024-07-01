@@ -8,16 +8,16 @@ inline float sigmoid(float x) {
 }
 
 void swiglu_cpu_f16(Tensor gate, Tensor up) {
-    ASSERT_EQ(gate.layout.ndim, 2);
-    ASSERT_EQ(up.layout.ndim, 2);
-    ASSERT_EQ(gate.layout.shape[0], up.layout.shape[0]);
-    ASSERT_EQ(gate.layout.shape[1], up.layout.shape[1]);
+    ASSERT_EQ(gate.layout->ndim, 2);
+    ASSERT_EQ(up.layout->ndim, 2);
+    ASSERT_EQ(gate.layout->shape[0], up.layout->shape[0]);
+    ASSERT_EQ(gate.layout->shape[1], up.layout->shape[1]);
 
-    auto seq_len = gate.layout.shape[0],
-         di = gate.layout.shape[1];
+    auto seq_len = gate.layout->shape[0],
+         di = gate.layout->shape[1];
 
-    auto stride_gate = gate.layout.strides[0],
-         stride_up = up.layout.strides[0];
+    auto stride_gate = gate.layout->strides[0],
+         stride_up = up.layout->strides[0];
 
     for (int i = 0; i < seq_len; ++i) {
         auto gate_ = reinterpret_cast<uint16_t *>(gate.data) + i * stride_gate;

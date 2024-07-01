@@ -4,17 +4,17 @@
 #include <cmath>
 
 void rotary_embedding_cpu_f16(Tensor t, Tensor pos, float theta) {
-    ASSERT_EQ(t.layout.ndim, 3);
-    ASSERT_EQ(pos.layout.ndim, 1);
+    ASSERT_EQ(t.layout->ndim, 3);
+    ASSERT_EQ(pos.layout->ndim, 1);
 
-    auto nt = t.layout.shape[0],
-         nh = t.layout.shape[1],
-         dh = t.layout.shape[2] / 2;
+    auto nt = t.layout->shape[0],
+         nh = t.layout->shape[1],
+         dh = t.layout->shape[2] / 2;
 
-    ASSERT_EQ(pos.layout.shape[0], nt);
+    ASSERT_EQ(pos.layout->shape[0], nt);
 
-    auto stride_0 = t.layout.strides[0];
-    auto stride_1 = t.layout.strides[1];
+    auto stride_0 = t.layout->strides[0];
+    auto stride_1 = t.layout->strides[1];
 
     for (int i = 0; i < nt; ++i) {
         auto pos_ = reinterpret_cast<unsigned int const *>(pos.data) + i;

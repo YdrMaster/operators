@@ -22,7 +22,7 @@ def test(lib, descriptor, torch_device):
     up = torch.rand((1, 64), dtype=torch.float16).to(torch_device)
 
     ans = swiglu(gate, up)
-    lib.swiglu(descriptor, to_tensor(gate), to_tensor(up), None)
+    lib.swiglu(descriptor, to_tensor(gate, lib), to_tensor(up, lib), None)
 
     assert torch.allclose(gate, ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")

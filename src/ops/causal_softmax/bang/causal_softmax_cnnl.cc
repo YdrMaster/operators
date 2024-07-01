@@ -10,11 +10,11 @@ CausalSoftmaxBangDescriptor::CausalSoftmaxBangDescriptor(Device device) {
 }
 
 void causal_softmax_cnnl_f16(CausalSoftmaxBangDescriptor *descriptor, Tensor t, void *stream) {
-    ASSERT(t.layout.ndim >= 2);
+    ASSERT(t.layout->ndim >= 2);
 
-    std::vector<int> dims(std::max(int(t.layout.ndim), 4), 1);
-    for (uint64_t i = 1; i <= t.layout.ndim; i++) {
-        dims[t.layout.ndim - i] = static_cast<int>(t.layout.shape[t.layout.ndim - i]);
+    std::vector<int> dims(std::max(int(t.layout->ndim), 4), 1);
+    for (uint64_t i = 1; i <= t.layout->ndim; i++) {
+        dims[t.layout->ndim - i] = static_cast<int>(t.layout->shape[t.layout->ndim - i]);
     }
     cnnlSetTensorDescriptor(descriptor->tDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF,
                             dims.size(), dims.data());

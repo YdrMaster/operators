@@ -44,7 +44,7 @@ def test(lib, descriptor, torch_device):
 
     ans = rotary_embedding(t, pos, theta, torch_device)
     lib.rotaryEmbedding(
-        descriptor, to_tensor(t), to_tensor(pos), c_float(theta), None
+        descriptor, to_tensor(t, lib), to_tensor(pos, lib), c_float(theta, lib), None
     )
 
     assert torch.allclose(t, ans, atol=1, rtol=1e-3)
@@ -81,7 +81,7 @@ def test_bang(lib):
     t = t.to("mlu")
     pos = pos.to("mlu")
     lib.rotaryEmbedding(
-        descriptor, to_tensor(t), to_tensor(pos), c_float(theta), None
+        descriptor, to_tensor(t, lib), to_tensor(pos, lib), c_float(theta), None
     )
     assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")

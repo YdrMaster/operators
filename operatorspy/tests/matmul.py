@@ -33,10 +33,10 @@ def test(lib, descriptor, torch_device):
     ans = matmul(c, beta, a, b, alpha)
     lib.matmul(
         descriptor,
-        to_tensor(c),
+        to_tensor(c, lib),
         beta,
-        to_tensor(a),
-        to_tensor(b),
+        to_tensor(a, lib),
+        to_tensor(b, lib),
         alpha,
         None,
     )

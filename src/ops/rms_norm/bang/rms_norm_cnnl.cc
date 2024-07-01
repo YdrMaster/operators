@@ -10,16 +10,16 @@ RMSNormBangDescriptor::RMSNormBangDescriptor(Device device) {
 }
 
 void rms_norm_cnnl_f16(RMSNormBangDescriptor *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    ASSERT_EQ(y.layout.ndim, 2);
-    ASSERT_EQ(x.layout.ndim, 2);
-    ASSERT_EQ(w.layout.ndim, 1);
+    ASSERT_EQ(y.layout->ndim, 2);
+    ASSERT_EQ(x.layout->ndim, 2);
+    ASSERT_EQ(w.layout->ndim, 1);
 
-    auto n = y.layout.shape[0],
-         d = y.layout.shape[1];
+    auto n = y.layout->shape[0],
+         d = y.layout->shape[1];
 
-    ASSERT_EQ(x.layout.shape[0], n);
-    ASSERT_EQ(x.layout.shape[1], d);
-    ASSERT_EQ(w.layout.shape[0], d);
+    ASSERT_EQ(x.layout->shape[0], n);
+    ASSERT_EQ(x.layout->shape[1], d);
+    ASSERT_EQ(w.layout->shape[0], d);
 
     setCnnlTensor(descriptor->yDesc, y.layout);
     setCnnlTensor(descriptor->xDesc, x.layout);

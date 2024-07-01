@@ -64,21 +64,21 @@ void reform(cnrtQueue_t queue, void *y, void *x, int *y_stride, int *x_stride, i
 }
 
 void reform_bang(Tensor y, Tensor x, void *stream) {
-    ASSERT_EQ(y.layout.ndim, x.layout.ndim);
-    int ndim = y.layout.ndim;
+    ASSERT_EQ(y.layout->ndim, x.layout->ndim);
+    int ndim = y.layout->ndim;
     ASSERT(ndim >= 2);
     for (int i = 0; i < ndim; ++i) {
-        ASSERT_EQ(y.layout.shape[i], x.layout.shape[i]);
+        ASSERT_EQ(y.layout->shape[i], x.layout->shape[i]);
     }
-    ASSERT_EQ(y.layout.strides[ndim - 1], y.layout.dt.size);
-    ASSERT_EQ(x.layout.strides[ndim - 1], x.layout.dt.size);
+    ASSERT_EQ(y.layout->strides[ndim - 1], y.layout->dt.size);
+    ASSERT_EQ(x.layout->strides[ndim - 1], x.layout->dt.size);
 
     int x_stride[ndim], y_stride[ndim], shape[ndim];
     int n = 1;
     for (int i = 0; i < ndim; i++) {
-        x_stride[i] = static_cast<int>(x.layout.strides[i]);
-        y_stride[i] = static_cast<int>(y.layout.strides[i]);
-        shape[i] = static_cast<int>(y.layout.shape[i]);
+        x_stride[i] = static_cast<int>(x.layout->strides[i]);
+        y_stride[i] = static_cast<int>(y.layout->strides[i]);
+        shape[i] = static_cast<int>(y.layout->shape[i]);
         n *= shape[i];
     }
     int dimsize = shape[ndim - 1];

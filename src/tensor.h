@@ -1,19 +1,20 @@
 ﻿#ifndef __TENSOR_H__
 #define __TENSOR_H__
 
-#include <stdint.h>
 #include "data_type.h"
+#include <stdint.h>
 
 struct TensorLayout {
     struct DataLayout dt;
     uint64_t ndim;
-    uint64_t offset;
     uint64_t *shape;
     int64_t *strides;
 };
 
+typedef struct TensorLayout *TensorDescriptor;
+
 struct TensorTuple {
-    struct TensorLayout const layout;
+    TensorDescriptor const layout;
     void *data;
 };
 

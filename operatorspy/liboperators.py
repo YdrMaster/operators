@@ -13,14 +13,16 @@ class TensorLayout(Structure):
     _fields_ = [
         ("dt", DataLayout),
         ("ndim", c_uint64),
-        ("offset", c_uint64),
         ("shape", POINTER(c_uint64)),
         ("pattern", POINTER(c_int64)),
     ]
 
 
+TensorDescriptor = ctypes.POINTER(TensorLayout)
+
+
 class CTensor(Structure):
-    _fields_ = [("layout", TensorLayout), ("data", c_void_p)]
+    _fields_ = [("layout", TensorDescriptor), ("data", c_void_p)]
 
 
 # Open operators library
@@ -40,11 +42,18 @@ def open_lib():
         library_path is not None
     ), f"Cannot find liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
     lib = ctypes.CDLL(library_path)
+    lib.createTensorDescriptor.argtypes = [
+        POINTER(POINTER(TensorLayout)),
+        c_uint64,
+        POINTER(c_uint64),
+        POINTER(c_int64),
+        DataLayout,
+    ]
     return lib
 
 
 # Convert PyTorch tensor to library Tensor
-def to_tensor(tensor):
+def to_tensor(tensor, lib):
     import torch
 
     ndim = tensor.ndimension()
@@ -54,45 +63,28 @@ def to_tensor(tensor):
         *(s * tensor.element_size() for s in tensor.stride())
     )
     data_ptr = tensor.data_ptr()
+    # fmt: off
     dt = (
-        I8
-        if tensor.dtype == torch.int8
-        else (
-            I16
-            if tensor.dtype == torch.int16
-            else (
-                I32
-                if tensor.dtype == torch.int32
-                else (
-                    I64
-                    if tensor.dtype == torch.int64
-                    else (
-                        U8
-                        if tensor.dtype == torch.uint8
-                        # TODO: Some PyTorch dtypes are not supported yet
-                        # else U16 if tensor.dtype == torch.uint16
-                        # else U32 if tensor.dtype == torch.uint32
-                        # else U64 if tensor.dtype == torch.uint64
-                        else (
-                            F16
-                            if tensor.dtype == torch.float16
-                            else (
-                                BF16
-                                if tensor.dtype == torch.bfloat16
-                                else (
-                                    F32
-                                    if tensor.dtype == torch.float32
-                                    else F64 if tensor.dtype == torch.float64 else None
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        )
+        I8 if tensor.dtype == torch.int8 else
+        I16 if tensor.dtype == torch.int16 else
+        I32 if tensor.dtype == torch.int32 else
+        I64 if tensor.dtype == torch.int64 else
+        U8 if tensor.dtype == torch.uint8 else
+        F16 if tensor.dtype == torch.float16 else
+        BF16 if tensor.dtype == torch.bfloat16 else
+        F32 if tensor.dtype == torch.float32 else
+        F64 if tensor.dtype == torch.float64 else
+        # TODO: These following types may not be supported by older 
+        # versions of PyTorch.
+        U16 if tensor.dtype == torch.uint16 else
+        U32 if tensor.dtype == torch.uint32 else
+        U64 if tensor.dtype == torch.uint64 else
+        None
     )
+    # fmt: on
     assert dt is not None
-    # Create TensorLayout
-    layout = TensorLayout(dt, ndim, 0, shape, strides)
+    # Create TensorDecriptor
+    tensor_desc = TensorDescriptor()
+    lib.createTensorDescriptor(ctypes.byref(tensor_desc), ndim, shape, strides, dt)
     # Create Tensor
-    return CTensor(layout, ctypes.c_void_p(data_ptr))
+    return CTensor(tensor_desc, ctypes.c_void_p(data_ptr))

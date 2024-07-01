@@ -118,24 +118,24 @@ static __global__ void rms_norm_standard(
 
 
 void rms_norm_nv_gpu_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    ASSERT_EQ(y.layout.ndim, 2);
-    ASSERT_EQ(x.layout.ndim, 2);
-    ASSERT_EQ(w.layout.ndim, 1);
+    ASSERT_EQ(y.layout->ndim, 2);
+    ASSERT_EQ(x.layout->ndim, 2);
+    ASSERT_EQ(w.layout->ndim, 1);
 
-    auto n = y.layout.shape[0],
-         d = y.layout.shape[1];
+    auto n = y.layout->shape[0],
+         d = y.layout->shape[1];
 
-    ASSERT_EQ(x.layout.shape[0], n);
-    ASSERT_EQ(x.layout.shape[1], d);
-    ASSERT_EQ(w.layout.shape[0], d);
+    ASSERT_EQ(x.layout->shape[0], n);
+    ASSERT_EQ(x.layout->shape[1], d);
+    ASSERT_EQ(w.layout->shape[0], d);
 
     auto y_ = reinterpret_cast<half *>(y.data);
     auto x_ = reinterpret_cast<half const *>(x.data);
     auto w_ = reinterpret_cast<half const *>(w.data);
 
     // Get strides in terms of elements
-    auto stride_y = y.layout.strides[0] / sizeof(half);
-    auto stride_x = x.layout.strides[0] / sizeof(half);
+    auto stride_y = y.layout->strides[0] / sizeof(half);
+    auto stride_x = x.layout->strides[0] / sizeof(half);
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
     unsigned int items_per_thread = ROUND_UP_DIV(d, MAX_THREADS_PER_BLOCK);
