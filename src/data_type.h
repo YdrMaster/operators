@@ -1,14 +1,14 @@
 ﻿#ifndef __DATA_TYPE_H__
 #define __DATA_TYPE_H__
 
-struct DataLayout {
+typedef struct DataLayout {
     unsigned short
         packed : 8,
         sign : 1,
         size : 7,
         mantissa : 8,
         exponent : 8;
-};
+} DataLayout;
 
 // clang-format off
 const static struct DataLayout
