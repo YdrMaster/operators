@@ -3,9 +3,9 @@
 
 #include "../../../operators.h"
 
-typedef struct RotaryEmbeddingCudaDescriptor {
+struct RotaryEmbeddingCudaDescriptor {
     Device device;
-} RotaryEmbeddingCudaDescriptor;
+};
 
 void rotary_embedding_nv_gpu_f16(Tensor t, Tensor pos, float theta, void *stream);
 

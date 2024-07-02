@@ -27,8 +27,11 @@ __C void *createRMSNormDescriptor(Device device, void *config) {
             return (RMSNormDescriptor *) (new RMSNormCudaDescriptor{device});
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            return (RMSNormDescriptor *) (new RMSNormBangDescriptor(device));
+        case DevCambriconMlu: {
+            auto bangDescriptor = new RMSNormBangDescriptor(device);
+            bangDescriptor->createCnnlDescriptors();
+            return (RMSNormDescriptor *) (bangDescriptor);
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -49,9 +52,12 @@ __C void destroyRMSNormDescriptor(RMSNormDescriptor *descriptor) {
             break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            delete (RMSNormBangDescriptor *) (descriptor);
+        case DevCambriconMlu: {
+            auto bangDescriptor = (RMSNormBangDescriptor *) (descriptor);
+            bangDescriptor->destroyCnnlDescriptors();
+            delete bangDescriptor;
             break;
+        }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -72,7 +78,9 @@ __C void rmsNorm(RMSNormDescriptor *descriptor, Tensor y, Tensor x, Tensor w, fl
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
-            rms_norm_bang_f16(y, x, w, epsilon, stream);
+            // Using BANGC Kernel
+            // rms_norm_bang_f16(y, x, w, epsilon, stream);
+            rms_norm_cnnl_f16((RMSNormBangDescriptor *) (descriptor), y, x, w, epsilon, stream);
             break;
 #endif
         default:

@@ -31,7 +31,7 @@ def test(lib, descriptor, torch_device):
     eps = 1e-5
     ans = rms_norm(x, w, eps)
     lib.rmsNorm(
-        descriptor, to_tensor(y), to_tensor(x), to_tensor(w), eps, None
+        descriptor, to_tensor(y, lib), to_tensor(x, lib), to_tensor(w, lib), eps, None
     )
 
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
@@ -51,9 +51,9 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyRMSNormDescriptor(descriptor)
 
-def test_cnnl(lib):
+def test_bang(lib):
     import torch_mlu
-    device = DeviceEnum.DEVICE_MLU
+    device = DeviceEnum.DEVICE_BANG
     descriptor = lib.createRMSNormDescriptor(device, None)
     test(lib, descriptor, "mlu")
     lib.destroyRMSNormDescriptor(descriptor)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     if args.cuda:
         test_cuda(lib)
     if args.cnnl:
-        test_cnnl(lib)
+        test_bang(lib)
     if args.ascend:
         # import torch_npu
         # torch_npu.npu.set_device(0)

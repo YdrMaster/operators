@@ -21,7 +21,7 @@ def test(lib, descriptor, torch_device):
     y = torch.zeros_like(x)
 
     start = time.time()
-    lib.reform(descriptor, to_tensor(y), to_tensor(x), None)
+    lib.reform(descriptor, to_tensor(y, lib), to_tensor(x, lib), None)
     end = time.time()
     print(f"Time elapsed: {(end - start) *1000} ms")
 
@@ -44,6 +44,12 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyReformDescriptor(descriptor)
 
+def test_bang(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_BANG
+    descriptor = lib.createReformDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroyReformDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -60,3 +66,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.bang:
+        test_bang(lib)

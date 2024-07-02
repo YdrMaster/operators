@@ -3,9 +3,9 @@
 
 #include "../../../operators.h"
 
-typedef struct RotaryEmbeddingCpuDescriptor {
+struct RotaryEmbeddingCpuDescriptor {
     Device device;
-} RotaryEmbeddingCpuDescriptor;
+};
 
 void rotary_embedding_cpu_f16(Tensor t, Tensor pos, float theta);
 

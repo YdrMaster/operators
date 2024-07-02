@@ -70,7 +70,7 @@ if has_config("nv-gpu") then
         end
 
         set_languages("cxx17")
-        add_files("src/ops/*/cuda/*.cu")
+        add_files("src/devices/cuda/*.cc", "src/ops/*/cuda/*.cu")
     target_end()
 
 end
@@ -79,7 +79,6 @@ if has_config("cambricon-mlu") then
 
     add_defines("ENABLE_CAMBRICON_MLU")
     add_includedirs("/usr/local/neuware/include")
-    -- add_includedirs("/usr/local/neuware/lib/clang/11.1.0/include")
     add_linkdirs("/usr/local/neuware/lib64")
     add_linkdirs("/usr/local/neuware/lib")
     add_links("libcnrt.so")
@@ -169,7 +168,7 @@ target("operators")
 
     set_languages("cxx17")
     add_files("src/ops/*/operator.cc")
-
+    add_files("src/tensor/*.cc")
 target_end()
 
 target("main")

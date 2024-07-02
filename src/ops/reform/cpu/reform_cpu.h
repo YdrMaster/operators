@@ -3,9 +3,9 @@
 
 #include "../../../operators.h"
 
-typedef struct ReformCpuDescriptor {
+struct ReformCpuDescriptor {
     Device device;
-} ReformCpuDescriptor;
+};
 
 void reform_cpu(Tensor y, Tensor x);
 

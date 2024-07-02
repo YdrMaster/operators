@@ -13,14 +13,15 @@ def get_args():
         help="Run CUDA test",
     )
     parser.add_argument(
+        "--bang",
+        action="store_true",
+        help="Run BANG test",
+    )
+
+    parser.add_argument(
         "--ascend",
         action="store_true",
         help="Run ASCEND NPU test",
-    )
-    parser.add_argument(
-        "--cnnl",
-        action="store_true",
-        help="Run MLU CNNL test",
     )
 
     return parser.parse_args()

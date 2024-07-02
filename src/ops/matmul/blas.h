@@ -14,21 +14,21 @@ struct BlasMatrix {
 
     BlasMatrix() {}
 
-    BlasMatrix(TensorLayout layout) {
-        if (layout.ndim == 2) {
+    BlasMatrix(TensorLayout *layout) {
+        if (layout->ndim == 2) {
             this->batch = 1;
             this->stride = 0;
-            this->rows = layout.shape[0];
-            this->cols = layout.shape[1];
-            this->row_stride = layout.strides[0] / layout.dt.size;
-            this->col_stride = layout.strides[1] / layout.dt.size;
-        } else if (layout.ndim == 3) {
-            this->batch = layout.shape[0];
-            this->stride = this->batch == 1 ? 0 : layout.strides[0] / layout.dt.size;
-            this->rows = layout.shape[1];
-            this->cols = layout.shape[2];
-            this->row_stride = layout.strides[1] / layout.dt.size;
-            this->col_stride = layout.strides[2] / layout.dt.size;
+            this->rows = layout->shape[0];
+            this->cols = layout->shape[1];
+            this->row_stride = layout->strides[0] / layout->dt.size;
+            this->col_stride = layout->strides[1] / layout->dt.size;
+        } else if (layout->ndim == 3) {
+            this->batch = layout->shape[0];
+            this->stride = this->batch == 1 ? 0 : layout->strides[0] / layout->dt.size;
+            this->rows = layout->shape[1];
+            this->cols = layout->shape[2];
+            this->row_stride = layout->strides[1] / layout->dt.size;
+            this->col_stride = layout->strides[2] / layout->dt.size;
         } else {
             PANIC(InvalidMatrixShape);
         }
@@ -39,7 +39,7 @@ struct BlasMatrix {
         }
     }
 
-    bool match_batch(uint64_t batch) const {
+    bool match_batch(int batch) const {
         return this->batch == batch || this->batch == 1;
     }
 

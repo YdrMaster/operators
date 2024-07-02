@@ -33,10 +33,10 @@ def test(lib, descriptor, torch_device):
     ans = matmul(c, beta, a, b, alpha)
     lib.matmul(
         descriptor,
-        to_tensor(c),
+        to_tensor(c, lib),
         beta,
-        to_tensor(a),
-        to_tensor(b),
+        to_tensor(a, lib),
+        to_tensor(b, lib),
         alpha,
         None,
     )
@@ -59,6 +59,12 @@ def test_cuda(lib):
     test(lib, descriptor, "cuda")
     lib.destroyMatmulDescriptor(descriptor)
 
+def test_bang(lib):
+    import torch_mlu
+    device = DeviceEnum.DEVICE_BANG
+    descriptor = lib.createMatmulDescriptor(device, None)
+    test(lib, descriptor, "mlu")
+    lib.destroyMatmulDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -78,3 +84,5 @@ if __name__ == "__main__":
         test_cpu(lib)
     if args.cuda:
         test_cuda(lib)
+    if args.bang:
+        test_bang(lib)

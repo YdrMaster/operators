@@ -1,3 +1,6 @@
+#ifndef __POOL_H__
+#define __POOL_H__
+
 #include <atomic>
 #include <mutex>
 #include <optional>
@@ -43,3 +46,5 @@ private:
 
     mutable std::atomic<Node<T> *> _head;
 };
+
+#endif // __POOL_H__
