@@ -1,7 +1,7 @@
 #include "rms_norm.h"
 
 
-void rms_norm_ascend_npu_fp16(MutTensor y, ConstTensor x, ConstTensor w, float epsilon, void *stream) {
+void rms_norm_ascend_npu_fp16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
     // Cast from uint64_t* to int64_t*
     auto xshape = castToInt64_t(x.layout.shape, x.layout.ndim);
     auto wshape = castToInt64_t(w.layout.shape, w.layout.ndim);
