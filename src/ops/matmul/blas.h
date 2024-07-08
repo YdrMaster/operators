@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 struct BlasMatrix {
+    int ndim;
     int batch;
     int64_t stride;
     int rows;
@@ -16,6 +17,7 @@ struct BlasMatrix {
 
     BlasMatrix(TensorLayout *layout) {
         if (layout->ndim == 2) {
+            this->ndim = 2;
             this->batch = 1;
             this->stride = 0;
             this->rows = layout->shape[0];
@@ -23,6 +25,7 @@ struct BlasMatrix {
             this->row_stride = layout->strides[0] / layout->dt.size;
             this->col_stride = layout->strides[1] / layout->dt.size;
         } else if (layout->ndim == 3) {
+            this->ndim = 3;
             this->batch = layout->shape[0];
             this->stride = this->batch == 1 ? 0 : layout->strides[0] / layout->dt.size;
             this->rows = layout->shape[1];
