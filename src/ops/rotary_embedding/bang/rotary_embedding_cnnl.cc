@@ -19,6 +19,10 @@ void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor
          dh = static_cast<int>(t.layout->shape[2]);
 
     int inDim[4] = {nt, 1, nh, dh};
+    int inDimStride[4] = {static_cast<int>(t.layout->strides[0] / t.layout->dt.size),
+                          0,
+                          static_cast<int>(t.layout->strides[1] / t.layout->dt.size),
+                          static_cast<int>(t.layout->strides[2] / t.layout->dt.size)};
     int posDim[2] = {nt, 1};
     int thetaDim[2] = {1, dh / 2};
     int freqDim[2] = {nt, dh / 2};
@@ -32,13 +36,13 @@ void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor
     cnnlCreateTensorDescriptor(&freqDesc);
     cnnlCreateTensorDescriptor(&freqConcatDesc);
     cnnlCreateTensorDescriptor(&scalerDesc);
-
-    cnnlSetTensorDescriptor(inDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF, 4, inDim);
-    cnnlSetTensorDescriptor(posDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32, 2, posDim);
-    cnnlSetTensorDescriptor(thetaDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, thetaDim);
-    cnnlSetTensorDescriptor(freqDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, freqDim);
-    cnnlSetTensorDescriptor(freqConcatDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, freqConcatDim);
-    cnnlSetTensorDescriptor(scalerDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 1, scalerDim);
+    
+    cnnlSetTensorDescriptor(descriptor->posDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_INT32, 2, posDim);
+    cnnlSetTensorDescriptorEx(descriptor->inDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_HALF, 4, inDim, inDimStride);
+    cnnlSetTensorDescriptor(descriptor->thetaDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, thetaDim);
+    cnnlSetTensorDescriptor(descriptor->freqDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, freqDim);
+    cnnlSetTensorDescriptor(descriptor->freqConcatDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 2, freqConcatDim);
+    cnnlSetTensorDescriptor(descriptor->scalerDesc, CNNL_LAYOUT_ARRAY, CNNL_DTYPE_FLOAT, 1, scalerDim);
 
     void *thetaData, *freqData, *freqConcatData, *scalerData;
     cnrtMalloc(&thetaData, dh / 2 * sizeof(float));
