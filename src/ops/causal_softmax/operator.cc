@@ -1,5 +1,5 @@
 #include "../utils.h"
-#include "causal_softmax.h"
+#include "ops/causal_softmax/causal_softmax.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/causal_softmax_cpu.h"
