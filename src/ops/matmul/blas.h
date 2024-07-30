@@ -3,7 +3,7 @@
 
 #include "../../operators.h"
 #include <stdint.h>
-
+#include <algorithm>
 struct BlasMatrix {
     int batch;
     int64_t stride;

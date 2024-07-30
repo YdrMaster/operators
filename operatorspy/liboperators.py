@@ -1,4 +1,5 @@
 import os
+import platform
 import ctypes
 from ctypes import c_void_p, c_int, c_int64, c_uint64, Structure, POINTER
 from .data_layout import *
@@ -36,11 +37,16 @@ def open_lib():
                 return full_path
         return None
 
+    system_name = platform.system()
     # Load the library
-    library_path = find_library_in_ld_path("liboperators.so")
+    if system_name == 'Windows':
+        library_path = find_library_in_ld_path("operators.dll")
+    elif system_name == 'Linux':
+        library_path = find_library_in_ld_path("liboperators.so")
+
     assert (
         library_path is not None
-    ), f"Cannot find liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
+    ), f"Cannot find operators.dll or liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
     lib = ctypes.CDLL(library_path)
     lib.createTensorDescriptor.argtypes = [
         POINTER(POINTER(TensorLayout)),
