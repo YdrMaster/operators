@@ -8,7 +8,7 @@
 #include <inttypes.h>
 #include <vector>
 
-// Aclnn tensor descriptor, 
+// Aclnn tensor descriptor,
 // used to build aclTensor
 struct aclnnTensorDesc {
     int64_t ndim;
@@ -21,13 +21,13 @@ struct aclnnTensorDesc {
     int64_t storageNdim;
 };
 
-
 typedef aclnnTensorDesc *aclnnTensorDesc_t;
 
 void aclnnCreateTensorDescriptor(aclnnTensorDesc_t *desc);
 
-void aclnnSetTensorDescriptor(aclnnTensorDesc_t desc, int64_t *shape, int64_t *stride, int64_t ndim,
-                              int64_t offset, aclDataType dataType, aclFormat format);
+void aclnnSetTensorDescriptor(aclnnTensorDesc_t desc, int64_t *shape,
+                              int64_t *stride, int64_t ndim, int64_t offset,
+                              aclDataType dataType, aclFormat format);
 
 void aclnnDestoryTensorDescriptor(aclnnTensorDesc_t desc);
 
@@ -35,6 +35,7 @@ int aclnnCreateTensor(aclnnTensorDesc_t desc, void *data, aclTensor **tensor);
 
 char *aclnnTensorDescToString(const aclnnTensorDesc_t desc);
 
-void aclnnSetTensorDescriptorFromTensorLayout(aclnnTensorDesc_t desc, const TensorLayout *layout);
+void aclnnSetTensorDescriptorFromTensorLayout(aclnnTensorDesc_t desc,
+                                              const TensorLayout *layout);
 
 #endif

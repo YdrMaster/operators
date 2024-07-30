@@ -7,7 +7,8 @@ MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device device) {
     this->device = device;
 }
 
-void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
+void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta,
+                      Tensor a, Tensor b, float alpha, void *stream) {
     // Copy tensor layout to descriptor
     aclnnSetTensorDescriptorFromTensorLayout(descriptor->aDesc, a.layout);
     aclnnSetTensorDescriptorFromTensorLayout(descriptor->bDesc, b.layout);
@@ -48,22 +49,28 @@ void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta, T
     aclOpExecutor *executor;
     // TODO
     int8_t cubeMathType = 1;
-    auto ret = aclnnBatchMatMulGetWorkspaceSize(
-        self, other, out, cubeMathType, &workspaceSize, &executor);
-    CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnBatchMatMulGetWorkspaceSize failed. ERROR: %d\n", ret););
+    auto ret = aclnnBatchMatMulGetWorkspaceSize(self, other, out, cubeMathType,
+                                                &workspaceSize, &executor);
+    CHECK_RET(ret == ACL_SUCCESS,
+              LOG_PRINT("aclnnBatchMatMulGetWorkspaceSize failed. ERROR: %d\n",
+                        ret););
     // Malloc workspace on device
     void *workspaceAddr = nullptr;
     if (workspaceSize > 0) {
-        ret = aclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
-        CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret););
+        ret = aclrtMalloc(&workspaceAddr, workspaceSize,
+                          ACL_MEM_MALLOC_HUGE_FIRST);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret););
     }
     // Call aclnnBatchMatMul
     ret = aclnnBatchMatMul(workspaceAddr, workspaceSize, executor, stream);
-    CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclnnBatchMatMul failed. ERROR: %d\n", ret););
-    
+    CHECK_RET(ret == ACL_SUCCESS,
+              LOG_PRINT("aclnnBatchMatMul failed. ERROR: %d\n", ret););
+
     // Wait device work
     ret = aclrtSynchronizeStream(stream);
-    CHECK_RET(ret == ACL_SUCCESS, LOG_PRINT("aclrtSynchronizeStream failed. ERROR: %d\n", ret););
+    CHECK_RET(ret == ACL_SUCCESS,
+              LOG_PRINT("aclrtSynchronizeStream failed. ERROR: %d\n", ret););
 
     aclDestroyTensor(self);
     aclDestroyTensor(other);

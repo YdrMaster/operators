@@ -29,6 +29,7 @@ extern "C" {
 
 std::vector<int64_t> castToInt64_t(uint64_t *v, uint64_t size);
 int64_t getShapeSize(const std::vector<int64_t> &shape);
+int64_t numElements(const int64_t *shape, int64_t num);
 const char *dataTypeToString(aclDataType dtype);
 const char *formatToString(aclFormat format);
 

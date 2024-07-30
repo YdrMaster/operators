@@ -6,7 +6,6 @@
 #include "acl/acl.h"
 #include "aclnnop/aclnn_batch_matmul.h"
 
-
 struct MatmulAclnnDescriptor {
     Device device;
     aclnnTensorDesc_t aDesc, bDesc, cDesc;
@@ -24,6 +23,7 @@ struct MatmulAclnnDescriptor {
     }
 };
 
-void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream);
+void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta,
+                      Tensor a, Tensor b, float alpha, void *stream);
 
 #endif

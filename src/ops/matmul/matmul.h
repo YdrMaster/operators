@@ -10,6 +10,7 @@ __C __export MatmulDescriptor *createMatmulDescriptor(Device, void *config);
 
 __C __export void destroyMatmulDescriptor(MatmulDescriptor *descriptor);
 
-__C __export void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream);
+__C __export void matmul(MatmulDescriptor *descriptor, Tensor c, float beta,
+                         Tensor a, Tensor b, float alpha, void *stream);
 
 #endif

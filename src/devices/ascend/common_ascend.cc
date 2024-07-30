@@ -17,6 +17,14 @@ inline int64_t getShapeSize(const std::vector<int64_t> &shape) {
     return shape_size;
 }
 
+int64_t numElements(const int64_t *shape, int64_t num) {
+    int64_t numEle = 1;
+    for (int i = 0; i < num; i++) {
+        numEle += shape[i];
+    }
+    return numEle;
+}
+
 const char* dataTypeToString(aclDataType dtype) {
     switch (dtype) {
         case ACL_DT_UNDEFINED : return "ACL_DT_UNDEFINED" ;

@@ -13,4 +13,6 @@ __pycache__/
 
 *.log
 
-*.josn
+*.json
+
+cache/
