@@ -11,6 +11,9 @@
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/matmul_cnnl.h"
 #endif
+#ifdef ENABLE_ASCEND_NPU
+#include "ascend/matmul_aclnn.h"
+#endif
 
 struct MatmulDescriptor {
     Device device;
@@ -32,6 +35,13 @@ __C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
             auto bangDescriptor = new MatmulBangDescriptor(device);
             bangDescriptor->createCnnlDescriptors();
             return (MatmulDescriptor *) (bangDescriptor);
+        }
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            auto ascendDescriptor = new MatmulAclnnDescriptor(device);
+            ascendDescriptor->createAclnnDescriptors();
+            return (MatmulDescriptor *) (ascendDescriptor);
         }
 #endif
         default:
@@ -60,6 +70,14 @@ __C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
             break;
         }
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            auto ascendDescriptor = (MatmulAclnnDescriptor *) (descriptor);
+            ascendDescriptor->destroyAclnnDescriptors();
+            delete ascendDescriptor;
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -80,6 +98,11 @@ __C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Te
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
             matmul_cnnl_f16((MatmulBangDescriptor *) (descriptor), c, beta, a, b, alpha, stream);
+            break;
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            matmul_aclnn_f16((MatmulAclnnDescriptor *) (descriptor), c, beta, a, b, alpha, stream);
             break;
 #endif
         default:

@@ -126,22 +126,13 @@ if has_config("ascend-npu") then
     add_linkdirs(ascend_home .. "/../../driver/lib64/driver")
     add_links("libascend_hal.so")
 
-    target("ascendc")
-        set_kind("phony")
-        add_rules("plugin.cmake")
-
-        on_load(function (target)
-            local cmake_dir = path.join(os.projectdir(), "src/ops/swiglu/ascend")
-            local build_dir
-        )
-
     target("ascend-npu")
         set_kind("static")
         -- Other configs
         set_languages("cxx17")
-        add_files("src/ops/*/ascend/*.cc")
-        -- npu
-        add_files("src/ops/*/ascend/*.cpp", {rule = "npu"})
+        add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
+        -- -- npu
+        -- add_files("src/ops/*/ascend/*.cpp", {rule = "npu"})
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
         -- add_includedirs(ascendc_cmake_dir)
         

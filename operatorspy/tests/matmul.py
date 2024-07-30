@@ -65,6 +65,13 @@ def test_bang(lib):
     descriptor = lib.createMatmulDescriptor(device, None)
     test(lib, descriptor, "mlu")
     lib.destroyMatmulDescriptor(descriptor)
+    
+def test_ascend(lib):
+    import torch_npu
+    device = DeviceEnum.DEVICE_NPU
+    descriptor = lib.createMatmulDescriptor(device, None)
+    test(lib, descriptor, "npu")
+    lib.destroyMatmulDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -86,3 +93,5 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.bang:
         test_bang(lib)
+    if args.ascend:
+        test_ascend(lib)

@@ -1,12 +1,11 @@
 #ifndef __ASCEND_NPU_COMMON_H__
 #define __ASCEND_NPU_COMMON_H__
 
-// #include "acl/acl.h"
-#include "../../tensor.h"
+#include "acl/acl.h"
 #include <cstdio>
+#include <functional>
 #include <numeric>
 #include <vector>
-#include <functional>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,18 +27,9 @@ extern "C" {
 };
 #endif
 
-inline std::vector<int64_t> castToInt64_t(uint64_t *v, uint64_t size) {
-    std::vector<int64_t> out(size);
-    for (size_t i = 0; i < size; ++i) {
-        out[i] = static_cast<int64_t>(v[i]);
-    }
-
-    return out;
-}
-
-inline int64_t shapeProd(std::vector<int64_t> shape) {
-    return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>());
-}
-
+std::vector<int64_t> castToInt64_t(uint64_t *v, uint64_t size);
+int64_t getShapeSize(const std::vector<int64_t> &shape);
+const char *dataTypeToString(aclDataType dtype);
+const char *formatToString(aclFormat format);
 
 #endif

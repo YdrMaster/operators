@@ -10,3 +10,7 @@ build/
 
 # Python
 __pycache__/
+
+*.log
+
+*.josn
