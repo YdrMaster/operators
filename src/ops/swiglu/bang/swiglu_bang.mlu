@@ -106,7 +106,7 @@ void swiglu(cnrtQueue_t queue, void *gate, int *gate_stride, void const *up, int
     k_type = CNRT_FUNC_TYPE_UNION1;
     
     swigluUnion1<T><<<k_dim, k_type, queue>>>(y_, gate_stride, x_, up_stride, shape, othersize, dimsize, ndim);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 void swiglu_fp16(cnrtQueue_t queue, void *gate, void *up, int *gate_stride, int *up_stride, int *shape, int othersize, int dimsize, int ndim) {
@@ -202,7 +202,7 @@ void swigluUnionDim_2(cnrtQueue_t queue, void *gate, void const *up, int strideS
     k_type = CNRT_FUNC_TYPE_UNION1;
     
     swigluDim_2<T><<<k_dim, k_type, queue>>>(y_, x_, strideS_f, strideD_f, othersize, dimsize);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 template <typename T>
@@ -299,7 +299,7 @@ void swigluUnionDim_3(cnrtQueue_t queue, void *gate, void const *up, int strideS
     k_type = CNRT_FUNC_TYPE_UNION1;
     
     swigluDim_3<T><<<k_dim, k_type, queue>>>(y_, x_, strideS_f, strideS_m, strideD_f, strideD_m, othersize, middle, dimsize);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 void swiglu_bang_f16(Tensor gate, Tensor up, void *stream) {

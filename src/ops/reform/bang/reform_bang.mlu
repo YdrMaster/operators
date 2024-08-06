@@ -72,7 +72,7 @@ void reform(cnrtQueue_t queue, void *y, void *x, int *y_stride, int *x_stride, i
     cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_UNION1;
     
     reformUnion1<half><<<dim, ktype, queue>>>(x_, y_, x_stride, y_stride, shape, n, dimsize, ndim);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 template <typename T>
@@ -128,7 +128,7 @@ void reformUnionDim_2(cnrtQueue_t queue, void *y, void *x , int strideS_f, int s
     cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_UNION1;
     
     reformDim_2<half><<<dim, ktype, queue>>>(x_, y_, strideS_f, strideD_f, n, dimsize);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 template <typename T>
@@ -191,7 +191,7 @@ void reformUnionDim_3(cnrtQueue_t queue, void *y, void *x, int strideS_f, int st
     cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_UNION1;
     
     reformDim_3<half><<<dim, ktype, queue>>>(x_, y_, strideS_f, strideS_m, strideD_f, strideD_m, n, middle, dimsize);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
     
 }
 void reform_bang(Tensor y, Tensor x, void *stream) {

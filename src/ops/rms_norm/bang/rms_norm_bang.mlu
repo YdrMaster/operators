@@ -176,7 +176,7 @@ void rmsNorm(cnrtQueue_t queue, void *y, void const *x, void const *w, int *stri
     k_type = CNRT_FUNC_TYPE_UNION1;
 
     rmsNormUnion1<T><<<k_dim, k_type, queue>>>(y_, x_, w_, strideSrc, strideDest, shape, n, d, dimS, eps, ndim);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
 }
 
 void rmsNorm_fp16(cnrtQueue_t queue, void *y, void const *x, void const *w, int *strideSrc, int *strideDest, int *shape, int n, int d, float eps, int ndim) {
@@ -340,7 +340,7 @@ void rmsNormUnionDim_2(cnrtQueue_t queue, void *y, void const *x, void const *w,
     k_type = CNRT_FUNC_TYPE_UNION1;
 
     rmsNormDim_2<T><<<k_dim, k_type, queue>>>(y_, x_, w_, strideS_f, strideD_f, n, d, dimS, eps);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
 }
 template <typename T>
 __mlu_global__ void rmsNormDim_3(T *destination, T const *source, T const *weight, int strideS_f, int strideS_m, int strideD_f, int strideD_m, int othersize, int middle, int dimsize, int dimS, float eps) {//axis=-1
@@ -507,7 +507,7 @@ void rmsNormUnionDim_3(cnrtQueue_t queue, void *y, void const *x, void const *w,
     k_type = CNRT_FUNC_TYPE_UNION1;
 
     rmsNormDim_3<T><<<k_dim, k_type, queue>>>(y_, x_, w_, strideS_f, strideS_m, strideD_f, strideD_m, n, middle, d, dimS, eps);
-    cnrtQueueSync(queue);
+    // cnrtQueueSync(queue);
 }
 
 void rms_norm_bang_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
