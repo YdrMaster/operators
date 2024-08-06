@@ -5,7 +5,6 @@
 #include "operators.h"
 #include <algorithm>
 #include <stdint.h>
-#include <algorithm>
 
 typedef struct BlasMatrix {
     int ndim;

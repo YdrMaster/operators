@@ -33,9 +33,9 @@ def test(lib, descriptor, torch_device):
         descriptor, to_tensor(y, lib, [16, 2048], [26624, 2]), to_tensor(x, lib), to_tensor(w, lib), eps, None
     )
 
-    print(ans)
-    print("=======================================================")
-    print(y[:, :2048])
+    # print(ans)
+    # print("=======================================================")
+    # print(y[:, :2048])
     assert torch.allclose(y[:, :2048], ans, atol=0, rtol=1e-3)
     print("Test passed!")
 

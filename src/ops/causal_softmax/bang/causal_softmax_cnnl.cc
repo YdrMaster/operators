@@ -4,16 +4,6 @@
 #include "../../utils.h"
 #include "cnrt.h"
 
-#define checkCnnlError(call)                                                   \
-    {                                                                          \
-        cnnlStatus_t err = call;                                               \
-        if (CNNL_STATUS_SUCCESS != err) {                                      \
-            fprintf(stderr, "cnnl error in %s:%i : %s.\n", __FILE__, __LINE__, \
-                    cnnlGetErrorString(err));                                  \
-            exit(EXIT_FAILURE);                                                \
-        }                                                                      \
-    }
-
 CausalSoftmaxBangDescriptor::CausalSoftmaxBangDescriptor(Device device) {
     this->device = device;
     get_cnnl_pool();
@@ -62,9 +52,9 @@ void causal_softmax_cnnl_f16(Tensor t, void *stream) {
 
     use_cnnl((cnrtQueue_t) stream,
              [&](cnnlHandle_t handle) {
-                 checkCnnlError(cnnlMaskedSoftmax(handle, CNNL_MASKED_SOFTMAX_MASKED_FILL,
-                                                  -1, 1.0, tDesc, t.data, maskDesc, mask,
-                                                  tDesc, t.data));
+                 cnnlMaskedSoftmax(handle, CNNL_MASKED_SOFTMAX_MASKED_FILL,
+                                   -1, 1.0, tDesc, t.data, maskDesc, mask,
+                                   tDesc, t.data);
              });
 
     cnnlDestroyTensorDescriptor(tDesc);

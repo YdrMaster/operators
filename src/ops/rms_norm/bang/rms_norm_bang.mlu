@@ -74,7 +74,8 @@ __mlu_device__ void rmsNormKernel(T *destination, T const *source, T const *weig
             destSumFinal[0] /= dimsize;
             destSum[0] = pow(destSum[0], 0.5);
             T globalSumInv = 1.0 / destSumFinal[0];
-            //-----------
+
+            // 写回 global memory
             for(int s = 0; s < repeat; s++){
                 tidS = inds + s * maxNum;
                 tidD = indd + s * maxNum;
@@ -245,7 +246,8 @@ __mlu_global__ void rmsNormDim_2(T *destination, T const *source, T const *weigh
             destSumFinal[0] /= dimsize;
             destSum[0] = pow(destSum[0], 0.5);
             T globalSumInv = 1.0 / destSumFinal[0];
-            //-----------
+            
+            // 写回 global memory
             for(int s = 0; s < repeat; s++){
                 tidS = inds + s * maxNum;
                 tidD = indd + s * maxNum;
@@ -409,7 +411,8 @@ __mlu_global__ void rmsNormDim_3(T *destination, T const *source, T const *weigh
             destSumFinal[0] /= dimsize;
             destSum[0] = pow(destSum[0], 0.5);
             T globalSumInv = 1.0 / destSumFinal[0];
-            //-----------
+            
+            // 写回 global memory
             for(int s = 0; s < repeat; s++){
                 tidS = inds + s * maxNum;
                 tidD = indd + s * maxNum;
