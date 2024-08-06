@@ -23,31 +23,38 @@ def test(lib, descriptor, torch_device, x = None):
         x = x.to(torch_device)
     y = torch.zeros((5, 5), dtype=torch.float16).to(torch_device)
 
-    # start = time.time()
     lib.reform(descriptor, to_tensor(y, lib), to_tensor(x, lib, [5, 5], [20, 2]), None)
-    # end = time.time()
-    # print(f"Time elapsed: {(end - start) *1000} ms")
-
-    # assert torch.allclose(y, x, atol=1, rtol=1e-3)
-    # print("Test passed!")
     
     return x, y
-
 
 def test_cpu(lib):
     device = DeviceEnum.DEVICE_CPU
     config = None
     descriptor = lib.createReformDescriptor(device, config)
-    ans = test(lib, descriptor, "cpu")
+    test(lib, descriptor, "cpu")
     lib.destroyReformDescriptor(descriptor)
-    return ans
+    print("Test passed!")
 
+def run_cpu(lib):
+    device = DeviceEnum.DEVICE_CPU
+    config = None
+    descriptor = lib.createReformDescriptor(device, config)
+    x, ans = test(lib, descriptor, "cpu")
+    lib.destroyReformDescriptor(descriptor)
+    return x, ans
 
 def test_cuda(lib):
     device = DeviceEnum.DEVICE_CUDA
     config = None
     descriptor = lib.createReformDescriptor(device, config)
-    test(lib, descriptor, "cuda")
+    
+    # compare with cpu results
+    x, cpu_ans = run_cpu(lib)
+    _, cuda_ans = test(lib, descriptor, "cuda", x)
+    
+    assert torch.allclose(cuda_ans.cpu(), cpu_ans, atol=1e-3, rtol=1e-3)
+    print("Test passed!")
+
     lib.destroyReformDescriptor(descriptor)
 
 def test_bang(lib):
@@ -56,11 +63,8 @@ def test_bang(lib):
     descriptor = lib.createReformDescriptor(device, None)
     
     # compare with cpu results
-    x, cpu_ans = test_cpu(lib)
+    x, cpu_ans = run_cpu(lib)
     _, bang_ans = test(lib, descriptor, "mlu", x)
-    print(x)
-    print(cpu_ans)
-    print(bang_ans.cpu())
     
     assert torch.allclose(bang_ans.cpu(), cpu_ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")
