@@ -154,5 +154,17 @@ task("install-operators")
         os.exec("mkdir -p $(projectdir)/lib/")
         os.exec("cp $(projectdir)/build/linux/x86_64/release/liboperators.so $(projectdir)/lib/")
         os.exec("cp -r $(projectdir)/include $(projectdir)/lib/")
-        os.exec("echo 'export INFINI_ROOT=$INFINI_ROOT:$PWD/lib' >> ~/.bashrc")
+        -- Define color codes
+        local GREEN = '\27[0;32m'
+        local YELLOW = '\27[1;33m'
+        local NC = '\27[0m'  -- No Color
+
+        -- Get the current directory
+        local current_dir = os.curdir()
+
+        -- Output messages with colors
+        os.exec("echo -e '" .. GREEN .. "Compilation completed successfully." .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "To set the environment variable, please run the following command:" .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "echo \"export INFINI_ROOT=" .. current_dir .. "/lib\" >> ~/.bashrc" .. NC .. "'")
+
     end)
