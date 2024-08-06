@@ -67,7 +67,7 @@ void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor
 
                  // Use Broadcast Mul to calc t * theta_n
                  size_t outerWorkspaceSize;
-                 cnnlGetOpTensorWorkspaceSize_v2(handle, outerDesc, &one,
+                 cnnlGetOpTensorWorkspaceSize_v2(handle, descriptor->outerDesc, &one,
                                                  posDesc, pos.data,
                                                  &one, thetaDesc, thetaData,
                                                  &zero, freqDesc, freqData,
@@ -97,7 +97,7 @@ void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor
                          powWorkspace, powWorkspaceSize, thetaDesc, thetaData);
 
 
-                 cnnlOpTensor(handle, outerDesc, &one,
+                 cnnlOpTensor(handle, descriptor->outerDesc, &one,
                               posDesc, pos.data,
                               &one, thetaDesc, thetaData,
                               outerWorkspace, outerWorkspaceSize,
@@ -112,7 +112,7 @@ void rotary_embedding_cnnl_f16(RotaryEmbeddingBangDescriptor *descriptor, Tensor
                             freqConcatDesc, freqConcatData);
 
                  // Do RotaryEmbedding with t(fp16) and [freq, freq](fp32)
-                 cnnlRotaryEmbedding_v2(handle, ropeDesc, inDesc, t.data,
+                 cnnlRotaryEmbedding_v2(handle, descriptor->ropeDesc, inDesc, t.data,
                                         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
                                         freqConcatDesc, freqConcatData,
                                         nullptr, nullptr, nullptr, 0,
