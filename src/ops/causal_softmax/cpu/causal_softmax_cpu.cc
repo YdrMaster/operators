@@ -2,7 +2,6 @@
 #include "../../../devices/cpu/common_cpu.h"
 #include "../../utils.h"
 #include <algorithm>
-#include <iostream>
 
 void causal_softmax_cpu_f16(Tensor y) {
     uint64_t ndim = y.layout->ndim;
