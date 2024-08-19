@@ -36,7 +36,7 @@ def test(lib, descriptor, torch_device):
     # print(ans)
     # print("=======================================================")
     # print(y[:, :2048])
-    assert torch.allclose(y[:, :2048], ans, atol=1e-1, rtol=1e-3)
+    assert torch.allclose(y[:, :2048], ans, atol=1e-3, rtol=1e-3)
     print("Test passed!")
 
 
