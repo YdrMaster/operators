@@ -9,7 +9,7 @@ const int NRAM_MAX_SIZE = 1024 * 256;//the maximum NRAM memory is 1024 * 768
 const int GDRAM_MAX_SIZE = 1024 * 1024 * 1024;
 
 // set cnnl tensor descriptor without strides11
-inline void setCnnlTensor(cnnlTensorDescriptor_t desc, const TensorLayout* layout) {
+inline void setCnnlTensor(cnnlTensorDescriptor_t desc, const TensorDescriptor *layout) {
     std::vector<int> dims(layout->ndim);
     for (uint64_t i = 0; i < layout->ndim; i++) {
         dims[i] = static_cast<int>(layout->shape[i]);
@@ -19,7 +19,7 @@ inline void setCnnlTensor(cnnlTensorDescriptor_t desc, const TensorLayout* layou
 }
 
 // set cnnl tensor descriptor with strides
-inline void setCnnlTensorEx(cnnlTensorDescriptor_t desc, const TensorLayout *layout) {
+inline void setCnnlTensorEx(cnnlTensorDescriptor_t desc, const TensorDescriptor *layout) {
     std::vector<int> dim_size(layout->ndim), dim_stride(layout->ndim);
     for (uint64_t i = 0; i < layout->ndim; i++) {
         dim_size[i] = static_cast<int>(layout->shape[i]);
@@ -29,4 +29,4 @@ inline void setCnnlTensorEx(cnnlTensorDescriptor_t desc, const TensorLayout *lay
                               dim_size.size(), dim_size.data(), dim_stride.data());
 }
 
-#endif  // __COMMON_BANG_H__
+#endif// __COMMON_BANG_H__
