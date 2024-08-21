@@ -131,6 +131,7 @@ target("operators")
         add_deps("cambricon-mlu")
     end
     set_languages("cxx17")
+    add_files("src/devices/handle.cc")
     add_files("src/ops/*/operator.cc")
     add_files("src/tensor/*.cc")
 target_end()

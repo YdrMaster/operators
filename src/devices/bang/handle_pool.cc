@@ -2,6 +2,7 @@
 #include <vector>
 #include "handle_pool.h"
 
+// @deprecated
 const Pool<cnnlHandle_t> &get_cnnl_pool() {
     int device_id;
     cnrtGetDevice(&device_id);
