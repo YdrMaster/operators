@@ -11,7 +11,7 @@ struct TensorDescriptor {
     uint64_t ndim;
     // Shape of the tensor, ndim elements
     uint64_t *shape;
-    // Stride of each dimension IN BYTES, ndim elements
+    // Stride of each dimension in elements, ndim elements
     int64_t *strides;
 };
 

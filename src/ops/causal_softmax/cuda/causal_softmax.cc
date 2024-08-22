@@ -13,13 +13,12 @@ infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
     if (!dtype_eq(y->dt, F16)) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
-    unsigned long int dsize = y->dt.size;
     unsigned long int total_seq_len = y->shape[ndim - 1];
     unsigned long int seq_len = y->shape[ndim - 2];
     unsigned long int batch_size = 1;
     unsigned long int stride_b = 0;
-    unsigned long int stride_i = y->strides[ndim - 2] / dsize;
-    unsigned long int stride_j = y->strides[ndim - 1] / dsize;
+    unsigned long int stride_i = y->strides[ndim - 2];
+    unsigned long int stride_j = y->strides[ndim - 1];
     if (stride_j != 1) {
         return STATUS_BAD_TENSOR_STRIDES;
     }
@@ -27,7 +26,7 @@ infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
         batch_size *= y->shape[i];
     }
     if (ndim == 3)
-        stride_b = y->strides[ndim - 3] / dsize;
+        stride_b = y->strides[ndim - 3];
     unsigned int max_items_per_thread = ROUND_UP_DIV(total_seq_len, MAX_THREADS_PER_BLOCK);
 
     *desc_ptr = new CausalSoftmaxCudaDescriptor{

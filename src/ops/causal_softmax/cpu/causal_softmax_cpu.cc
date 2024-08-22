@@ -13,15 +13,14 @@ infiniopStatus_t cpuCreateCausalSoftmaxDescriptor(infiniopHandle_t,
     if (!dtype_eq(y->dt, F16)) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
-    uint64_t dsize = y->dt.size;// single data size in bytes
     uint64_t total_seq_len = y->shape[ndim - 1];
     uint64_t seq_len = y->shape[ndim - 2];
     uint64_t batch_size = 1;
-    uint64_t stride_j = y->strides[ndim - 1] / dsize;
-    uint64_t stride_i = y->strides[ndim - 2] / dsize;
+    uint64_t stride_j = y->strides[ndim - 1];
+    uint64_t stride_i = y->strides[ndim - 2];
     uint64_t stride_b = 0;
     if (ndim == 3)
-        stride_b = y->strides[ndim - 3] / dsize;
+        stride_b = y->strides[ndim - 3];
     for (size_t i = 0; i < ndim - 2; i++) {
         batch_size *= y->shape[i];
     }

@@ -19,9 +19,7 @@ def to_tensor(tensor, lib, shape=None, strides=None):
         shape = (ctypes.c_uint64 * ndim)(*shape)
     # Get strides in bytes
     if strides is None:
-        strides = (ctypes.c_int64 * ndim)(
-            *(s * tensor.element_size() for s in tensor.stride())
-        )
+        strides = (ctypes.c_int64 * ndim)(*(tensor.stride()))
     else:
         strides = (ctypes.c_int64 * ndim)(*strides)
     data_ptr = tensor.data_ptr()
