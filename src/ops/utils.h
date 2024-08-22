@@ -1,6 +1,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include "data_type.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -23,4 +24,18 @@ inline void assert_true(int expr, const char *msg, const char *file, int line) {
     exit(EXIT_FAILURE)
 
 #define ROUND_UP_DIV(x, y) ((x + y - 1) / y)
+
+// check if two data layouts (types) are equal
+inline bool dtype_eq(DataLayout a, DataLayout b) {
+    union TypePun {
+        DataLayout layout;
+        int i;
+    } pun;
+    pun.layout = a;
+    auto a_ = pun.i;
+    pun.layout = b;
+    auto b_ = pun.i;
+    return a_ == b_;
+}
+
 #endif// __UTILS_H__
