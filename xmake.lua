@@ -137,14 +137,6 @@ target("operators")
     add_files("src/tensor/*.cc")
 target_end()
 
-target("main")
-    set_kind("binary")
-    add_deps("operators")
-
-    set_languages("c11")
-    add_files("src/main.c")
-target_end()
-
 task("install-operators")
     set_menu {
         usage = "xmake install-operators",

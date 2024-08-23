@@ -47,13 +47,13 @@ __C infiniopStatus_t infiniopDestroyHandle(infiniopHandle_t handle) {
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            delete (infiniopHandle_t) handle;
+            delete (CudaHandle_t) handle;
             return STATUS_SUCCESS;
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            delete (infiniopHandle_t) handle;
+            delete (BangHandle_t) handle;
             return STATUS_SUCCESS;
         }
 #endif
