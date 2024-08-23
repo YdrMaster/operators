@@ -7,4 +7,6 @@ enum DeviceEnum {
     DevCambriconMlu,
 };
 
+typedef enum DeviceEnum Device;
+
 #endif// __DEVICE_H__

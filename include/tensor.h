@@ -4,20 +4,25 @@
 #include "data_type.h"
 #include <stdint.h>
 
-struct TensorLayout {
-    struct DataLayout dt;
+struct TensorDescriptor {
+    // Datatype
+    DT dt;
+    // Number of dimensions
     uint64_t ndim;
+    // Shape of the tensor, ndim elements
     uint64_t *shape;
+    // Stride of each dimension in elements, ndim elements
     int64_t *strides;
 };
 
-typedef struct TensorLayout *TensorDescriptor;
+typedef struct TensorDescriptor *infiniopTensorDescriptor_t;
 
+// @depricated
 struct TensorTuple {
-    TensorDescriptor const layout;
+    infiniopTensorDescriptor_t const layout;
     void *data;
 };
-
+// @depricated
 typedef struct TensorTuple Tensor;
 
 #endif// __TENSOR_H__

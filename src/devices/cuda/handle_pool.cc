@@ -2,6 +2,7 @@
 #include <vector>
 #include <cuda_runtime.h>
 
+// @deprecated
 const Pool<cublasHandle_t> &get_cublas_pool() {
     int device_id;
     cudaGetDevice(&device_id);

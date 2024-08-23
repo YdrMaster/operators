@@ -10,6 +10,8 @@ typedef struct DataLayout {
         exponent : 8;
 } DataLayout;
 
+typedef struct DataLayout DT;
+
 // clang-format off
 const static struct DataLayout
     I8   = {1, 1, 1,  7,  0},

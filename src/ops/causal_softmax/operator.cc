@@ -1,4 +1,5 @@
 #include "../utils.h"
+#include "operators.h"
 #include "ops/causal_softmax/causal_softmax.h"
 
 #ifdef ENABLE_CPU
@@ -9,79 +10,85 @@
 #include "cuda/causal_softmax.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-#include "bang/causal_softmax_cnnl.h"
 #include "bang/causal_softmax_bang.h"
+#include "bang/causal_softmax_cnnl.h"
 #endif
 
-struct CausalSoftmaxDescriptor {
-    Device device;
-};
-
-__C CausalSoftmaxDescriptor *createCausalSoftmaxDescriptor(Device device, void *config) {
-    switch (device) {
+__C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
+    infiniopHandle_t handle,
+    infiniopCausalSoftmaxDescriptor_t *desc_ptr,
+    infiniopTensorDescriptor_t y_desc) {
+    switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCpuDescriptor{device});
+            return cpuCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxCpuDescriptor_t *) desc_ptr, y_desc);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxCudaDescriptor{device});
+            return cudaCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxCudaDescriptor_t *) desc_ptr, y_desc);
         }
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            return (CausalSoftmaxDescriptor *) (new CausalSoftmaxBangDescriptor(device));
-        }
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
-    return nullptr;
+    return STATUS_BAD_DEVICE;
 }
 
-__C void destroyCausalSoftmaxDescriptor(CausalSoftmaxDescriptor *descriptor) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopGetCausalSoftmaxWorkspaceSize(infiniopCausalSoftmaxDescriptor_t desc, uint64_t *size) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (CausalSoftmaxCpuDescriptor *) (descriptor);
-            break;
+            return cpuGetCausalSoftmaxWorkspaceSize((CausalSoftmaxCpuDescriptor_t) desc, size);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            delete (CausalSoftmaxCudaDescriptor *) (descriptor);
-            break;
+        case DevNvGpu: {
+            return cudaGetCausalSoftmaxWorkspaceSize((CausalSoftmaxCudaDescriptor_t) desc, size);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            delete (CausalSoftmaxBangDescriptor *) (descriptor);
-            break;
-        }
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
 }
 
-__C void causalSoftmax(CausalSoftmaxDescriptor *descriptor, Tensor y, void *stream) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopCausalSoftmax(infiniopCausalSoftmaxDescriptor_t desc, void *workspace, uint64_t workspace_size, void *data, void *stream) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            causal_softmax_cpu_f16(y);
-            break;
+            return cpuCausalSoftmax((CausalSoftmaxCpuDescriptor_t) desc, workspace, workspace_size, data, stream);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            causal_softmax_nv_gpu_f16((CausalSoftmaxCudaDescriptor *) descriptor, y, stream);
-            break;
+        case DevNvGpu: {
+            return cudaCausalSoftmax((CausalSoftmaxCudaDescriptor_t) desc, workspace, workspace_size, data, stream);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            // causal_softmax_bang_f16(y, y, stream);
-            causal_softmax_cnnl_f16(y, stream);
-            break;
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
+}
+
+__C infiniopStatus_t infiniopDestroyCausalSoftmaxDescriptor(infiniopCausalSoftmaxDescriptor_t desc) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuDestroyCausalSoftmaxDescriptor((CausalSoftmaxCpuDescriptor_t) desc);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return cudaDestroyCausalSoftmaxDescriptor((CausalSoftmaxCudaDescriptor_t) desc);
+        }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        // TODO
+#endif
+    }
+    return STATUS_BAD_DEVICE;
 }

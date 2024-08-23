@@ -3,21 +3,60 @@
 #include "../../utils.h"
 #include <algorithm>
 
-void causal_softmax_cpu_f16(Tensor y) {
-    uint64_t ndim = y.layout->ndim;
-    ASSERT(ndim == 2 || ndim == 3);
-    uint64_t total_seq_len = y.layout->shape[ndim - 1];
-    uint64_t seq_len = y.layout->shape[ndim - 2];
+infiniopStatus_t cpuCreateCausalSoftmaxDescriptor(infiniopHandle_t,
+                                                  CausalSoftmaxCpuDescriptor_t *desc_ptr,
+                                                  infiniopTensorDescriptor_t y) {
+    uint64_t ndim = y->ndim;
+    if (ndim != 2 && ndim != 3) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
+    if (!dtype_eq(y->dt, F16)) {
+        return STATUS_BAD_TENSOR_DTYPE;
+    }
+    uint64_t total_seq_len = y->shape[ndim - 1];
+    uint64_t seq_len = y->shape[ndim - 2];
     uint64_t batch_size = 1;
-    uint64_t stride_j = y.layout->strides[ndim - 1] / 2;
-    uint64_t stride_i = y.layout->strides[ndim - 2] / 2;
+    uint64_t stride_j = y->strides[ndim - 1];
+    uint64_t stride_i = y->strides[ndim - 2];
     uint64_t stride_b = 0;
     if (ndim == 3)
-        stride_b = y.layout->strides[ndim - 3] / 2;
+        stride_b = y->strides[ndim - 3];
     for (size_t i = 0; i < ndim - 2; i++) {
-        batch_size *= y.layout->shape[i];
+        batch_size *= y->shape[i];
     }
-    auto y_ptr = reinterpret_cast<uint16_t *>(y.data);
+
+    *desc_ptr = new CausalSoftmaxCpuDescriptor{
+        DevCpu,
+        y->dt,
+        batch_size,
+        stride_b,
+        seq_len,
+        stride_i,
+        total_seq_len,
+        stride_j};
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t cpuGetCausalSoftmaxWorkspaceSize(CausalSoftmaxCpuDescriptor_t desc, uint64_t *size) {
+    *size = 0;
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t cpuDestroyCausalSoftmaxDescriptor(CausalSoftmaxCpuDescriptor_t desc) {
+    delete desc;
+    return STATUS_SUCCESS;
+}
+
+
+void causal_softmax_cpu_f16(CausalSoftmaxCpuDescriptor_t desc, void* y) {
+    uint64_t total_seq_len = desc->total_seq_len;
+    uint64_t seq_len = desc->seq_len;
+    uint64_t batch_size = desc->batch_size;
+    uint64_t stride_j = desc->stride_j;
+    uint64_t stride_i = desc->stride_i;
+    uint64_t stride_b = desc->stride_b;
+    auto y_ptr = reinterpret_cast<uint16_t *>(y);
     for (size_t b = 0; b < batch_size; b++) {
         for (size_t i = 0; i < seq_len; i++) {
             uint64_t offset = b * stride_b + i * stride_i;
@@ -40,4 +79,17 @@ void causal_softmax_cpu_f16(Tensor y) {
             }
         }
     }
+}
+
+infiniopStatus_t cpuCausalSoftmax(CausalSoftmaxCpuDescriptor_t desc,
+                                  void *workspace,
+                                  uint64_t workspace_size,
+                                  void *data,
+                                  void *stream) {
+    if(dtype_eq(desc->dtype, F16)){
+        causal_softmax_cpu_f16(desc, data);
+        return STATUS_SUCCESS;
+    }
+
+    return STATUS_BAD_TENSOR_DTYPE;
 }

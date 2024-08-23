@@ -1,11 +1,9 @@
 ﻿#ifndef __OPERATORS_H__
 #define __OPERATORS_H__
 
-#include "data_type.h"
 #include "device.h"
 #include "tensor.h"
-
-typedef enum DeviceEnum Device;
-typedef struct DataLayout DT;
+#include "handle.h"
+#include "status.h"
 
 #endif// __OPERATORS_H__

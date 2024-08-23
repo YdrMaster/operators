@@ -66,6 +66,7 @@ if has_config("nv-gpu") then
 
         set_languages("cxx17")
         add_files("src/devices/cuda/*.cc", "src/ops/*/cuda/*.cu")
+        add_files("src/ops/*/cuda/*.cc")
     target_end()
 
 end
@@ -131,16 +132,9 @@ target("operators")
         add_deps("cambricon-mlu")
     end
     set_languages("cxx17")
+    add_files("src/devices/handle.cc")
     add_files("src/ops/*/operator.cc")
     add_files("src/tensor/*.cc")
-target_end()
-
-target("main")
-    set_kind("binary")
-    add_deps("operators")
-
-    set_languages("c11")
-    add_files("src/main.c")
 target_end()
 
 task("install-operators")

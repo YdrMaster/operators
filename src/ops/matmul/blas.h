@@ -17,7 +17,7 @@ typedef struct BlasMatrix {
 
     BlasMatrix() {}
 
-    BlasMatrix(TensorLayout *layout) {
+    BlasMatrix(TensorDescriptor *layout) {
         if (layout->ndim == 2) {
             this->ndim = 2;
             this->batch = 1;

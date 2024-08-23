@@ -1,6 +1,8 @@
 #ifndef REFORM_H
 #define REFORM_H
 
+/* @deprecated This operator is renamed, and the whole file will be removed. */
+
 #include "../../export.h"
 #include "../../operators.h"
 typedef struct ReformDescriptor ReformDescriptor;
