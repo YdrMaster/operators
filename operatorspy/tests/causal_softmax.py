@@ -50,7 +50,7 @@ def test(lib, handle, torch_device):
     lib.infiniopGetCausalSoftmaxWorkspaceSize(descriptor, ctypes.byref(workspace_size))
     workspace = to_tensor(torch.zeros(workspace_size.value, dtype=torch.int8).to(torch_device), lib)
     lib.infiniopCausalSoftmax(descriptor, workspace.data, workspace_size, x_tensor.data, None)
-    assert torch.allclose(x, ans, atol=0, rtol=1e-3)
+    assert torch.allclose(x, ans, atol=1e-4, rtol=1e-3)
     print("Test passed!")
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 

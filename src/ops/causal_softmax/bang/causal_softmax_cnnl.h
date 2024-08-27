@@ -1,17 +1,34 @@
 #ifndef __CNNL_CAUSAL_SOFTMAX_H__
 #define __CNNL_CAUSAL_SOFTMAX_H__
 
+#include "../../../devices/bang/bang_handle.h"
 #include "cnnl.h"
-#include "cnnl_extra.h"
 #include "operators.h"
+#include <vector>
 
-// @deprecated
-// struct CausalSoftmaxBangDescriptor {
-//     Device device;
-//     CausalSoftmaxBangDescriptor(Device device);
-// };
+struct CausalSoftmaxCnnlDescriptor {
+    Device device;
+    DT dtype;
+    BangHandle_t handle;
+    cnnlTensorDescriptor_t yDesc;
+    cnnlTensorDescriptor_t maskDesc;
+    std::vector<int> dims;
+};
 
-// @deprecated
-void causal_softmax_cnnl_f16(Tensor t, void *stream);
+typedef struct CausalSoftmaxCnnlDescriptor *CausalSoftmaxCnnlDescriptor_t;
 
-#endif// __CNNL_CAUSAL_SOFTMAX_H__
+infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+                                                   CausalSoftmaxCnnlDescriptor_t *desc_ptr,
+                                                   infiniopTensorDescriptor_t y_desc);
+
+infiniopStatus_t cnnlGetCausalSoftmaxWorkspaceSize(CausalSoftmaxCnnlDescriptor_t desc, unsigned long int *size);
+
+infiniopStatus_t cnnlCausalSoftmax(CausalSoftmaxCnnlDescriptor_t desc,
+                                   void *workspace,
+                                   unsigned long int workspace_size,
+                                   void *data,
+                                   void *stream);
+
+infiniopStatus_t cnnlDestroyCausalSoftmaxDescriptor(CausalSoftmaxCnnlDescriptor_t desc);
+
+#endif

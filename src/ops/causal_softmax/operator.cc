@@ -10,7 +10,8 @@
 #include "cuda/causal_softmax.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-#include "bang/causal_softmax.h"
+#include "bang/causal_softmax_bang.h"
+#include "bang/causal_softmax_cnnl.h"
 #endif
 
 __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(

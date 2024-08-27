@@ -2,10 +2,32 @@
 #define __BANG_CAUSAL_SOFTMAX_H__
 
 #include "../../utils.h"
-#include "cnrt.h"
 #include "operators.h"
 
-void causal_softmax_bang_f16(Tensor y, void *stream);
+struct CausalSoftmaxBangDescriptor {
+    Device device;
+    DT dtype;
+    int ndim;
+    int* stride;
+    int* shape;
+    int n;
+};
 
-#endif// __BANG_CAUSAL_SOFTMAX_H__
+typedef struct CausalSoftmaxBangDescriptor *CausalSoftmaxBangDescriptor_t;
 
+infiniopStatus_t bangCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+                                                   CausalSoftmaxBangDescriptor_t *desc_ptr,
+                                                   infiniopTensorDescriptor_t y_desc);
+
+infiniopStatus_t bangGetCausalSoftmaxWorkspaceSize(CausalSoftmaxBangDescriptor_t desc, unsigned long int *size);
+
+infiniopStatus_t bangCausalSoftmax(CausalSoftmaxBangDescriptor_t desc,
+                                   void *workspace,
+                                   unsigned long int workspace_size,
+                                   void *data,
+                                   void *stream);
+
+infiniopStatus_t bangDestroyCausalSoftmaxDescriptor(CausalSoftmaxBangDescriptor_t desc);
+
+
+#endif
