@@ -15,6 +15,7 @@ from operatorspy import (
     create_handle,
     destroy_handle,
     check_error,
+    rearrange_tensor,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -36,9 +37,14 @@ def causal_softmax(x):
     return torch.nn.functional.softmax(masked, dim=-1).to(type)
 
 
-def test(lib, handle, torch_device):
-    x = torch.rand((32, 20, 512), dtype=torch.float16).to(torch_device)
+def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float16):
+    print(
+        f"Testing CausalSoftmax on {torch_device} with x_shape:{x_shape} x_stride:{x_stride} dtype:{x_dtype}"
+    )
+    x = torch.rand(x_shape, dtype=x_dtype).to(torch_device)
     ans = causal_softmax(x)
+    if x_stride is not None:
+        x = rearrange_tensor(x, x_stride)
     x_tensor = to_tensor(x, lib)
     descriptor = infiniopCausalSoftmaxDescriptor_t()
     check_error(
@@ -48,34 +54,41 @@ def test(lib, handle, torch_device):
     )
     lib.infiniopCausalSoftmax(descriptor, None, 0, x_tensor.data, None)
     assert torch.allclose(x, ans, atol=0, rtol=1e-3)
-    print("Test passed!")
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
 
-def test_cpu(lib):
+def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    test(lib, handle, "cpu")
+    for x_shape, x_stride in test_cases:
+        test(lib, handle, "cpu", x_shape, x_stride)
     destroy_handle(lib, handle)
 
 
-def test_cuda(lib):
+def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    test(lib, handle, "cuda")
+    for x_shape, x_stride in test_cases:
+        test(lib, handle, "cuda", x_shape, x_stride)
     destroy_handle(lib, handle)
 
 
-def test_bang(lib):
+def test_bang(lib, test_cases):
     import torch_mlu
 
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
-    test(lib, handle, "mlu")
+    for x_shape, x_stride in test_cases:
+        test(lib, handle, "mlu", x_shape, x_stride)
     destroy_handle(lib, handle)
 
 
 if __name__ == "__main__":
+    test_cases = [
+        # x_shape, x_stride
+        ((32, 20, 512), None),
+        ((32, 20, 512), (20480, 512, 1)),
+    ]
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateCausalSoftmaxDescriptor.restype = c_int32
@@ -103,8 +116,11 @@ if __name__ == "__main__":
     ]
 
     if args.cpu:
-        test_cpu(lib)
+        test_cpu(lib, test_cases)
     if args.cuda:
-        test_cuda(lib)
+        test_cuda(lib, test_cases)
     if args.bang:
-        test_bang(lib)
+        test_bang(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang):
+        test_cpu(lib, test_cases)
+    print("Test passed!")

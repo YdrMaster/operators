@@ -8,20 +8,15 @@ def check_error(status):
         raise Exception("Error code " + str(status))
 
 
-# Convert PyTorch tensor to library Tensor
-def to_tensor(tensor, lib, shape=None, strides=None):
+def to_tensor(tensor, lib):
+    """
+    Convert a PyTorch tensor to a library Tensor(descriptor, data).
+    """
     import torch
 
     ndim = tensor.ndimension()
-    if shape is None:
-        shape = (ctypes.c_uint64 * ndim)(*tensor.shape)
-    else:
-        shape = (ctypes.c_uint64 * ndim)(*shape)
-    # Get strides in bytes
-    if strides is None:
-        strides = (ctypes.c_int64 * ndim)(*(tensor.stride()))
-    else:
-        strides = (ctypes.c_int64 * ndim)(*strides)
+    shape = (ctypes.c_uint64 * ndim)(*tensor.shape)
+    strides = (ctypes.c_int64 * ndim)(*(tensor.stride()))
     data_ptr = tensor.data_ptr()
     # fmt: off
     dt = (
@@ -60,3 +55,49 @@ def create_handle(lib, device, id=0):
 
 def destroy_handle(lib, handle):
     check_error(lib.infiniopDestroyHandle(handle))
+
+
+def rearrange_tensor(tensor, new_strides):
+    """
+    Given a PyTorch tensor and a list of new strides, return a new PyTorch tensor with the given strides.
+    """
+    import torch
+
+    shape = tensor.shape
+
+    new_size = [0] * len(shape)
+    left = 0
+    right = 0
+    for i in range(len(shape)):
+        if new_strides[i] > 0:
+            new_size[i] = (shape[i] - 1) * new_strides[i] + 1
+            right += new_strides[i] * (shape[i] - 1)
+        else:  # TODO: Support negative strides in the future
+            # new_size[i] = (shape[i] - 1) * (-new_strides[i]) + 1
+            # left += new_strides[i] * (shape[i] - 1)
+            raise ValueError("Negative strides are not supported yet")
+
+    # Create a new tensor with zeros
+    new_tensor = torch.zeros(
+        (right - left + 1,), dtype=tensor.dtype, device=tensor.device
+    )
+
+    # Generate indices for original tensor based on original strides
+    indices = [torch.arange(s) for s in shape]
+    mesh = torch.meshgrid(*indices, indexing="ij")
+
+    # Flatten indices for linear indexing
+    linear_indices = [m.flatten() for m in mesh]
+
+    # Calculate new positions based on new strides
+    new_positions = sum(
+        linear_indices[i] * new_strides[i] for i in range(len(shape))
+    ).to(tensor.device)
+    offset = -left
+    new_positions += offset
+
+    # Copy the original data to the new tensor
+    new_tensor.view(-1).index_add_(0, new_positions, tensor.view(-1))
+    new_tensor.set_(new_tensor.untyped_storage(), offset, shape, tuple(new_strides))
+
+    return new_tensor
