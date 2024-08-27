@@ -3,7 +3,7 @@
 infiniopStatus_t createBangHandle(BangHandle_t *handle_ptr, int device_id) {
     unsigned int device_count;
     cnrtGetDeviceCount(&device_count);
-    if (device_id >= device_count) {
+    if (device_id >= static_cast<int>(device_count)) {
         return STATUS_BAD_DEVICE;
     }
 

@@ -4,11 +4,13 @@
 #include "../../utils.h"
 #include "cnrt.h"
 
-CausalSoftmaxBangDescriptor::CausalSoftmaxBangDescriptor(Device device) {
-    this->device = device;
-    get_cnnl_pool();
-}
+// @deprecated
+// CausalSoftmaxBangDescriptor::CausalSoftmaxBangDescriptor(Device device) {
+//     this->device = device;
+//     get_cnnl_pool();
+// }
 
+// @deprecated
 void causal_softmax_cnnl_f16(Tensor t, void *stream) {
     ASSERT(t.layout->ndim >= 2);
     ASSERT(t.layout->shape[t.layout->ndim - 1] >= t.layout->shape[t.layout->ndim - 2]);
