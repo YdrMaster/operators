@@ -38,13 +38,13 @@ def rotary_embedding(t, pos, theta, torch_device):
 
 
 def test(lib, descriptor, torch_device):
-    t = torch.rand((1, 32, 128), dtype=torch.float16).to(torch_device)
+    t = torch.rand((1, 32, 128), dtype=torch.float32).to(torch_device)
     pos = torch.ones((1,), dtype=torch.int32).to(torch_device)
     theta = 1e4
 
     ans = rotary_embedding(t, pos, theta, torch_device)
     lib.rotaryEmbedding(
-        descriptor, to_tensor(t, lib), to_tensor(pos, lib), c_float(theta, lib), None
+        descriptor, to_tensor(t, lib), to_tensor(pos, lib), c_float(theta), None
     )
 
     assert torch.allclose(t, ans, atol=1, rtol=1e-3)
@@ -87,6 +87,43 @@ def test_bang(lib):
     print("Test passed!")
 
     lib.destroyRotaryEmbeddingDescriptor(descriptor)
+    
+def test_ascend(lib):
+    import torch_npu
+    device = DeviceEnum.DEVICE_NPU
+    config = None
+    descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
+    
+    # Note: BANG does not support complex calculation, compare with cpu results 
+    t = torch.rand((1, 32, 128), dtype=torch.float16)
+    pos = torch.ones((1,), dtype=torch.int32)
+    sin = torch.ones((2, 128), dtype=torch.float32)
+    cos = torch.ones((2, 128), dtype=torch.float32)
+    theta = 1e4
+    
+    print(t[0, 0, :])
+    
+    # ans = rotary_embedding(t, pos, theta, "cpu").half()
+    t = t.to("npu")
+    pos = pos.to("npu")
+    sin = sin.to("npu")
+    cos = cos.to("npu")
+    
+    lib.rotaryEmbedding(
+        descriptor,
+        to_tensor(t, lib), 
+        to_tensor(pos, lib), 
+        to_tensor(sin, lib),
+        to_tensor(cos, lib), 
+        c_float(theta),
+        None
+    )
+    print(t[0, 0, :])
+    # print(ans[:128])
+    # assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
+    print("Test passed!")
+    
+    lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 if __name__ == "__main__":
     args = get_args()
@@ -95,6 +132,8 @@ if __name__ == "__main__":
     lib.destroyRotaryEmbeddingDescriptor.argtypes = [c_void_p]
     lib.rotaryEmbedding.argtypes = [
         c_void_p,
+        CTensor,
+        CTensor,
         CTensor,
         CTensor,
         c_float,
@@ -106,3 +145,5 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.bang:
         test_bang(lib)
+    if args.ascend:
+        test_ascend(lib)

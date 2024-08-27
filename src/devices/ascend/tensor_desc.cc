@@ -35,12 +35,12 @@ void aclnnSetTensorDescriptor(aclnnTensorDesc_t desc, int64_t *shape, int64_t *s
     if (stride) {
         desc->stride = stride;
     } else {
-        // Use defaut stride
-        std::vector<int64_t> stride_v(ndim, 1);
+        auto stride_v = new int64_t(ndim);
+        stride_v[ndim - 1] = 1;
         for (int64_t i = ndim - 2; i >= 0; i--) {
             stride_v[i] = shape[i + 1] * stride_v[i + 1];
         }
-        desc->stride = stride_v.data();
+        desc->stride = stride_v;
     }
     desc->storageNdim = ndim;
     desc->storageShape = shape;

@@ -62,7 +62,7 @@ void rms_norm_aclnn_f16(RMSNormAclnnDescriptor *descriptor, Tensor y, Tensor x,
 
     uint64_t workspaceSize = 0;
     aclOpExecutor *executor;
-    // ERROR: rstdOut can not set nullptr
+    // Note: rstdOut can not set nullptr
     ret = aclnnRmsNormGetWorkspaceSize(tx, tgamma, epsilon, ty, trstd,
                                        &workspaceSize, &executor);
     CHECK_RET(

@@ -18,8 +18,8 @@ def swiglu(gate, up):
 
 
 def test(lib, descriptor, torch_device):
-    gate = torch.rand((1, 64), dtype=torch.float16).to(torch_device)
-    up = torch.rand((1, 64), dtype=torch.float16).to(torch_device)
+    gate = torch.rand((16, 64), dtype=torch.float16).to(torch_device)
+    up = torch.rand((16, 64), dtype=torch.float16).to(torch_device)
 
     ans = swiglu(gate, up)
     lib.swiglu(descriptor, to_tensor(gate, lib), to_tensor(up, lib), None)
@@ -49,6 +49,13 @@ def test_bang(lib):
     descriptor = lib.createSwigluDescriptor(device, None)
     test(lib, descriptor, "mlu")
     lib.destroySwigluDescriptor(descriptor)
+    
+def test_ascend(lib):
+    import torch_npu
+    device = DeviceEnum.DEVICE_NPU
+    descriptor = lib.createSwigluDescriptor(device, None)
+    test(lib, descriptor, "npu")
+    lib.destroySwigluDescriptor(descriptor)
 
 
 if __name__ == "__main__":
@@ -68,3 +75,5 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.bang:
         test_bang(lib)
+    if args.ascend:
+        test_ascend(lib)

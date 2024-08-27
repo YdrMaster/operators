@@ -10,6 +10,9 @@
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/reform_bang.h"
 #endif
+#ifdef ENABLE_ASCEND_NPU
+#include "ascend/reform.h"
+#endif
 
 struct ReformDescriptor {
     Device device;
@@ -30,6 +33,13 @@ __C ReformDescriptor *createReformDescriptor(Device device, void *config) {
         case DevCambriconMlu: {
             return (ReformDescriptor *) (new ReformBangDescriptor{device});
         }
+#endif
+#ifdef ENABLE_ASCEND_NPU
+    case DevAscendNpu: {
+        auto ascendDescriptor = new ReformAscendDescriptor(device);
+        ascendDescriptor->createAclnnDescriptors();
+        return (ReformDescriptor *) (ascendDescriptor);
+    }
 #endif
         default:
             PANIC(UnsupportedDevice);
@@ -55,6 +65,14 @@ __C void destroyReformDescriptor(ReformDescriptor *descriptor) {
             break;
         }
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            auto ascendDescriptor = (ReformAscendDescriptor *)(descriptor);
+            ascendDescriptor->destroyAclnnDescriptors();
+            delete ascendDescriptor;
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -75,6 +93,11 @@ __C void reform(ReformDescriptor *descriptor, Tensor y, Tensor x, void *stream) 
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu:
             reform_bang(y, x, stream);
+            break;
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            reform_aclnn((ReformAscendDescriptor *) (descriptor), y, x, stream);
             break;
 #endif
         default:

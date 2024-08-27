@@ -10,6 +10,9 @@
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/swiglu_cnnl.h"
 #endif
+#ifdef ENABLE_ASCEND_NPU
+#include "ascend/swiglu.h"
+#endif
 
 struct SwigluDescriptor {
     Device device;
@@ -30,6 +33,13 @@ __C void *createSwigluDescriptor(Device device, void *config) {
         auto bangDescriptor = new SwigluBangDescriptor(device);
         bangDescriptor->createCnnlDescriptors();
         return (SwigluDescriptor *) (bangDescriptor);
+    }
+#endif
+#ifdef ENABLE_ASCEND_NPU
+    case DevAscendNpu: {
+        auto ascendDescriptor = new SwigluAscendCDescriptor(device);
+        ascendDescriptor->createAclnnDescriptors();
+        return (SwigluDescriptor *) (ascendDescriptor);
     }
 #endif
     default:
@@ -58,6 +68,14 @@ __C void destroySwigluDescriptor(SwigluDescriptor *descriptor) {
             break;
         }
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            auto ascendDescriptor = (SwigluAscendCDescriptor *)(descriptor);
+            ascendDescriptor->destroyAclnnDescriptors();
+            delete ascendDescriptor;
+            break;
+        }
+#endif
         default:
             PANIC(UnsupportedDevice);
     }
@@ -80,7 +98,13 @@ __C void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stre
             swiglu_cnnl_f16((SwigluBangDescriptor *) (descriptor), gate, up, stream);
             break;
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            swiglu_aclnn_f16((SwigluAscendCDescriptor *) (descriptor), gate, up, stream);
+            break;
+#endif
         default:
+            // printf("The device code is: %d", descriptor->device);
             PANIC(UnsupportedDevice);
     }
 };

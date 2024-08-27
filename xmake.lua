@@ -26,7 +26,7 @@ option("ascend-npu")
     set_showmenu(true)
     set_description("Enable or disable Ascend NPU kernel")
     add_defines("ENABLE_ASCEND_NPU")
-
+option_end()
 
 if is_mode("debug") then
     add_cxflags("-g -O0")
@@ -112,32 +112,69 @@ end
 if has_config("ascend-npu") then
 
     add_defines("ENABLE_ASCEND_NPU")
-    local ascend_home = os.getenv("ASCEND_HOME")
-    print(ascend_home)
+    local ASCEND_HOME = os.getenv("ASCEND_HOME")
+    local SOC_VERSION = os.getenv("SOC_VERSION")
+
     -- Add include dirs
-    add_includedirs(ascend_home .. "/include")
-    add_includedirs(ascend_home .. "/include/aclnn")
-    -- add_includedirs(ascend_home .. "/include/ascendc/basic_api")
-    -- Add shared lib
-    add_linkdirs(ascend_home .. "/lib64")
+    add_includedirs(ASCEND_HOME .. "/include")
+    add_includedirs(ASCEND_HOME .. "/include/aclnn")
+    add_linkdirs(ASCEND_HOME .. "/lib64")
     add_links("libascendcl.so")
     add_links("libnnopbase.so")
-    add_links("libopapi.so")    
-    add_linkdirs(ascend_home .. "/../../driver/lib64/driver")
+    add_links("libopapi.so")
+    add_links("libruntime.so")  
+    add_linkdirs(ASCEND_HOME .. "/../../driver/lib64/driver")
     add_links("libascend_hal.so")
-
+    
+    
     target("ascend-npu")
-        set_kind("static")
         -- Other configs
+        set_kind("static")
         set_languages("cxx17")
+        -- Add files
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
-        -- -- npu
-        -- add_files("src/ops/*/ascend/*.cpp", {rule = "npu"})
-        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
-        -- add_includedirs(ascendc_cmake_dir)
         
-    target_end()
+        -- Add operator 
+        add_linkdirs("src/ops/swiglu/ascend/build/lib")
+        add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
+        add_links("libswiglu.so")
+        add_links("librope.so")
 
+        add_rpathdirs("src/ops/swiglu/ascend/build/lib")
+        add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
+        
+        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
+
+        -- before_build(function (target)
+        --     -- Add operator dirs here
+        --     local dirs = {"src/ops/swiglu/ascend"}
+        --     local soc_version = os.getenv("SOC_VERSION")
+        --     local ascend_home = os.getenv("ASCEND_HOME")
+
+        --     for _, dir in ipairs(dirs) do
+        --         local op_dir = path.absolute(dir)
+        --         -- local cur_dir = path.scriptdir()
+        --         -- print("CurDir: " .. curdir)
+        --         if not os.isdir(op_dir) then
+        --             print("Directory does not exist: " .. op_dir)
+        --             return
+        --         end
+        --         print("=============================")
+        --         print(op_dir)
+        --         os.cd(op_dir)
+        --         if os.isdir(op_dir .. "/build") then
+        --             os.rmdir(op_dir .. "/build")
+        --         end
+        --         os.execv("cmake", {"-B", "build", 
+        --                            "-DSOC_VERSION=" .. soc_version,
+        --                            "-DASCEND_CANN_PACKAGE_PATH=" .. ascend_home})
+        --         -- os.exec("cmake ..")
+        --         os.exec("cmake --build build")
+        --         os.cd(cur_dir)
+        --     end
+            
+        -- end)    
+    target_end()
 end
 
 target("operators")

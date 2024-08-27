@@ -8,6 +8,6 @@ typedef struct RotaryEmbeddingDescriptor RotaryEmbeddingDescriptor;
 
 __C __export void *createRotaryEmbeddingDescriptor(Device, void *config);
 __C __export void destroyRotaryEmbeddingDescriptor(RotaryEmbeddingDescriptor *descriptor);
-__C __export void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor pos, float theta, void *stream);
+__C __export void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor pos, Tensor sin, Tensor cos, float theta, void *stream);
 
 #endif
