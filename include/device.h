@@ -8,4 +8,6 @@ enum DeviceEnum {
     DevAscendNpu,
 };
 
+typedef enum DeviceEnum Device;
+
 #endif// __DEVICE_H__

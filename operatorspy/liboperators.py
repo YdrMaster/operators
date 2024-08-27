@@ -1,8 +1,9 @@
 import os
 import platform
 import ctypes
-from ctypes import c_void_p, c_int, c_int64, c_uint64, Structure, POINTER
+from ctypes import c_int, c_int64, c_uint64, Structure, POINTER
 from .data_layout import *
+from .devices import *
 
 Device = c_int
 Optype = c_int
@@ -10,7 +11,7 @@ Optype = c_int
 LIB_OPERATORS_DIR = "INFINI_ROOT"
 
 
-class TensorLayout(Structure):
+class TensorDescriptor(Structure):
     _fields_ = [
         ("dt", DataLayout),
         ("ndim", c_uint64),
@@ -19,11 +20,20 @@ class TensorLayout(Structure):
     ]
 
 
-TensorDescriptor = ctypes.POINTER(TensorLayout)
+infiniopTensorDescriptor_t = ctypes.POINTER(TensorDescriptor)
 
 
-class CTensor(Structure):
-    _fields_ = [("layout", TensorDescriptor), ("data", c_void_p)]
+class CTensor:
+    def __init__(self, desc, data):
+        self.descriptor = desc
+        self.data = data
+
+
+class Handle(Structure):
+    _fields_ = [("device", c_int)]
+
+
+infiniopHandle_t = POINTER(Handle)
 
 
 # Open operators library
@@ -39,58 +49,25 @@ def open_lib():
 
     system_name = platform.system()
     # Load the library
-    if system_name == 'Windows':
+    if system_name == "Windows":
         library_path = find_library_in_ld_path("operators.dll")
-    elif system_name == 'Linux':
+    elif system_name == "Linux":
         library_path = find_library_in_ld_path("liboperators.so")
 
     assert (
         library_path is not None
     ), f"Cannot find operators.dll or liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
     lib = ctypes.CDLL(library_path)
-    lib.createTensorDescriptor.argtypes = [
-        POINTER(POINTER(TensorLayout)),
+    lib.infiniopCreateTensorDescriptor.argtypes = [
+        POINTER(infiniopTensorDescriptor_t),
         c_uint64,
         POINTER(c_uint64),
         POINTER(c_int64),
         DataLayout,
     ]
+    lib.infiniopCreateHandle.argtypes = [POINTER(infiniopHandle_t), c_int, c_int]
+    lib.infiniopCreateHandle.restype = c_int
+    lib.infiniopDestroyHandle.argtypes = [infiniopHandle_t]
+    lib.infiniopDestroyHandle.restype = c_int
+
     return lib
-
-
-# Convert PyTorch tensor to library Tensor
-def to_tensor(tensor, lib):
-    import torch
-
-    ndim = tensor.ndimension()
-    shape = (ctypes.c_uint64 * ndim)(*tensor.shape)
-    # Get strides in bytes
-    strides = (ctypes.c_int64 * ndim)(
-        *(s * tensor.element_size() for s in tensor.stride())
-    )
-    data_ptr = tensor.data_ptr()
-    # fmt: off
-    dt = (
-        I8 if tensor.dtype == torch.int8 else
-        I16 if tensor.dtype == torch.int16 else
-        I32 if tensor.dtype == torch.int32 else
-        I64 if tensor.dtype == torch.int64 else
-        U8 if tensor.dtype == torch.uint8 else
-        F16 if tensor.dtype == torch.float16 else
-        BF16 if tensor.dtype == torch.bfloat16 else
-        F32 if tensor.dtype == torch.float32 else
-        F64 if tensor.dtype == torch.float64 else
-        # TODO: These following types may not be supported by older 
-        # versions of PyTorch.
-        U16 if tensor.dtype == torch.uint16 else
-        U32 if tensor.dtype == torch.uint32 else
-        U64 if tensor.dtype == torch.uint64 else
-        None
-    )
-    # fmt: on
-    assert dt is not None
-    # Create TensorDecriptor
-    tensor_desc = TensorDescriptor()
-    lib.createTensorDescriptor(ctypes.byref(tensor_desc), ndim, shape, strides, dt)
-    # Create Tensor
-    return CTensor(tensor_desc, ctypes.c_void_p(data_ptr))

@@ -1,5 +1,5 @@
 #include "../utils.h"
-#include "matmul.h"
+#include "ops/matmul/matmul.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/matmul_cpu.h"
@@ -31,21 +31,12 @@ __C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
     }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu: {
-        auto bangDescriptor = new MatmulBangDescriptor(device);
-        bangDescriptor->createCnnlDescriptors();
-        return (MatmulDescriptor *)(bangDescriptor);
-    }
+        case DevCambriconMlu: {
+            return (MatmulDescriptor *) (new MatmulBangDescriptor(device));
+        }
 #endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu: {
-        auto ascendDescriptor = new MatmulAclnnDescriptor(device);
-        ascendDescriptor->createAclnnDescriptors();
-        return (MatmulDescriptor *)(ascendDescriptor);
-    }
-#endif
-    default:
-        PANIC(UnsupportedDevice);
+        default:
+            PANIC(UnsupportedDevice);
     }
     return nullptr;
 }
@@ -63,23 +54,13 @@ __C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
         break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu: {
-        auto bangDescriptor = (MatmulBangDescriptor *)(descriptor);
-        bangDescriptor->destroyCnnlDescriptors();
-        delete bangDescriptor;
-        break;
-    }
+        case DevCambriconMlu: {
+            delete (MatmulBangDescriptor *) (descriptor);
+            break;
+        }
 #endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu: {
-        auto ascendDescriptor = (MatmulAclnnDescriptor *)(descriptor);
-        ascendDescriptor->destroyAclnnDescriptors();
-        delete ascendDescriptor;
-        break;
-    }
-#endif
-    default:
-        PANIC(UnsupportedDevice);
+        default:
+            PANIC(UnsupportedDevice);
     }
 }
 
@@ -97,16 +78,9 @@ __C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a,
         break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu:
-        matmul_cnnl_f16((MatmulBangDescriptor *)(descriptor), c, beta, a, b,
-                        alpha, stream);
-        break;
-#endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu:
-        matmul_aclnn_f16((MatmulAclnnDescriptor *)(descriptor), c, beta, a, b,
-                         alpha, stream);
-        break;
+        case DevCambriconMlu:
+            matmul_cnnl_f16(c, beta, a, b, alpha, stream);
+            break;
 #endif
     default:
         PANIC(UnsupportedDevice);

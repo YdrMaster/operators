@@ -1,5 +1,5 @@
 #include "../utils.h"
-#include "rms_norm.h"
+#include "ops/rms_norm/rms_norm.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/rms_norm_cpu.h"
@@ -30,21 +30,12 @@ __C RMSNormDescriptor *createRMSNormDescriptor(Device device, void *config) {
         return (RMSNormDescriptor *)(new RMSNormCudaDescriptor{device});
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu: {
-        auto bangDescriptor = new RMSNormBangDescriptor(device);
-        bangDescriptor->createCnnlDescriptors();
-        return (RMSNormDescriptor *)(bangDescriptor);
-    }
+        case DevCambriconMlu: {
+            return (RMSNormDescriptor *) (new RMSNormBangDescriptor(device));
+        }
 #endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu: {
-        auto ascendDescriptor = new RMSNormAclnnDescriptor(device);
-        ascendDescriptor->createAclnnDescriptors();
-        return (RMSNormDescriptor *)(ascendDescriptor);
-    }
-#endif
-    default:
-        PANIC(UnsupportedDevice);
+        default:
+            PANIC(UnsupportedDevice);
     }
     return nullptr;
 }
@@ -62,23 +53,13 @@ __C void destroyRMSNormDescriptor(RMSNormDescriptor *descriptor) {
         break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu: {
-        auto bangDescriptor = (RMSNormBangDescriptor *)(descriptor);
-        bangDescriptor->destroyCnnlDescriptors();
-        delete bangDescriptor;
-        break;
-    }
+        case DevCambriconMlu: {
+            delete (RMSNormBangDescriptor *) (descriptor);
+            break;
+        }
 #endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu: {
-        auto ascendDescriptor = (RMSNormAclnnDescriptor *)(descriptor);
-        ascendDescriptor->destroyAclnnDescriptors();
-        delete ascendDescriptor;
-        break;
-    }
-#endif
-    default:
-        PANIC(UnsupportedDevice);
+        default:
+            PANIC(UnsupportedDevice);
     }
 }
 
@@ -96,20 +77,13 @@ __C void rmsNorm(RMSNormDescriptor *descriptor, Tensor y, Tensor x, Tensor w,
         break;
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu:
-        // Using BANGC Kernel
-        // rms_norm_bang_f16(y, x, w, epsilon, stream);
-        rms_norm_cnnl_f16((RMSNormBangDescriptor *)(descriptor), y, x, w,
-                          epsilon, stream);
-        break;
+        case DevCambriconMlu:
+            // Using BANGC Kernel
+            rms_norm_bang_f16(y, x, w, epsilon, stream);
+            // rms_norm_cnnl_f16(y, x, w, epsilon, stream);
+            break;
 #endif
-#ifdef ENABLE_ASCEND_NPU
-    case DevAscendNpu:
-        rms_norm_aclnn_f16((RMSNormAclnnDescriptor *)(descriptor), y, x, w,
-                           epsilon, stream);
-        break;
-#endif
-    default:
-        PANIC(UnsupportedDevice);
+        default:
+            PANIC(UnsupportedDevice);
     }
 }

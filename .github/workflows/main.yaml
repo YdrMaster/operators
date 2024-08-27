@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install Python dependencies
+      run: |
+        pip install torch
+
+    - name: Install xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+    
+    - name: configure xmake
+      run: xmake f --cpu=true -cv
+
+    - name: Build with XMake
+      run: xmake
+
+    - name: Find and Set INFINI_ROOT
+      id: set_infini_root
+      run: |
+        export INFINI_ROOT=$(dirname $(find ./build -name "*.so"))
+        echo "INFINI_ROOT=$INFINI_ROOT" >> $GITHUB_ENV
+
+    - name: Run Python Tests
+      run: |
+        GREEN='\033[0;32m'
+        RED='\033[0;31m'
+        NC='\033[0m' # No Color
+
+        PASSED_TESTS=()
+        FAILED_TESTS=()
+        for script in operatorspy/tests/*.py; do
+          if [ "$(basename $script)" != "__init__.py" ] && [ "$(basename $script)" != "test_utils.py" ]; then
+            echo "Running $script"
+            if ! python3 $script --cpu; then
+              echo "$script failed"
+              FAILED_TESTS+=($script)
+            else
+              echo "$script passed"
+              PASSED_TESTS+=($script)
+            fi
+          fi
+        done
+
+        if [ ${#FAILED_TESTS[@]} -ne 0 ]; then
+          echo "The following tests passed:"
+          for test in "${PASSED_TESTS[@]}"; do
+            echo -e "${GREEN}$test${NC}"
+          done
+          echo "The following tests failed:"
+          for test in "${FAILED_TESTS[@]}"; do
+            echo -e "${RED}$test${NC}"
+          done
+          exit 1
+        else
+          echo "The following tests passed:"
+          for test in "${PASSED_TESTS[@]}"; do
+          echo -e "${GREEN}$test${NC}"
+          done
+          echo "${GREEN}All tests passed${NC}"
+        fi
+      env:
+        INFINI_ROOT: ${{ env.INFINI_ROOT }}

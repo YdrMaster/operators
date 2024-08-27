@@ -5,8 +5,9 @@
 #include "cnrt.h"
 #include "../pool.h"
 
+// @deprecated
 const Pool<cnnlHandle_t> &get_cnnl_pool();
-
+// @deprecated
 template<typename T>
 void use_cnnl(cnrtQueue_t queue, T const &f) {
     auto &pool = get_cnnl_pool();

@@ -218,31 +218,38 @@ __global__ void fused_softmax_standard(
 }
 
 
-void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor *desc, Tensor y, void *stream) {
-    // TODO: only support 2d or 3d tensor
-    ASSERT(y.layout->ndim == 2 || y.layout->ndim == 3);
-    uint64_t total_seq_len = y.layout->shape[y.layout->ndim - 1];
-    uint64_t seq_len = y.layout->shape[y.layout->ndim - 2];
-    uint64_t batch_size = 1;
-    uint64_t stride_x = 1;
-    uint64_t stride_y = y.layout->strides[y.layout->ndim - 2] / 2;
-    uint64_t stride_z = y.layout->strides[y.layout->ndim - 1] / 2;
-    ASSERT(stride_z == 1); // the last dimension should be contiguous
-    for (size_t i = 0; i < y.layout->ndim - 2; i++) {
-        batch_size *= y.layout->shape[i];
-        stride_x *= y.layout->strides[i];
-    }
-    stride_x /= 2; // covert byte strides to element strides
+void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor_t desc, void* y, void *stream) {
+    unsigned long int total_seq_len = desc->total_seq_len;
+    unsigned long int seq_len = desc->seq_len;
+    unsigned long int batch_size = desc->batch_size;
+    unsigned long int stride_x = desc->stride_b;
+    unsigned long int stride_y = desc->stride_i;
+    unsigned long int stride_z = desc->stride_j;// covert byte strides to element strides
+    unsigned int max_items_per_thread = desc->max_items_per_thread;
+
     dim3 grid(batch_size, seq_len);
-    auto max_items_per_thread = ROUND_UP_DIV(total_seq_len, MAX_THREADS_PER_BLOCK);
+    
     if (max_items_per_thread == 1) {
         fused_softmax_padding<MAX_THREADS_PER_BLOCK>
-            <<<grid, total_seq_len, 0, (cudaStream_t) stream>>>((half *) (y.data), stride_x, stride_y, stride_z);
+            <<<grid, total_seq_len, 0, (cudaStream_t) stream>>>((half *) (y), stride_x, stride_y, stride_z);
     } else if (max_items_per_thread <= 16) {
         fused_softmax_folding<MAX_THREADS_PER_BLOCK, 16>
-            <<<grid, MAX_THREADS_PER_BLOCK, 0, (cudaStream_t) stream>>>((half *) (y.data), stride_x, stride_y, stride_z, total_seq_len);
+            <<<grid, MAX_THREADS_PER_BLOCK, 0, (cudaStream_t) stream>>>((half *) (y), stride_x, stride_y, stride_z, total_seq_len);
     } else {
         fused_softmax_standard<MAX_THREADS_PER_BLOCK>
-            <<<grid, MAX_THREADS_PER_BLOCK, 0, (cudaStream_t) stream>>>((half *) (y.data), stride_x, stride_y, stride_z, total_seq_len);
+            <<<grid, MAX_THREADS_PER_BLOCK, 0, (cudaStream_t) stream>>>((half *) (y), stride_x, stride_y, stride_z, total_seq_len);
     }
+}
+
+infiniopStatus_t cudaCausalSoftmax(CausalSoftmaxCudaDescriptor_t desc,
+                                   void *workspace,
+                                   unsigned long int workspace_size,
+                                   void *data,
+                                   void *stream){
+    if (dtype_eq(desc->dtype, F16)){
+        causal_softmax_nv_gpu_f16(desc, data, stream);
+        return STATUS_SUCCESS;
+    }
+
+    return STATUS_BAD_TENSOR_DTYPE;
 }

@@ -3,9 +3,9 @@
 
 #include <cublas_v2.h>
 #include "../pool.h"
-
+// @deprecated
 const Pool<cublasHandle_t> &get_cublas_pool(); 
-
+// @deprecated
 template<typename T>
 void use_cublas(cudaStream_t stream, T const &f) {
     auto &pool = get_cublas_pool();
