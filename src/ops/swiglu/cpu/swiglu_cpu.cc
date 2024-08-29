@@ -19,6 +19,10 @@ infiniopStatus_t cpuCreateSwiGLUDescriptor(infiniopHandle_t handle,
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
+    if (a_desc->strides[1] != 1 || b_desc->strides[1] != 1 || c_desc->strides[1] != 1) {
+        return STATUS_BAD_TENSOR_STRIDES;
+    }
+
     uint64_t seq_len = c_desc->shape[0],
              di = c_desc->shape[1];
 
