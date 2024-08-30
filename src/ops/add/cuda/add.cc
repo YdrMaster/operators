@@ -21,8 +21,8 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
     }
 
     // create cudnn handle
-    cudnnHandle_t handle_ptr;
-    checkCudnnError(cudnnCreate(&handle_ptr));
+    cudnnHandle_t cudnn_handle;
+    checkCudnnError(cudnnCreate(&cudnn_handle));
 
     // promote to dimension 4 if dimension is less than 4
     ndim = std::max(4UL, ndim);
@@ -39,7 +39,7 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
     *desc_ptr = new AddCudaDescriptor{
         DevNvGpu,
         c->dt,
-        handle_ptr,
+        cudnn_handle,
         ndim,
         shape,
         strides};
@@ -49,8 +49,8 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc) {
     cudnnDestroy(desc->handle);
-    delete desc->shape;
-    delete desc->strides;
+    delete[] desc->shape;
+    delete[] desc->strides;
     delete desc;
     return STATUS_SUCCESS;
 }
