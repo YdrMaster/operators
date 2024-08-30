@@ -7,8 +7,9 @@
 infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
                                                    CausalSoftmaxCnnlDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y) {
-    ASSERT(y->ndim >= 2);
-    ASSERT(y->shape[y->ndim - 1] >= y->shape[y->ndim - 2]);
+    if (y->ndim < 2 || y->shape[y->ndim - 1] < y->shape[y->ndim - 2]) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
 
     // cnnlMaskedSoftmax only support 4D or 5D tensors
     int ndim_ = std::max(static_cast<int>(y->ndim), 4);
@@ -70,7 +71,7 @@ infiniopStatus_t cnnlCausalSoftmax(CausalSoftmaxCnnlDescriptor_t desc,
         }
     }
 
-    cnrtMemcpy(workspace, mask_matrix, workspace_size, cnrtMemcpyHostToDev);
+    cnrtMemcpyAsync(workspace, mask_matrix, workspace_size, cnrtMemcpyHostToDev);
 
     use_cnnl(desc->handle, (cnrtQueue_t) stream,
              [&](cnnlHandle_t handle) {

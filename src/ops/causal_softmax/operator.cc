@@ -32,6 +32,7 @@ __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
             return bangCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxBangDescriptor_t *) desc_ptr, y_desc);
+            // return cnnlCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxCnnlDescriptor_t *) desc_ptr, y_desc);
         }
 
 #endif
@@ -54,6 +55,7 @@ __C infiniopStatus_t infiniopGetCausalSoftmaxWorkspaceSize(infiniopCausalSoftmax
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
             return bangGetCausalSoftmaxWorkspaceSize((CausalSoftmaxBangDescriptor_t) desc, size);
+            // return cnnlGetCausalSoftmaxWorkspaceSize((CausalSoftmaxCnnlDescriptor_t) desc, size);
         }
 
 #endif
@@ -76,6 +78,7 @@ __C infiniopStatus_t infiniopCausalSoftmax(infiniopCausalSoftmaxDescriptor_t des
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
             return bangCausalSoftmax((CausalSoftmaxBangDescriptor_t) desc, workspace, workspace_size, data, stream);
+            // return cnnlCausalSoftmax((CausalSoftmaxCnnlDescriptor_t) desc, workspace, workspace_size, data, stream);
         }
 
 #endif
@@ -98,6 +101,7 @@ __C infiniopStatus_t infiniopDestroyCausalSoftmaxDescriptor(infiniopCausalSoftma
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
             return bangDestroyCausalSoftmaxDescriptor((CausalSoftmaxBangDescriptor_t) desc);
+            // return cnnlDestroyCausalSoftmaxDescriptor((CausalSoftmaxCnnlDescriptor_t) desc);
         }
 
 #endif
