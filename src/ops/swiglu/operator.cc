@@ -28,7 +28,13 @@ __C infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t handle,
             return cudaCreateSwiGLUDescriptor(handle, (SwiGLUCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-            // TODO
+        case DevCambriconMlu: {
+            return bangCreateSwiGLUDescriptor(handle,
+                                              (SwiGLUBangDescriptor_t *) desc_ptr,
+                                              c_desc,
+                                              a_desc,
+                                              b_desc);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -49,7 +55,9 @@ __C infiniopStatus_t infiniopSwiGLU(infiniopSwiGLUDescriptor_t desc,
             return cudaSwiGLU((SwiGLUCudaDescriptor_t) desc, c, a, b, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-            // TODO
+        case DevCambriconMlu: {
+            return bangSwiGLU((SwiGLUBangDescriptor_t) desc, c, a, b, stream);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -66,7 +74,9 @@ __C infiniopStatus_t infiniopDestroySwiGLUDescriptor(infiniopSwiGLUDescriptor_t 
             return cudaDestroySwiGLUDescriptor((SwiGLUCudaDescriptor_t) desc);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-            // TODO
+        case DevCambriconMlu: {
+            return bangDestroySwiGLUDescriptor((SwiGLUBangDescriptor_t) desc);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;

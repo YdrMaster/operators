@@ -3,9 +3,9 @@
 
 #include "data_type.h"
 #include "tensor.h"
-#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 /* This file contains some useful macros and helper functions */
 
@@ -40,10 +40,10 @@ inline bool dtype_eq(DataLayout a, DataLayout b) {
     return a_ == b_;
 }
 
-inline std::vector<int64_t> get_byte_strides(infiniopTensorDescriptor_t desc){
+inline std::vector<int64_t> get_byte_strides(infiniopTensorDescriptor_t desc) {
     int64_t dsize = desc->dt.size;
     std::vector<int64_t> strides(desc->ndim);
-    for (int i = 0; i < desc->ndim; i++){
+    for (int i = 0; i < (int) desc->ndim; i++) {
         strides[i] = dsize * desc->strides[i];
     }
 
