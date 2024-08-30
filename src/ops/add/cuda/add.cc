@@ -48,7 +48,7 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
 }
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc) {
-    cudnnDestroy(desc->handle);
+    checkCudnnError(cudnnDestroy(desc->handle));
     delete[] desc->shape;
     delete[] desc->strides;
     delete desc;
