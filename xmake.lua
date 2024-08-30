@@ -55,11 +55,13 @@ if has_config("nv-gpu") then
 
         set_toolchains("cuda")
         add_links("cublas")
+        add_links("cudnn")
         add_cugencodes("native")
 
         if is_plat("windows") then
             add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
         else
+            add_cxxflags("-fPIC")
             add_cuflags("-Xcompiler=-fPIC")
             add_culdflags("-Xcompiler=-fPIC")
         end
