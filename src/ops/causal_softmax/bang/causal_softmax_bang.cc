@@ -1,7 +1,7 @@
 #include "causal_softmax_bang.h"
 #include "../../utils.h"
 
-infiniopStatus_t bangCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t bangCreateCausalSoftmaxDescriptor(BangHandle_t handle,
                                                    CausalSoftmaxBangDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y) {
     ASSERT(y->ndim >= 2);
@@ -21,7 +21,8 @@ infiniopStatus_t bangCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
     }
 
     *desc_ptr = new CausalSoftmaxBangDescriptor{
-        DevCambriconMlu,
+        handle->device,
+        handle->device_id,
         y->dt,
         ndim,
         stride,

@@ -790,6 +790,9 @@ infiniopStatus_t bangCausalSoftmax(CausalSoftmaxBangDescriptor_t desc,
                                    unsigned long int workspace_size,
                                    void *data,
                                    void *stream) {
+    if (cnrtSetDevice(desc->device_id) != cnrtSuccess) {
+        return STATUS_BAD_DEVICE;
+    }
     if (dtype_eq(desc->dtype, F16)) {
         causal_softmax_bang_f16(desc, workspace, data, stream);
         return STATUS_SUCCESS;

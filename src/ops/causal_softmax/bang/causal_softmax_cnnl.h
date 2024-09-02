@@ -8,8 +8,9 @@
 
 struct CausalSoftmaxCnnlDescriptor {
     Device device;
+    int device_id;
+    std::shared_ptr<Pool<cnnlHandle_t>> pool;
     DT dtype;
-    BangHandle_t handle;
     cnnlTensorDescriptor_t yDesc;
     cnnlTensorDescriptor_t maskDesc;
     std::vector<int> dims;
@@ -17,7 +18,7 @@ struct CausalSoftmaxCnnlDescriptor {
 
 typedef struct CausalSoftmaxCnnlDescriptor *CausalSoftmaxCnnlDescriptor_t;
 
-infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(BangHandle_t handle,
                                                    CausalSoftmaxCnnlDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y_desc);
 

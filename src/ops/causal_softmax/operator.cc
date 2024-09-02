@@ -10,6 +10,7 @@
 #include "cuda/causal_softmax.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
+#include "../../devices/bang/bang_handle.h"
 #include "bang/causal_softmax_bang.h"
 #include "bang/causal_softmax_cnnl.h"
 #endif
@@ -31,8 +32,8 @@ __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            return bangCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxBangDescriptor_t *) desc_ptr, y_desc);
-            // return cnnlCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxCnnlDescriptor_t *) desc_ptr, y_desc);
+            return bangCreateCausalSoftmaxDescriptor((BangHandle_t) handle, (CausalSoftmaxBangDescriptor_t *) desc_ptr, y_desc);
+            // return cnnlCreateCausalSoftmaxDescriptor((BangHandle_t) handle, (CausalSoftmaxCnnlDescriptor_t *) desc_ptr, y_desc);
         }
 
 #endif

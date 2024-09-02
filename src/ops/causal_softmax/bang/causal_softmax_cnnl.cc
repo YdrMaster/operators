@@ -4,7 +4,7 @@
 #include "../../utils.h"
 #include "cnnl_extra.h"
 
-infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(BangHandle_t handle,
                                                    CausalSoftmaxCnnlDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y) {
     if (y->ndim < 2 || y->shape[y->ndim - 1] < y->shape[y->ndim - 2]) {
@@ -27,9 +27,10 @@ infiniopStatus_t cnnlCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
                             dims.size(), dims.data());
 
     *desc_ptr = new CausalSoftmaxCnnlDescriptor{
-        DevCambriconMlu,
+        handle->device,
+        handle->device_id,
+        handle->cnnl_handles,
         y->dt,
-        (BangHandle_t) handle,
         std::move(yDesc),
         std::move(maskDesc),
         std::move(dims)};
@@ -54,6 +55,9 @@ infiniopStatus_t cnnlCausalSoftmax(CausalSoftmaxCnnlDescriptor_t desc,
                                    unsigned long int workspace_size,
                                    void *data,
                                    void *stream) {
+    if (cnrtSetDevice(desc->device_id) != cnrtSuccess) {
+        return STATUS_BAD_DEVICE;
+    }
     bool mask_matrix[desc->dims[0]][desc->dims[1]][desc->dims[2]][desc->dims[3]];
 
     // 填充上三角矩阵（右上角为 false）
@@ -71,9 +75,9 @@ infiniopStatus_t cnnlCausalSoftmax(CausalSoftmaxCnnlDescriptor_t desc,
         }
     }
 
-    cnrtMemcpyAsync(workspace, mask_matrix, workspace_size, cnrtMemcpyHostToDev);
+    cnrtMemcpyAsync(workspace, mask_matrix, workspace_size, (cnrtQueue_t) stream, cnrtMemcpyHostToDev);
 
-    use_cnnl(desc->handle, (cnrtQueue_t) stream,
+    use_cnnl(desc->pool, desc->device_id, (cnrtQueue_t) stream,
              [&](cnnlHandle_t handle) {
                  cnnlMaskedSoftmax(handle, CNNL_MASKED_SOFTMAX_MASKED_FILL,
                                    -1, 1.0, desc->yDesc, data, desc->maskDesc, workspace,
