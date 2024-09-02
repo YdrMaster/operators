@@ -6,7 +6,7 @@
 #include "cpu/add_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
-#include "../../devices/cuda/common_cuda.h"
+#include "../../devices/cuda/cuda_handle.h"
 #include "cuda/add.cuh"
 #endif
 
@@ -24,7 +24,7 @@ __C infiniopStatus_t infiniopCreateAddDescriptor(
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateAddDescriptor(handle, (AddCudaDescriptor_t *) desc_ptr, c, a, b, device_id);
+            return cudaCreateAddDescriptor((CudaHandle_t) handle, (AddCudaDescriptor_t *) desc_ptr, c, a, b, device_id);
         }
 
 #endif

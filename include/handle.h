@@ -6,7 +6,6 @@
 
 typedef struct HandleStruct {
     Device device;
-    cudnnHandle_t cudnn_handle;
 } HandleStruct;
 
 typedef HandleStruct *infiniopHandle_t;

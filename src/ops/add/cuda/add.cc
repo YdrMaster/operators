@@ -2,7 +2,7 @@
 #include "../../../devices/cuda/common_cuda.h"
 #include "../../utils.h"
 
-infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t handle,
                                          AddCudaDescriptor_t *desc_ptr,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,

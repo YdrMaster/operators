@@ -2,6 +2,7 @@
 #define __CUDA_ADD_H__
 
 #include "../../../devices/cuda/common_cuda.h"
+#include "../../../devices/cuda/cuda_handle.h"
 #include "operators.h"
 #include <cudnn.h>
 
@@ -18,7 +19,7 @@ struct AddCudaDescriptor {
 
 typedef struct AddCudaDescriptor *AddCudaDescriptor_t;
 
-infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t,
+infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t,
                                          AddCudaDescriptor_t *,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,

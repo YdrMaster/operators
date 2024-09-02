@@ -8,12 +8,14 @@
 #include <stdexcept>
 #include <string>
 
-#define checkCudaError(call)                             \
+#define checkCudaErrorWithCode(call, errorCode)          \
     do {                                                 \
         if (auto status = call; status != cudaSuccess) { \
-            return STATUS_EXECUTION_FAILED;              \
+            return errorCode;                            \
         }                                                \
     } while (0)
+
+#define checkCudaError(call) checkCudaErrorWithCode(call, STATUS_BAD_DEVICE)
 
 #define checkCudnnError(call)                                     \
     do {                                                          \
