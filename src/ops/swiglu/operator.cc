@@ -1,4 +1,5 @@
 #include "../utils.h"
+#include "operators.h"
 #include "ops/swiglu/swiglu.h"
 
 #ifdef ENABLE_CPU
@@ -12,77 +13,61 @@
 #include "bang/swiglu_cnnl.h"
 #endif
 
-struct SwigluDescriptor {
-    Device device;
-};
-
-__C void *createSwigluDescriptor(Device device, void *config) {
-    switch (device) {
-#ifdef ENABLE_CPU
-    case DevCpu:
-        return (SwigluDescriptor *) (new SwigluCpuDescriptor{device});
-#endif
-#ifdef ENABLE_NV_GPU
-    case DevNvGpu:
-        return (SwigluDescriptor *) (new SwigluCudaDescriptor{device});
-#endif
-#ifdef ENABLE_CAMBRICON_MLU
-    case DevCambriconMlu: {
-        auto bangDescriptor = new SwigluBangDescriptor(device);
-        bangDescriptor->createCnnlDescriptors();
-        return (SwigluDescriptor *) (bangDescriptor);
-    }
-#endif
-    default:
-        PANIC(UnsupportedDevice);
-    }
-    return nullptr;
-};
-
-__C void destroySwigluDescriptor(SwigluDescriptor *descriptor) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t handle,
+                                                    infiniopSwiGLUDescriptor_t *desc_ptr,
+                                                    infiniopTensorDescriptor_t c_desc,
+                                                    infiniopTensorDescriptor_t a_desc,
+                                                    infiniopTensorDescriptor_t b_desc) {
+    switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (SwigluCpuDescriptor *) (descriptor);
-            break;
+            return cpuCreateSwiGLUDescriptor(handle, (SwiGLUCpuDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            delete (SwigluCudaDescriptor *) (descriptor);
-            break;
+            return cudaCreateSwiGLUDescriptor(handle, (SwiGLUCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            auto bangDescriptor = (SwigluBangDescriptor *) (descriptor);
-            bangDescriptor->destroyCnnlDescriptors();
-            delete bangDescriptor;
-            break;
-        }
+            // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
+};
+
+__C infiniopStatus_t infiniopSwiGLU(infiniopSwiGLUDescriptor_t desc,
+                                    void *c,
+                                    void *a,
+                                    void *b,
+                                    void *stream) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuSwiGLU((SwiGLUCpuDescriptor_t) desc, c, a, b, stream);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu:
+            return cudaSwiGLU((SwiGLUCudaDescriptor_t) desc, c, a, b, stream);
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+            // TODO
+#endif
+    }
+    return STATUS_BAD_DEVICE;
 }
 
-__C void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stream) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopDestroySwiGLUDescriptor(infiniopSwiGLUDescriptor_t desc) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            swiglu_cpu_f16(gate, up);
-            break;
+            return cpuDestroySwiGLUDescriptor((SwiGLUCpuDescriptor_t) desc);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            swiglu_nv_gpu_f16(gate, up, stream);
-            break;
+            return cudaDestroySwiGLUDescriptor((SwiGLUCudaDescriptor_t) desc);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            // swiglu_cnnl_f16((SwigluBangDescriptor *) (descriptor), gate, up, stream);
-            swiglu_bang_f16(gate, up, stream);
-            break;
+            // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
-};
+    return STATUS_BAD_DEVICE;
+}
