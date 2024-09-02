@@ -50,4 +50,5 @@ inline std::vector<int64_t> get_byte_strides(infiniopTensorDescriptor_t desc){
     return strides;
 }
 
+
 #endif// __UTILS_H__

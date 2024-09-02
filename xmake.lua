@@ -153,45 +153,16 @@ if has_config("ascend-npu") then
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         
         -- Add operator 
-        add_linkdirs("src/ops/swiglu/ascend/build/lib")
-        add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
-        add_links("libswiglu.so")
-        add_links("librope.so")
+        -- add_linkdirs("src/ops/swiglu/ascend/build/lib")
+        -- add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
+        -- add_links("libswiglu.so")
+        -- add_links("librope.so")
 
-        add_rpathdirs("src/ops/swiglu/ascend/build/lib")
-        add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
+        -- add_rpathdirs("src/ops/swiglu/ascend/build/lib")
+        -- add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
         
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
 
-        -- before_build(function (target)
-        --     -- Add operator dirs here
-        --     local dirs = {"src/ops/swiglu/ascend"}
-        --     local soc_version = os.getenv("SOC_VERSION")
-        --     local ascend_home = os.getenv("ASCEND_HOME")
-
-        --     for _, dir in ipairs(dirs) do
-        --         local op_dir = path.absolute(dir)
-        --         -- local cur_dir = path.scriptdir()
-        --         -- print("CurDir: " .. curdir)
-        --         if not os.isdir(op_dir) then
-        --             print("Directory does not exist: " .. op_dir)
-        --             return
-        --         end
-        --         print("=============================")
-        --         print(op_dir)
-        --         os.cd(op_dir)
-        --         if os.isdir(op_dir .. "/build") then
-        --             os.rmdir(op_dir .. "/build")
-        --         end
-        --         os.execv("cmake", {"-B", "build", 
-        --                            "-DSOC_VERSION=" .. soc_version,
-        --                            "-DASCEND_CANN_PACKAGE_PATH=" .. ascend_home})
-        --         -- os.exec("cmake ..")
-        --         os.exec("cmake --build build")
-        --         os.cd(cur_dir)
-        --     end
-            
-        -- end)    
     target_end()
 end
 

@@ -1,22 +1,5 @@
 #include "common_ascend.h"
 
-inline std::vector<int64_t> castToInt64_t(uint64_t *v, uint64_t size) {
-    std::vector<int64_t> out(size);
-    for (size_t i = 0; i < size; ++i) {
-        out[i] = static_cast<int64_t>(v[i]);
-    }
-
-    return out;
-}
-
-inline int64_t getShapeSize(const std::vector<int64_t> &shape) {
-    int64_t shape_size = 1;
-    for (auto i : shape) {
-        shape_size *= i;
-    }
-    return shape_size;
-}
-
 int64_t numElements(const int64_t *shape, int64_t num) {
     int64_t numEle = 1;
     for (int i = 0; i < num; i++) {

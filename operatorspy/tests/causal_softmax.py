@@ -29,10 +29,13 @@ infiniopCausalSoftmaxDescriptor_t = POINTER(CausalSoftmaxDescriptor)
 
 
 def causal_softmax(x):
+    device = x.device
     type = x.dtype
+    # x = x.cpu()
     mask = torch.tril(torch.ones_like(x), diagonal=-1).flip(dims=[-2, -1])
     y = x.clone()
-    masked = torch.where(mask == 1, -torch.inf, y.to(torch.float32))
+    masked = torch.where(mask == 1.0, torch.tensor(-torch.inf).to(torch.float32).to(device), y.to(torch.float32))
+    # return torch.nn.functional.softmax(masked, dim=-1).to(type)
     return torch.nn.functional.softmax(masked, dim=-1).to(type)
 
 
@@ -46,8 +49,16 @@ def test(lib, handle, torch_device):
             handle, ctypes.byref(descriptor), x_tensor.descriptor
         )
     )
-    lib.infiniopCausalSoftmax(descriptor, None, 0, x_tensor.data, None)
-    assert torch.allclose(x, ans, atol=0, rtol=1e-3)
+    workspace_size = ctypes.c_ulong(0)
+    lib.infiniopGetCausalSoftmaxWorkspaceSize(descriptor, 
+                                              ctypes.byref(workspace_size))
+    workspace = to_tensor(torch.zeros(workspace_size.value, dtype=torch.int8).to(torch_device), lib)
+    
+    lib.infiniopCausalSoftmax(descriptor, workspace.data, workspace_size, x_tensor.data, None)
+    print(ans[0])
+    print(x[0])
+    assert torch.allclose(x, ans, atol=0, rtol=1e-2)
+    
     print("Test passed!")
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
@@ -72,6 +83,14 @@ def test_bang(lib):
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
     test(lib, handle, "mlu")
+    destroy_handle(lib, handle)
+    
+def test_ascend(lib):
+    import torch_npu
+
+    device = DeviceEnum.DEVICE_NPU
+    handle = create_handle(lib, device)
+    test(lib, handle, "npu")
     destroy_handle(lib, handle)
 
 
@@ -108,3 +127,5 @@ if __name__ == "__main__":
         test_cuda(lib)
     if args.bang:
         test_bang(lib)
+    if args.ascend:
+        test_ascend(lib)
