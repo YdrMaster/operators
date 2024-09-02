@@ -2,9 +2,11 @@
 #define __CUDA_CAUSAL_SOFTMAX_H__
 
 #include "operators.h"
+#include "../../../devices/cuda/cuda_handle.h"
 
 struct CausalSoftmaxCudaDescriptor {
     Device device;
+    int device_id;
     DT dtype;
     unsigned long int batch_size;
     unsigned long int stride_b;
@@ -17,7 +19,7 @@ struct CausalSoftmaxCudaDescriptor {
 
 typedef struct CausalSoftmaxCudaDescriptor *CausalSoftmaxCudaDescriptor_t;
 
-infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(CudaHandle_t handle,
                                                    CausalSoftmaxCudaDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y_desc);
 

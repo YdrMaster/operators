@@ -8,6 +8,7 @@
 #ifdef ENABLE_NV_GPU
 #include "../../devices/cuda/common_cuda.h"
 #include "cuda/causal_softmax.cuh"
+#include "../../devices/cuda/cuda_handle.h"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/causal_softmax_bang.h"
@@ -25,7 +26,7 @@ __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxCudaDescriptor_t *) desc_ptr, y_desc);
+            return cudaCreateCausalSoftmaxDescriptor((CudaHandle_t)handle, (CausalSoftmaxCudaDescriptor_t *) desc_ptr, y_desc);
         }
 
 #endif
