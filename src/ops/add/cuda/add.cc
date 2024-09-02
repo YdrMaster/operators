@@ -6,7 +6,8 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
                                          AddCudaDescriptor_t *desc_ptr,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,
-                                         infiniopTensorDescriptor_t b) {
+                                         infiniopTensorDescriptor_t b,
+                                         int device_id) {
     uint64_t ndim = c->ndim;
     if (ndim > 5 || ndim != a->ndim || ndim != b->ndim) {
         return STATUS_BAD_TENSOR_SHAPE;
@@ -16,13 +17,9 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
             return STATUS_BAD_TENSOR_SHAPE;
         }
     }
-    if (!dtype_eq(c->dt, F16) || !dtype_eq(a->dt, F16) || !dtype_eq(b->dt, F16)) {
+    if (!dtype_eq(c->dt, F16) || c->dt != a->dt || c->dt != b->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
-
-    // create cudnn handle
-    cudnnHandle_t cudnn_handle;
-    checkCudnnError(cudnnCreate(&cudnn_handle));
 
     // promote to dimension 4 if dimension is less than 4
     ndim = std::max(4UL, ndim);
@@ -36,21 +33,40 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t handle,
         strides[i] = i < old_dim ? static_cast<int32_t>(c->strides[i]) : 1;
     }
 
+    // create and set tensor descriptors for tensors a, b, and c
+    cudnnTensorDescriptor_t tensor_desc;
+    checkCudnnError(cudnnCreateTensorDescriptor(&tensor_desc));
+    checkCudnnError(cudnnSetTensorNdDescriptor(tensor_desc, CUDNN_DATA_HALF, ndim, shape, strides));
+
+    // set operator descriptor
+    cudnnOpTensorDescriptor_t op_desc;
+    checkCudnnError(cudnnCreateOpTensorDescriptor(&op_desc));
+    checkCudnnError(cudnnSetOpTensorDescriptor(
+        op_desc, CUDNN_OP_TENSOR_ADD, CUDNN_DATA_FLOAT, CUDNN_NOT_PROPAGATE_NAN));
+
+    const float alpha = 1.0f;
+    const float beta = 0.0f;
+
     *desc_ptr = new AddCudaDescriptor{
         DevNvGpu,
         c->dt,
-        cudnn_handle,
-        ndim,
-        shape,
-        strides};
+        device_id,
+        &handle->cudnn_handle,
+        tensor_desc,
+        op_desc,
+        alpha,
+        beta};
+
+    delete[] shape;
+    delete[] strides;
 
     return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc) {
-    checkCudnnError(cudnnDestroy(desc->handle));
-    delete[] desc->shape;
-    delete[] desc->strides;
+    checkCudnnError(cudnnDestroyOpTensorDescriptor(desc->op_desc));
+    checkCudnnError(cudnnDestroyTensorDescriptor(desc->tensor_desc));
+    desc->handle = nullptr;
     delete desc;
     return STATUS_SUCCESS;
 }

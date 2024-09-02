@@ -37,6 +37,7 @@ def test(
     tensor_shape,
     tensor_stride=None,
     tensor_dtype=torch.float16,
+    device_id = 0
 ):
     print(
         f"Testing Add on {torch_device} with tensor_shape:{tensor_shape} tensor_stride:{tensor_stride} dtype:{tensor_dtype}"
@@ -58,6 +59,7 @@ def test(
             c_tensor.descriptor,
             a_tensor.descriptor,
             b_tensor.descriptor,
+            device_id
         )
     )
     lib.infiniopAdd(

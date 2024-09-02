@@ -16,7 +16,7 @@ infiniopStatus_t cpuCreateAddDescriptor(infiniopHandle_t,
             return STATUS_BAD_TENSOR_SHAPE;
         }
     }
-    if (!dtype_eq(c->dt, F16) || !dtype_eq(a->dt, F16) || !dtype_eq(b->dt, F16)) {
+    if (!dtype_eq(c->dt, F16) || c->dt != a->dt || c->dt != b->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
@@ -35,7 +35,7 @@ infiniopStatus_t cpuDestroyAddDescriptor(AddCpuDescriptor_t desc) {
     return STATUS_SUCCESS;
 }
 
-void add_cpu_f16(AddCpuDescriptor_t desc, void *c, void *a, void *b) {
+void add_cpu_f16(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
     auto a_ = reinterpret_cast<uint16_t const *>(a);
     auto b_ = reinterpret_cast<uint16_t const *>(b);
     auto c_ = reinterpret_cast<uint16_t *>(c);
@@ -45,9 +45,7 @@ void add_cpu_f16(AddCpuDescriptor_t desc, void *c, void *a, void *b) {
 }
 
 infiniopStatus_t cpuAdd(AddCpuDescriptor_t desc,
-                        void *workspace,
-                        uint64_t workspace_size,
-                        void *c, void *a, void *b,
+                        void *c, void const *a, void const *b,
                         void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
         add_cpu_f16(desc, c, a, b);

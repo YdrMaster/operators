@@ -47,6 +47,7 @@ __C infiniopStatus_t infiniopDestroyHandle(infiniopHandle_t handle) {
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
+            checkCudnnError(cudnnDestroy(handle->cudnn_handle));
             delete (CudaHandle_t) handle;
             return STATUS_SUCCESS;
         }

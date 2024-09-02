@@ -8,16 +8,18 @@
 #include <stdexcept>
 #include <string>
 
-#define checkCudaError(call)                                                \
-    if (auto err = call; err != cudaSuccess)                                \
-    throw std::runtime_error(std::string("[") + __FILE__ + ":" +           \
-                              std::to_string(__LINE__) + "] CUDA error (" + \
-                              #call + "): " + cudaGetErrorString(err))
+#define checkCudaError(call)                             \
+    do {                                                 \
+        if (auto status = call; status != cudaSuccess) { \
+            return STATUS_EXECUTION_FAILED;              \
+        }                                                \
+    } while (0)
 
-#define checkCudnnError(call)                                               \
-    if (auto err = call; err != CUDNN_STATUS_SUCCESS)                       \
-    throw std::runtime_error(std::string("[") + __FILE__ + ":" +            \
-                             std::to_string(__LINE__) + "] cuDNN error (" + \
-                             #call + "): " + cudnnGetErrorString(err))
+#define checkCudnnError(call)                                     \
+    do {                                                          \
+        if (auto status = call; status != CUDNN_STATUS_SUCCESS) { \
+            return STATUS_EXECUTION_FAILED;                       \
+        }                                                         \
+    } while (0)
 
 #endif// __COMMON_CUDA_H__

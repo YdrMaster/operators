@@ -8,6 +8,18 @@ typedef struct DataLayout {
         size : 7,
         mantissa : 8,
         exponent : 8;
+
+    bool operator==(const DataLayout &other) const {
+        return packed == other.packed &&
+               sign == other.sign &&
+               size == other.size &&
+               mantissa == other.mantissa &&
+               exponent == other.exponent;
+    }
+
+    bool operator!=(const DataLayout &other) const {
+        return !(*this == other);
+    }
 } DataLayout;
 
 typedef struct DataLayout DT;

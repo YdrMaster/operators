@@ -8,10 +8,12 @@
 struct AddCudaDescriptor {
     Device device;
     DT dtype;
-    cudnnHandle_t handle;
-    uint64_t ndim;
-    int32_t *shape;
-    int32_t *strides;
+    int device_id;
+    cudnnHandle_t *handle;
+    cudnnTensorDescriptor_t tensor_desc;
+    cudnnOpTensorDescriptor_t op_desc;
+    const float alpha;
+    const float beta;
 };
 
 typedef struct AddCudaDescriptor *AddCudaDescriptor_t;
@@ -20,12 +22,11 @@ infiniopStatus_t cudaCreateAddDescriptor(infiniopHandle_t,
                                          AddCudaDescriptor_t *,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,
-                                         infiniopTensorDescriptor_t b);
+                                         infiniopTensorDescriptor_t b,
+                                         int device_id);
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
-                         void *workspace,
-                         uint64_t workspace_size,
-                         void *c, void *a, void *b,
+                         void *c, void const *a, void const *b,
                          void *stream);
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc);

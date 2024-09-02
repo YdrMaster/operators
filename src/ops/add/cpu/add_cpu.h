@@ -18,9 +18,7 @@ infiniopStatus_t cpuCreateAddDescriptor(infiniopHandle_t,
                                         infiniopTensorDescriptor_t b);
 
 infiniopStatus_t cpuAdd(AddCpuDescriptor_t desc,
-                        void *workspace,
-                        uint64_t workspace_size,
-                        void *c, void *a, void *b,
+                        void *c, void const *a, void const *b,
                         void *stream);
 
 infiniopStatus_t cpuDestroyAddDescriptor(AddCpuDescriptor_t desc);

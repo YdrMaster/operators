@@ -2,13 +2,16 @@
 #define CUDA_HANDLE_H
 
 #include "../pool.h"
+#include "common_cuda.h"
 #include "device.h"
 #include "status.h"
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#include <cudnn.h>
 
 struct CudaContext {
     Device device;
+    cudnnHandle_t cudnn_handle;
     int device_id;
     Pool<cublasHandle_t> cublas_handles;
 };
