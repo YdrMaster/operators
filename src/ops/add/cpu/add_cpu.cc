@@ -15,6 +15,9 @@ infiniopStatus_t cpuCreateAddDescriptor(infiniopHandle_t,
         if (a->shape[i] != b->shape[i] || a->shape[i] != c->shape[i]) {
             return STATUS_BAD_TENSOR_SHAPE;
         }
+        if (a->strides[i] != b->strides[i] || a->strides[i] != c->strides[i]) {
+            return STATUS_BAD_TENSOR_STRIDES;
+        }
     }
     if (!dtype_eq(c->dt, F16) || c->dt != a->dt || c->dt != b->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
