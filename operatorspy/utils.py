@@ -46,6 +46,11 @@ def to_tensor(tensor, lib):
     # Create Tensor
     return CTensor(tensor_desc, data_ptr)
 
+def create_workspace(size, torch_device):
+    if size == 0:
+        return None
+    import torch
+    return torch.zeros(size=(size,), dtype=torch.uint8, device=torch_device)
 
 def create_handle(lib, device, id=0):
     handle = infiniopHandle_t()
