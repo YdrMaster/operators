@@ -10,6 +10,7 @@
 #include "cuda/causal_softmax.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
+#include "../../devices/bang/bang_handle.h"
 #include "bang/causal_softmax_bang.h"
 #include "bang/causal_softmax_cnnl.h"
 #endif
@@ -30,7 +31,11 @@ __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangCreateCausalSoftmaxDescriptor((BangHandle_t) handle, (CausalSoftmaxBangDescriptor_t *) desc_ptr, y_desc);
+            // return cnnlCreateCausalSoftmaxDescriptor((BangHandle_t) handle, (CausalSoftmaxCnnlDescriptor_t *) desc_ptr, y_desc);
+        }
+
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -49,7 +54,11 @@ __C infiniopStatus_t infiniopGetCausalSoftmaxWorkspaceSize(infiniopCausalSoftmax
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangGetCausalSoftmaxWorkspaceSize((CausalSoftmaxBangDescriptor_t) desc, size);
+            // return cnnlGetCausalSoftmaxWorkspaceSize((CausalSoftmaxCnnlDescriptor_t) desc, size);
+        }
+
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -68,7 +77,11 @@ __C infiniopStatus_t infiniopCausalSoftmax(infiniopCausalSoftmaxDescriptor_t des
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangCausalSoftmax((CausalSoftmaxBangDescriptor_t) desc, workspace, workspace_size, data, stream);
+            // return cnnlCausalSoftmax((CausalSoftmaxCnnlDescriptor_t) desc, workspace, workspace_size, data, stream);
+        }
+
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -87,7 +100,11 @@ __C infiniopStatus_t infiniopDestroyCausalSoftmaxDescriptor(infiniopCausalSoftma
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangDestroyCausalSoftmaxDescriptor((CausalSoftmaxBangDescriptor_t) desc);
+            // return cnnlDestroyCausalSoftmaxDescriptor((CausalSoftmaxCnnlDescriptor_t) desc);
+        }
+
 #endif
     }
     return STATUS_BAD_DEVICE;

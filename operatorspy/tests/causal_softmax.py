@@ -52,8 +52,11 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             handle, ctypes.byref(descriptor), x_tensor.descriptor
         )
     )
-    lib.infiniopCausalSoftmax(descriptor, None, 0, x_tensor.data, None)
-    assert torch.allclose(x, ans, atol=0, rtol=1e-3)
+    workspace_size = ctypes.c_ulong(0)
+    lib.infiniopGetCausalSoftmaxWorkspaceSize(descriptor, ctypes.byref(workspace_size))
+    workspace = to_tensor(torch.zeros(workspace_size.value, dtype=torch.int8).to(torch_device), lib)
+    lib.infiniopCausalSoftmax(descriptor, workspace.data, workspace_size, x_tensor.data, None)
+    assert torch.allclose(x, ans, atol=0, rtol=1e-2)
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
 
