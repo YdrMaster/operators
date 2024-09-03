@@ -9,7 +9,9 @@ infiniopStatus_t createCudaHandle(CudaHandle_t* handle_ptr, int device_id) {
     }
     // Create a new cublas handle pool
     auto pool = Pool<cublasHandle_t>();
-    cudaSetDevice(device_id);
+    if (cudaSetDevice(device_id) != cudaSuccess){
+        return STATUS_BAD_DEVICE;
+    }
     cublasHandle_t handle;
     cublasCreate(&handle);
     pool.push(std::move(handle));

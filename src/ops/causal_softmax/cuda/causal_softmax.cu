@@ -246,6 +246,9 @@ infiniopStatus_t cudaCausalSoftmax(CausalSoftmaxCudaDescriptor_t desc,
                                    unsigned long int workspace_size,
                                    void *data,
                                    void *stream){
+    if(cudaSetDevice(desc->device_id) != cudaSuccess){
+        return STATUS_BAD_DEVICE;
+    }
     if (dtype_eq(desc->dtype, F16)){
         causal_softmax_nv_gpu_f16(desc, data, stream);
         return STATUS_SUCCESS;
