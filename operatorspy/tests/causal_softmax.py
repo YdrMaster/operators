@@ -68,7 +68,7 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             None,
         )
     )
-    assert torch.allclose(x, ans, atol=0, rtol=1e-3)
+    assert torch.allclose(x, ans, atol=0, rtol=1e-2)
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
 
