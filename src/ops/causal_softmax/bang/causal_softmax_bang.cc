@@ -4,8 +4,9 @@
 infiniopStatus_t bangCreateCausalSoftmaxDescriptor(BangHandle_t handle,
                                                    CausalSoftmaxBangDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y) {
-    ASSERT(y->ndim >= 2);
-    ASSERT(y->shape[y->ndim - 1] >= y->shape[y->ndim - 2]);
+    if (y->ndim < 2 || y->shape[y->ndim - 1] < y->shape[y->ndim - 2]) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
 
     int ndim = y->ndim;
     int *stride = new int[ndim];
