@@ -33,6 +33,10 @@ __C infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t handle,
 #ifdef ENABLE_CAMBRICON_MLU
             // TODO
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            return ascendCreateSwiGLUDescriptor(handle, (SwiGLUAscendDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+#endif
     }
     return STATUS_BAD_DEVICE;
 };
@@ -54,6 +58,10 @@ __C infiniopStatus_t infiniopSwiGLU(infiniopSwiGLUDescriptor_t desc,
 #ifdef ENABLE_CAMBRICON_MLU
             // TODO
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            return ascendSwiGLU((SwiGLUAscendDescriptor_t) desc, c, a, b, stream);
+#endif
     }
     return STATUS_BAD_DEVICE;
 }
@@ -70,6 +78,10 @@ __C infiniopStatus_t infiniopDestroySwiGLUDescriptor(infiniopSwiGLUDescriptor_t 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
             // TODO
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu:
+            return ascendDestroySwiGLUDescriptor((SwiGLUAscendDescriptor_t) desc);
 #endif
     }
     return STATUS_BAD_DEVICE;

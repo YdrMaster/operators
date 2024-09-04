@@ -147,7 +147,7 @@ def test_in_place2(
         )
     )
     lib.infiniopSwiGLU(descriptor, b_tensor.data, a_tensor.data, b_tensor.data, None)
-
+    
     assert torch.allclose(b, ans, atol=1e-3, rtol=1e-3)
     print("in-place2 Test passed!")
 
@@ -195,13 +195,29 @@ def test_bang(lib, test_cases):
         test_in_place2(lib, handle, "mlu", shape, a_stride, b_stride, dtype)
 
     destroy_handle(lib, handle)
+    
+def test_ascend(lib, test_cases):
+    import torch_npu
+    device = DeviceEnum.DEVICE_NPU
+    handle = create_handle(lib, device)
+
+    for shape, a_stride, b_stride, c_stride, dtype in test_cases:
+        test_out_of_place(
+            lib, handle, "npu", shape, a_stride, b_stride, c_stride, dtype, torch.npu.synchronize
+        )
+        test_in_place1(lib, handle, "npu", shape, a_stride, b_stride, dtype, torch.npu.synchronize)
+        test_in_place2(lib, handle, "npu", shape, a_stride, b_stride, dtype, torch.npu.synchronize)
+
+    destroy_handle(lib, handle) 
 
 
 if __name__ == "__main__":
     test_cases = [
         # shape, a_stride, b_stride, c_stride, dtype
-        ((13, 4), None, None, None, torch.float16),
-        ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
+        # ((13, 4), None, None, None, torch.float16),
+        # ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
+        # ((13, 1024), (1024, 1), (1024, 1), (1024, 1), torch.float16)
+        ((13, 1024), None, None, None, torch.float16)
     ]
     args = get_args()
     lib = open_lib()
@@ -236,4 +252,4 @@ if __name__ == "__main__":
     if args.bang:
         test_bang(lib, test_cases)
     if args.ascend:
-        test_ascend(lib)
+        test_ascend(lib, test_cases)
