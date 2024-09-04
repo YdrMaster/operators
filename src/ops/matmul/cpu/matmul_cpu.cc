@@ -3,7 +3,7 @@
 #include "../../utils.h"
 #include <cmath>
 
-infiniopStatus_t cpuCreateMatmulDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cpuCreateMatmulDescriptor(CpuHandle_t handle,
                                            MatmulCpuDescriptor_t *desc_ptr,
                                            infiniopTensorDescriptor_t c_desc,
                                            infiniopTensorDescriptor_t a_desc,

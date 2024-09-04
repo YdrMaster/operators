@@ -20,11 +20,11 @@ __C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuCreateMatmulDescriptor(handle, (MatmulCpuDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return cpuCreateMatmulDescriptor((CpuHandle_t) handle, (MatmulCpuDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateMatmulDescriptor(handle, (MatmulCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return cudaCreateMatmulDescriptor((CudaHandle_t) handle, (MatmulCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
@@ -61,7 +61,7 @@ __C infiniopStatus_t infiniopMatmul(infiniopMatmulDescriptor_t desc, void *works
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            return matmul_nv_gpu_f16((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha, stream);
+            return cudaMatmul((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
             // TODO
