@@ -203,10 +203,10 @@ def test_ascend(lib, test_cases):
 
     for shape, a_stride, b_stride, c_stride, dtype in test_cases:
         test_out_of_place(
-            lib, handle, "npu", shape, a_stride, b_stride, c_stride, dtype, torch.npu.synchronize
+            lib, handle, "npu", shape, a_stride, b_stride, c_stride, dtype
         )
-        test_in_place1(lib, handle, "npu", shape, a_stride, b_stride, dtype, torch.npu.synchronize)
-        test_in_place2(lib, handle, "npu", shape, a_stride, b_stride, dtype, torch.npu.synchronize)
+        test_in_place1(lib, handle, "npu", shape, a_stride, b_stride, dtype)
+        test_in_place2(lib, handle, "npu", shape, a_stride, b_stride, dtype)
 
     destroy_handle(lib, handle) 
 

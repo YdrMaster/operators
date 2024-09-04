@@ -43,7 +43,7 @@ __C infiniopStatus_t infiniopCreateCausalSoftmaxDescriptor(
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            return aclnnCreateCausalSoftmaxDescriptor(handle, (CausalSoftmaxAclnnDescriptor_t *) desc_ptr, y_desc);
+            return aclnnCreateCausalSoftmaxDescriptor((AscendHandle_t) handle, (CausalSoftmaxAclnnDescriptor_t *) desc_ptr, y_desc);
         }
 #endif
     }
