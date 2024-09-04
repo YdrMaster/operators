@@ -15,6 +15,7 @@ from operatorspy import (
     destroy_handle,
     check_error,
     rearrange_tensor,
+    create_workspace,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -80,11 +81,18 @@ def test(
             b_tensor.descriptor,
         )
     )
+
+    workspace_size = c_uint64(0)
+    check_error(
+        lib.infiniopGetMatmulWorkspaceSize(descriptor, ctypes.byref(workspace_size))
+    )
+    workspace = create_workspace(workspace_size.value, a.device)
+
     check_error(
         lib.infiniopMatmul(
             descriptor,
-            None,
-            0,
+            workspace.data if workspace is not None else None,
+            workspace_size.value,
             c_tensor.data,
             a_tensor.data,
             b_tensor.data,
