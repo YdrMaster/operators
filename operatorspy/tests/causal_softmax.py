@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    CTensor,
     DeviceEnum,
     infiniopHandle_t,
     infiniopTensorDescriptor_t,
@@ -16,6 +15,7 @@ from operatorspy import (
     destroy_handle,
     check_error,
     rearrange_tensor,
+    create_workspace,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -55,17 +55,23 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             handle, ctypes.byref(descriptor), x_tensor.descriptor
         )
     )
-    workspace_size = ctypes.c_ulong(0)
-    lib.infiniopGetCausalSoftmaxWorkspaceSize(descriptor, 
-                                              ctypes.byref(workspace_size))
-    workspace = to_tensor(torch.zeros(workspace_size.value, dtype=torch.int8).to(torch_device), lib)
-    
-    lib.infiniopCausalSoftmax(descriptor, workspace.data, workspace_size, x_tensor.data, None)
-    print(ans[0])
-    print(x[0])
+    workspace_size = c_uint64(0)
+    check_error(
+        lib.infiniopGetCausalSoftmaxWorkspaceSize(
+            descriptor, ctypes.byref(workspace_size)
+        )
+    )
+    workspace = create_workspace(workspace_size.value, x.device)
+    check_error(
+        lib.infiniopCausalSoftmax(
+            descriptor,
+            workspace.data if workspace is not None else None,
+            workspace_size.value,
+            x_tensor.data,
+            None,
+        )
+    )
     assert torch.allclose(x, ans, atol=0, rtol=1e-2)
-    
-    print("Test passed!")
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
 
