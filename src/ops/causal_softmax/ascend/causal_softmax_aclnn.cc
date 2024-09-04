@@ -1,14 +1,16 @@
 #include "causal_softmax_aclnn.h"
 #include "utils.h"
 
-CausalSoftmaxAclnnDescriptor::CausalSoftmaxAclnnDescriptor(Device device) {
-    this->device = device;
+CausalSoftmaxAclnnDescriptor::CausalSoftmaxAclnnDescriptor(Device _device) {
+    device = _device;
+    handle = nullptr;
     aDesc = new aclnnTensorDescriptor();
     maskDesc = new aclnnTensorDescriptor();
     outDesc = new aclnnTensorDescriptor();
+    workspaceSize = 0;
 }
 
-infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
                                                     CausalSoftmaxAclnnDescriptor_t *desc_ptr,
                                                     infiniopTensorDescriptor_t y) {
     // Construct CausalSoftmaxAclnnDescriptor
@@ -90,7 +92,7 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
     return status;
 }
 
-infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, unsigned long int *size) {
+infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, uint64_t *size) {
     auto &maskDesc = desc->maskDesc;
     auto &aDesc = desc->aDesc;
     auto &outDesc = desc->outDesc;
@@ -140,7 +142,7 @@ infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor
 
 infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
                                     void *workspace,
-                                    unsigned long int workspace_size,
+                                    uint64_t workspace_size,
                                     void *data,
                                     void *stream) {
     auto &aDesc = desc->aDesc;
@@ -163,7 +165,7 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
         for (int m = 0; m < dims[1]; ++m) {
             for (int n = 0; n < dims[2]; ++n) {
                 if (n - m > dims[2] - dims[1]) {
-                    // 0xF939 = -102400 half
+                    // 0xF939 = -10240 half
                     mask_matrix[i][m][n] = 0xF880;
                 } else {
                     mask_matrix[i][m][n] = 0;

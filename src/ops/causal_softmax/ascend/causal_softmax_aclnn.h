@@ -20,15 +20,15 @@ struct CausalSoftmaxAclnnDescriptor {
 
 typedef CausalSoftmaxAclnnDescriptor *CausalSoftmaxAclnnDescriptor_t;
 
-infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
                                                    CausalSoftmaxAclnnDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y_desc);
 
-infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, unsigned long int *size);
+infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, uint64_t *size);
 
 infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
                                    void *workspace,
-                                   unsigned long int workspace_size,
+                                   uint64_t workspace_size,
                                    void *data,
                                    void *stream);
 

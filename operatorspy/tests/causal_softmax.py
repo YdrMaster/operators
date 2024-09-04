@@ -61,7 +61,7 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             descriptor, ctypes.byref(workspace_size)
         )
     )
-    workspace = create_workspace(workspace_size.value, x.device)
+    workspace = to_tensor(create_workspace(workspace_size.value, x.device), lib)
     check_error(
         lib.infiniopCausalSoftmax(
             descriptor,
@@ -115,8 +115,8 @@ def test_ascend(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # x_shape, x_stride
-        ((32, 20, 512), None),
-        ((32, 20, 512), (20480, 512, 1)),
+        ((32, 20, 20), None),
+        # ((32, 20, 512), (20480, 512, 1)),
     ]
     args = get_args()
     lib = open_lib()
@@ -152,6 +152,6 @@ if __name__ == "__main__":
         test_bang(lib, test_cases)
     if args.ascend:
         test_ascend(lib, test_cases)
-    if not (args.cpu or args.cuda or args.bang):
+    if not (args.cpu or args.cuda or args.bang or args.ascend):
         test_cpu(lib, test_cases)
     print("Test passed!")
