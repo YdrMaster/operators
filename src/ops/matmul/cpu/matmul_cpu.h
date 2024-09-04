@@ -1,6 +1,7 @@
 #ifndef __CPU_MATMUL_H__
 #define __CPU_MATMUL_H__
 
+#include "../../../devices/cpu/cpu_handle.h"
 #include "../blas.h"
 #include "operators.h"
 
@@ -12,7 +13,7 @@ typedef struct MatmulCpuDescriptor {
 
 typedef struct MatmulCpuDescriptor *MatmulCpuDescriptor_t;
 
-infiniopStatus_t cpuCreateMatmulDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cpuCreateMatmulDescriptor(CpuHandle_t handle,
                                            MatmulCpuDescriptor_t *desc_ptr,
                                            infiniopTensorDescriptor_t c_desc,
                                            infiniopTensorDescriptor_t a_desc,
