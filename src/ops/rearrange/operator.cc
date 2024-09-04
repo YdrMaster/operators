@@ -1,6 +1,7 @@
 #include "../utils.h"
 #include "operators.h"
 #include "ops/rearrange/rearrange.h"
+#include "../../devices/cuda/cuda_handle.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/rearrange_cpu.h"
@@ -26,7 +27,7 @@ __C infiniopStatus_t infiniopCreateRearrangeDescriptor(
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateRearrangeDescriptor(handle, (RearrangeCudaDescriptor_t *) desc_ptr, dst, src);
+            return cudaCreateRearrangeDescriptor((CudaHandle_t)handle, (RearrangeCudaDescriptor_t *) desc_ptr, dst, src);
         }
 
 #endif
