@@ -93,8 +93,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
             descriptor, ctypes.byref(workspace_size)
         )
     )
-    workspace = create_workspace(workspace_size.value, torch_device)
-    print(type(workspace.data), len(workspace.data), workspace_size.value, type(workspace_size.value))
+    workspace = to_tensor(create_workspace(workspace_size.value, torch_device), lib)
     check_error(
         lib.infiniopRandomSample(
             descriptor,
