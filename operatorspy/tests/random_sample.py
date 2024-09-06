@@ -32,12 +32,13 @@ infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 def random_sample(data, topp, topk, voc, temperature):
     indices = torch.zeros([topk], dtype = torch.int32)
     dataNp = data.clone().numpy()
-    print(dataNp)
+    #print(dataNp)
     sorted_indices = np.argsort(dataNp)[::-1]  
     indices = sorted_indices[:topk] 
+    
     dataNp = dataNp[sorted_indices]
-    print(dataNp)
-    print(indices)
+    #print(dataNp)
+    #print(indices)
     globalM = dataNp[0]
     dataNp = torch.tensor((dataNp - globalM) / temperature)
     dataNp = torch.softmax(dataNp, dim = 0)
@@ -69,7 +70,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     print(
         f"Testing RandomSample on {torch_device} with voc:{voc} dtype:{x_dtype}"
     )
-    voc = 20
+    #voc = 20
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
     #data = torch.tensor(np.arange(voc), dtype=x_dtype).to(torch_device)
     
@@ -141,9 +142,7 @@ def test_bang(lib, test_cases):
 
 
 if __name__ == "__main__":
-    test_cases = [
-        (32, 20, 512),
-    ]
+    test_cases = [32, 20, 512]
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateRandomSampleDescriptor.restype = c_int32
