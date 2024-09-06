@@ -105,7 +105,6 @@ void swigluUnionDim_2(cnrtQueue_t queue, void const *a, void const *b, void *c, 
     k_type = CNRT_FUNC_TYPE_UNION1;
     
     swigluDim_2<T><<<k_dim, k_type, queue>>>(a_, b_, c_, stride_a, stride_b, stride_c, othersize, dimsize);
-    // cnrtQueueSync(queue);
     
 }
 
@@ -128,6 +127,9 @@ infiniopStatus_t bangSwiGLU(SwiGLUBangDescriptor_t desc,
                            void *a,
                            void *b,
                            void *stream){
+    if (cnrtSetDevice(desc->device_id) != cnrtSuccess) {
+        return STATUS_BAD_DEVICE;
+    }                        
     if (dtype_eq(desc->dtype, F16)) {
         swiglu_bang_f16(desc, a, b, c, stream);
         return STATUS_SUCCESS;

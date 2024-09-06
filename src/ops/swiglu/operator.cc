@@ -25,11 +25,11 @@ __C infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t handle,
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            return cudaCreateSwiGLUDescriptor(handle, (SwiGLUCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return cudaCreateSwiGLUDescriptor((CudaHandle_t) handle, (SwiGLUCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            return bangCreateSwiGLUDescriptor(handle,
+            return bangCreateSwiGLUDescriptor((BangHandle_t) handle,
                                               (SwiGLUBangDescriptor_t *) desc_ptr,
                                               c_desc,
                                               a_desc,

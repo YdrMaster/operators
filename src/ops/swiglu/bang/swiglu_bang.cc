@@ -1,7 +1,7 @@
-#include "../../utils.h"
 #include "swiglu_bang.h"
+#include "../../utils.h"
 
-infiniopStatus_t bangCreateSwiGLUDescriptor(infiniopHandle_t handle,
+infiniopStatus_t bangCreateSwiGLUDescriptor(BangHandle_t handle,
                                             SwiGLUBangDescriptor_t *desc_ptr,
                                             infiniopTensorDescriptor_t c_desc,
                                             infiniopTensorDescriptor_t a_desc,
@@ -33,7 +33,8 @@ infiniopStatus_t bangCreateSwiGLUDescriptor(infiniopHandle_t handle,
         return STATUS_BAD_PARAM;
     }
 
-    *desc_ptr = new SwiGLUBangDescriptor{DevCambriconMlu,
+    *desc_ptr = new SwiGLUBangDescriptor{handle->device,
+                                         handle->device_id,
                                          dtype,
                                          seq_len,
                                          di,
@@ -47,4 +48,3 @@ infiniopStatus_t bangDestroySwiGLUDescriptor(SwiGLUBangDescriptor_t desc) {
     delete desc;
     return STATUS_SUCCESS;
 }
-
