@@ -59,7 +59,7 @@ __C infiniopStatus_t infiniopGetRandomSampleWorkspaceSize(infiniopRandomSampleDe
 __C infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescriptor_t desc,
                                           void *workspace,
                                           uint64_t workspace_size,
-                                          uint64_t *result,
+                                          void *result,
                                           void *probs,
                                           float topp,
                                           int topk,

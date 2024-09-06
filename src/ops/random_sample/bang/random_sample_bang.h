@@ -23,7 +23,7 @@ infiniopStatus_t bangGetRandomSampleWorkspaceSize(RandomSampleBangDescriptor_t d
 infiniopStatus_t bangRandomSample(RandomSampleBangDescriptor_t desc,
                                   void *workspace,
                                   unsigned long int workspace_size,
-                                  uint64_t *result,
+                                  void *result,
                                   void *probs,
                                   float topp,
                                   int topk,

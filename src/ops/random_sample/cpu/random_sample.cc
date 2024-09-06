@@ -36,7 +36,7 @@ infiniopStatus_t cpuDestroyRandomSampleDescriptor(RandomSampleCpuDescriptor_t de
 
 
 void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
-                            uint64_t *result,
+                            void *result,
                             void *probs,
                             float topp,
                             int topk,
@@ -68,8 +68,8 @@ void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
             }
         }
     }
-    // for(int i = 0; i < topk; i++){
-    //     printf("%d ", indexTmp[i]);
+    // for (int i = 0; i < topk; i++) {
+    //     printf("%ld ", indexTmp[i]);
     // }
     // printf("\n");
     //做类似于softmax的temperature变换
@@ -119,7 +119,7 @@ void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
 infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  void *workspace,
                                  uint64_t workspace_size,
-                                 uint64_t *result,
+                                 void *result,
                                  void *probs,
                                  float topp,
                                  int topk,

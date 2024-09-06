@@ -19,7 +19,7 @@ infiniopStatus_t cpuGetRandomSampleWorkspaceSize(RandomSampleCpuDescriptor_t des
 infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  void *workspace,
                                  uint64_t workspace_size,
-                                 uint64_t *result,
+                                 void *result,
                                  void *probs,
                                  float topp,
                                  int topk,
