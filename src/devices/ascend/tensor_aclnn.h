@@ -26,7 +26,7 @@ struct aclnnTensorDescriptor {
     // Convert form InfiniOpTensorDescriptor
     infiniopStatus_t fromInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y_desc);
     infiniopStatus_t createTensor();
-    infiniopStatus_t destroyTensor(); 
+    infiniopStatus_t destroyTensor();
     ~aclnnTensorDescriptor();
 
     char *toString();
