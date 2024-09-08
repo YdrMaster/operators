@@ -69,6 +69,7 @@ if has_config("nv-gpu") then
         else
             add_cuflags("-Xcompiler=-fPIC")
             add_culdflags("-Xcompiler=-fPIC")
+            add_cxxflags("-fPIC")
         end
 
         set_languages("cxx17")
