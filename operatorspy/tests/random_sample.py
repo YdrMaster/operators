@@ -2,7 +2,6 @@ from ctypes import POINTER, Structure, c_int32, c_uint64, c_void_p, c_float
 import ctypes
 import sys
 import os
-import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from operatorspy import (
@@ -31,16 +30,16 @@ infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 
 def random_sample(data, topp, topk, voc, temperature):
     indices = torch.zeros([topk], dtype = torch.int32)
-    dataNp = data.clone().numpy()
+    dataNp = data.clone().detach()
     #print(dataNp)
-    sorted_indices = np.argsort(dataNp)[::-1]  
+    sorted_indices = torch.argsort(dataNp, descending=True)
     indices = sorted_indices[:topk] 
     
     dataNp = dataNp[sorted_indices]
     #print(dataNp)
     #print(indices)
     globalM = dataNp[0]
-    dataNp = torch.tensor((dataNp - globalM) / temperature)
+    dataNp = (dataNp - globalM) / temperature
     dataNp = torch.softmax(dataNp, dim = 0)
     sum_s = 0
     for end in range(topk):
@@ -63,7 +62,7 @@ def random_sample(data, topp, topk, voc, temperature):
     for i in range(end):
         sum_s += dataNp[i]
         if(rad < sum_s):
-            return torch.tensor(indices[i]).to(torch.int32)
+            return indices[i].to(torch.int32)
 
 
 def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
@@ -72,7 +71,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     )
     #voc = 20
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
-    #data = torch.tensor(np.arange(voc), dtype=x_dtype).to(torch_device)
+    
     
     indices = torch.zeros([1], dtype = torch.int32).to(torch_device)
     topp = 0.9
