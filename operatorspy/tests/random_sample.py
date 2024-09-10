@@ -31,13 +31,25 @@ infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 def random_sample(data, topp, topk, voc, temperature):
     indices = torch.zeros([topk], dtype = torch.int32)
     dataNp = data.clone().detach()
+    sorted_indices = torch.arange(voc)
     #print(dataNp)
-    sorted_indices = torch.argsort(dataNp, descending=True)
+    for i in range(topk):
+        for j in range(i + 1, voc):
+            if(dataNp[i] < dataNp[j]):
+                tmp = dataNp[i].clone().detach()
+                dataNp[i] = dataNp[j].clone().detach()
+                dataNp[j] = tmp
+
+                tmpInd = sorted_indices[i].clone().detach()
+                sorted_indices[i] = sorted_indices[j].clone().detach()
+                sorted_indices[j] = tmpInd
+                
+    #sorted_indices = torch.argsort(dataNp, descending=True)
     indices = sorted_indices[:topk] 
     
     dataNp = dataNp[sorted_indices]
     #print(dataNp)
-    #print(indices)
+    #print(indices, data[indices])
     globalM = dataNp[0]
     dataNp = (dataNp - globalM) / temperature
     dataNp = torch.softmax(dataNp, dim = 0)

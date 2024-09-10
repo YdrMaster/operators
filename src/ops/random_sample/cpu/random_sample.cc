@@ -72,6 +72,10 @@ void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
     //     printf("%ld ", indexTmp[i]);
     // }
     // printf("\n");
+    // for (int i = 0; i < topk; i++) {
+    //     printf("%.4e ", f16_to_f32(logits_[i]));
+    // }
+    // printf("\n");
     //做类似于softmax的temperature变换
     float reduceM = f16_to_f32(logits_[0]);
     float reduceS = 0.0f;
