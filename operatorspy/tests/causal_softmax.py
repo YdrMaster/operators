@@ -61,11 +61,12 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             descriptor, ctypes.byref(workspace_size)
         )
     )
-    workspace = to_tensor(create_workspace(workspace_size.value, x.device), lib)
+    # workspace = to_tensor(create_workspace(workspace_size.value, x.device), lib)
+    workspace = create_workspace(workspace_size.value, x.device)
     check_error(
         lib.infiniopCausalSoftmax(
             descriptor,
-            workspace.data if workspace is not None else None,
+            workspace.data_ptr() if workspace is not None else None,
             workspace_size.value,
             x_tensor.data,
             None,

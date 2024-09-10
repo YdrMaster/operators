@@ -32,8 +32,8 @@ infiniopStatus_t cpuMatmul(MatmulCpuDescriptor_t desc,
                            uint64_t workspace_size,
                            void *c,
                            float beta,
-                           void *a,
-                           void *b,
+                           void const *a,
+                           void const *b,
                            float alpha) {
     if (dtype_eq(desc->dtype, F16)) {
         matmul_cpu_f16(desc, c, beta, a, b, alpha);

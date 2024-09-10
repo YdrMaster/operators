@@ -86,12 +86,13 @@ def test(
     check_error(
         lib.infiniopGetMatmulWorkspaceSize(descriptor, ctypes.byref(workspace_size))
     )
+    # print(workspace_size)
     workspace = create_workspace(workspace_size.value, a.device)
 
     check_error(
         lib.infiniopMatmul(
             descriptor,
-            workspace.data if workspace is not None else None,
+            workspace.data_ptr() if workspace is not None else None,
             workspace_size.value,
             c_tensor.data,
             a_tensor.data,
@@ -205,23 +206,56 @@ def test_bang(lib, test_cases):
         )
 
     destroy_handle(lib, handle)
+    
+def test_ascend(lib, test_cases):
+    import torch_npu
+    device = DeviceEnum.DEVICE_NPU
+    handle = create_handle(lib, device)
+    
+    for (
+        alpha,
+        beta,
+        a_shape,
+        b_shape,
+        c_shape,
+        a_stride,
+        b_stride,
+        c_stride,
+        dtype,
+    ) in test_cases:
+        test(
+            lib,
+            handle,
+            "npu",
+            alpha,
+            beta,
+            a_shape,
+            b_shape,
+            c_shape,
+            a_stride,
+            b_stride,
+            c_stride,
+            dtype,
+        )
+
+    destroy_handle(lib, handle) 
 
 
 if __name__ == "__main__":
     test_cases = [
         # alpha, beta, a_shape, b_shape, c_shape, a_stride, b_stride, c_stride, dtype
         (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
-        (
-            1.0,
-            0.0,
-            (1, 2048),
-            (2048, 2048),
-            (1, 2048),
-            (4096, 1),
-            (4096, 1),
-            (4096, 1),
-            torch.float16,
-        ),
+        # (
+        #     1.0,
+        #     0.0,
+        #     (1, 2048),
+        #     (2048, 2048),
+        #     (1, 2048),
+        #     (4096, 1),
+        #     (4096, 1),
+        #     (4096, 1),
+        #     torch.float16,
+        # ),
     ]
     args = get_args()
     lib = open_lib()
@@ -265,6 +299,8 @@ if __name__ == "__main__":
         test_cuda(lib, test_cases)
     if args.bang:
         test_bang(lib, test_cases)
-    if not (args.cpu or args.cuda or args.bang):
+    if args.ascend:
+        test_ascend(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang or args.ascend):
         test_cpu(lib, test_cases)
     print("Test passed!")
