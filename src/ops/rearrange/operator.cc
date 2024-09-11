@@ -1,13 +1,13 @@
 #include "../utils.h"
 #include "operators.h"
 #include "ops/rearrange/rearrange.h"
-#include "../../devices/cuda/cuda_handle.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/rearrange_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
 #include "../../devices/cuda/common_cuda.h"
+#include "../../devices/cuda/cuda_handle.h"
 #include "cuda/rearrange.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
