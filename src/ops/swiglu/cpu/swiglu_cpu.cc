@@ -47,7 +47,7 @@ infiniopStatus_t cpuCreateSwiGLUDescriptor(infiniopHandle_t handle,
 }
 
 inline float silu(float x) {
-    return x * 1.0f / (1.0f + expf(-x));
+    return x / (1.0f + expf(-x));
 }
 
 void swiglu_cpu_f16(SwiGLUCpuDescriptor_t desc, void *c, void const *a, void const *b) {
