@@ -5,9 +5,6 @@
 #define MAX_WARP_PER_BLOCK 32
 #define WARP_SIZE 32
 
-#include <stdexcept>
-#include <string>
-
 #define checkCudaErrorWithCode(call, errorCode)          \
     do {                                                 \
         if (auto status = call; status != cudaSuccess) { \

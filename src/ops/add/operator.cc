@@ -15,8 +15,7 @@ __C infiniopStatus_t infiniopCreateAddDescriptor(
     infiniopAddDescriptor_t *desc_ptr,
     infiniopTensorDescriptor_t c,
     infiniopTensorDescriptor_t a,
-    infiniopTensorDescriptor_t b,
-    int device_id) {
+    infiniopTensorDescriptor_t b) {
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
@@ -24,7 +23,7 @@ __C infiniopStatus_t infiniopCreateAddDescriptor(
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateAddDescriptor((CudaHandle_t) handle, (AddCudaDescriptor_t *) desc_ptr, c, a, b, device_id);
+            return cudaCreateAddDescriptor((CudaHandle_t) handle, (AddCudaDescriptor_t *) desc_ptr, c, a, b);
         }
 
 #endif

@@ -6,8 +6,7 @@ infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t handle,
                                          AddCudaDescriptor_t *desc_ptr,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,
-                                         infiniopTensorDescriptor_t b,
-                                         int device_id) {
+                                         infiniopTensorDescriptor_t b) {
     uint64_t ndim = c->ndim;
     if (ndim > 5 || ndim != a->ndim || ndim != b->ndim) {
         return STATUS_BAD_TENSOR_SHAPE;
@@ -50,7 +49,7 @@ infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t handle,
     *desc_ptr = new AddCudaDescriptor{
         DevNvGpu,
         c->dt,
-        device_id,
+        handle->device_id,
         &handle->cudnn_handle,
         tensor_desc,
         op_desc,

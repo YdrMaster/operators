@@ -23,8 +23,7 @@ infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t,
                                          AddCudaDescriptor_t *,
                                          infiniopTensorDescriptor_t c,
                                          infiniopTensorDescriptor_t a,
-                                         infiniopTensorDescriptor_t b,
-                                         int device_id);
+                                         infiniopTensorDescriptor_t b);
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
                          void *c, void const *a, void const *b,

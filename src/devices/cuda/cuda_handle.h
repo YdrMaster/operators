@@ -12,7 +12,6 @@
 
 struct CudaContext {
     Device device;
-    cudnnHandle_t cudnn_handle;
     int device_id;
     std::shared_ptr<Pool<cublasHandle_t>> cublas_handles_t;
 };

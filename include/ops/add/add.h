@@ -14,8 +14,7 @@ __C __export infiniopStatus_t infiniopCreateAddDescriptor(infiniopHandle_t handl
                                                           infiniopAddDescriptor_t *desc_ptr,
                                                           infiniopTensorDescriptor_t c,
                                                           infiniopTensorDescriptor_t a,
-                                                          infiniopTensorDescriptor_t b,
-                                                          int device_id);
+                                                          infiniopTensorDescriptor_t b);
 
 __C __export infiniopStatus_t infiniopAdd(infiniopAddDescriptor_t desc,
                                           void *workspace,

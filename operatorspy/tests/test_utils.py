@@ -1,3 +1,11 @@
+from enum import Enum, auto
+
+class Inplace(Enum):
+    OUT_OF_PLACE = auto()
+    INPLACE_A = auto()
+    INPLACE_B = auto()
+    
+    
 def get_args():
     import argparse
 

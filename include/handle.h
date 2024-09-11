@@ -2,7 +2,6 @@
 #define INFINIOP_HANDLE_H
 
 #include "device.h"
-#include <cudnn.h>
 
 typedef struct HandleStruct {
     Device device;

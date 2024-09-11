@@ -15,7 +15,7 @@ from operatorspy import (
     check_error,
 )
 
-from operatorspy.tests.test_utils import get_args
+from operatorspy.tests.test_utils import get_args, Inplace
 import torch
 
 
@@ -37,19 +37,24 @@ def test(
     tensor_shape,
     tensor_stride=None,
     tensor_dtype=torch.float16,
-    device_id = 0
+    inplace=Inplace.OUT_OF_PLACE,
 ):
     print(
-        f"Testing Add on {torch_device} with tensor_shape:{tensor_shape} tensor_stride:{tensor_stride} dtype:{tensor_dtype}"
+        f"Testing Add on {torch_device} with tensor_shape:{tensor_shape} tensor_stride:{tensor_stride} dtype:{tensor_dtype} inplace: {inplace.name}"
     )
+    if torch_device == "cuda" and inplace == Inplace.INPLACE_B:
+        print("Unsupported test: CUDA does not support inplace b")
+        return
+
     a = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
     b = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
-    c = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
+    c = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) if inplace == Inplace.OUT_OF_PLACE else (a if inplace == Inplace.INPLACE_A else b)
 
     ans = add(a, b)
+
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
-    c_tensor = to_tensor(c, lib)
+    c_tensor = to_tensor(c, lib) if inplace == Inplace.OUT_OF_PLACE else (a_tensor if inplace == Inplace.INPLACE_A else b_tensor)
     descriptor = infiniopAddDescriptor_t()
 
     check_error(
@@ -59,7 +64,6 @@ def test(
             c_tensor.descriptor,
             a_tensor.descriptor,
             b_tensor.descriptor,
-            device_id
         )
     )
     lib.infiniopAdd(
@@ -72,16 +76,16 @@ def test(
 def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    for x_shape, x_stride in test_cases:
-        test(lib, handle, "cpu", x_shape, x_stride)
+    for x_shape, x_stride, inplace in test_cases:
+        test(lib, handle, "cpu", x_shape, x_stride, inplace=inplace)
     destroy_handle(lib, handle)
 
 
 def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    for x_shape, x_stride in test_cases:
-        test(lib, handle, "cuda", x_shape, x_stride)
+    for x_shape, x_stride, inplace in test_cases:
+        test(lib, handle, "cuda", x_shape, x_stride, inplace=inplace)
     destroy_handle(lib, handle)
 
 
@@ -97,13 +101,15 @@ def test_bang(lib, test_cases):
 
 if __name__ == "__main__":
     test_cases = [
-        # x_shape, x_stride
-        ((32, 20, 512), None),
-        ((32), None),
+        # x_shape, x_stride, inplace
+        ((32, 20, 512), None, Inplace.OUT_OF_PLACE),
+        ((32, 20, 512), None, Inplace.INPLACE_A),
+        ((32, 20, 512), None, Inplace.INPLACE_B),
+        ((32), None, Inplace.OUT_OF_PLACE),
     ]
     args = get_args()
     lib = open_lib()
-    lib.infiniopCreateAddDescriptor.restype = c_uint16
+    lib.infiniopCreateAddDescriptor.restype = c_int32
     lib.infiniopCreateAddDescriptor.argtypes = [
         infiniopHandle_t,
         POINTER(infiniopAddDescriptor_t),
@@ -111,7 +117,7 @@ if __name__ == "__main__":
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
     ]
-    lib.infiniopAdd.restype = c_uint16
+    lib.infiniopAdd.restype = c_int32
     lib.infiniopAdd.argtypes = [
         infiniopAddDescriptor_t,
         c_void_p,
@@ -121,7 +127,7 @@ if __name__ == "__main__":
         c_void_p,
         c_void_p,
     ]
-    lib.infiniopDestroyAddDescriptor.restype = c_uint16
+    lib.infiniopDestroyAddDescriptor.restype = c_int32
     lib.infiniopDestroyAddDescriptor.argtypes = [
         infiniopAddDescriptor_t,
     ]
