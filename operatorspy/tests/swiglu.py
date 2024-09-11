@@ -29,7 +29,7 @@ infiniopSwiGLUDescriptor_t = POINTER(SwiGLUDescriptor)
 
 
 def swiglu(a, b):
-    #return a * torch.nn.functional.silu(b.float()).to(b.dtype)
+    
     return a * b / (1 + torch.exp(-b.float()).to(b.dtype))
 
 def test_out_of_place(
