@@ -13,13 +13,22 @@ infiniopStatus_t createCudaHandle(CudaHandle_t *handle_ptr, int device_id) {
     checkCudnnError(cudnnCreate(&cudnn_handle));
 
     // Create a new cublas handle pool
-    auto pool = Pool<cublasHandle_t>();
-    cudaSetDevice(device_id);
+    auto pool = std::make_shared<Pool<cublasHandle_t>>();
+    if (cudaSetDevice(device_id) != cudaSuccess){
+        return STATUS_BAD_DEVICE;
+    }
     cublasHandle_t handle;
     cublasCreate(&handle);
-    pool.push(std::move(handle));
+    pool->push(std::move(handle));
 
     *handle_ptr = new CudaContext{DevNvGpu, std::move(cudnn_handle), device_id, std::move(pool)};
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t deleteCudaHandle(CudaHandle_t handle_ptr) {
+    handle_ptr->cublas_handles_t = nullptr;
+    delete handle_ptr;
 
     return STATUS_SUCCESS;
 }

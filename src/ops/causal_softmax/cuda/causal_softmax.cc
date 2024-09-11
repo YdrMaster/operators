@@ -2,7 +2,7 @@
 #include "../../utils.h"
 #include "../../../devices/cuda/common_cuda.h"
 
-infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(CudaHandle_t handle,
                                                    CausalSoftmaxCudaDescriptor_t *desc_ptr,
                                                    infiniopTensorDescriptor_t y) {
     unsigned long int ndim = y->ndim;
@@ -30,7 +30,8 @@ infiniopStatus_t cudaCreateCausalSoftmaxDescriptor(infiniopHandle_t handle,
     unsigned int max_items_per_thread = ROUND_UP_DIV(total_seq_len, MAX_THREADS_PER_BLOCK);
 
     *desc_ptr = new CausalSoftmaxCudaDescriptor{
-        DevNvGpu,
+        handle->device,
+        handle->device_id,
         y->dt,
         batch_size,
         stride_b,

@@ -1,17 +1,16 @@
-#include "../../../devices/cuda/handle_pool.h"
+#include "../../../devices/cuda/cuda_handle.h"
 #include "../../utils.h"
 #include "../blas.h"
 #include "matmul_cuda.h"
 #include <cublas_v2.h>
 #include <cuda_fp16.h>
 
-MatmulCudaDescriptor::MatmulCudaDescriptor(Device device) {
-    this->device = device;
-    get_cublas_pool();
-}
+void matmul_cuda_f16(MatmulCudaDescriptor_t desc, void *c, float beta, void const *a, void const *b, float alpha, void *stream) {
+    auto info = desc->info;
 
-void matmul_nv_gpu_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
-    auto info = MatmulInfo(c, a, b);
+    if (info.is_transed) {
+        std::swap(a, b);
+    }
 
     auto alpha_f16 = __float2half(alpha);
     auto beta_f16 = __float2half(beta);
@@ -19,7 +18,7 @@ void matmul_nv_gpu_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha, vo
     auto op_a = info.a_matrix.row_stride == 1 ? CUBLAS_OP_N : CUBLAS_OP_T;
     auto op_b = info.b_matrix.row_stride == 1 ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-    use_cublas((cudaStream_t) stream,
+    use_cublas(desc->cublas_handles_t, desc->device_id, (cudaStream_t) stream,
                [&](cublasHandle_t handle) { cublasGemmStridedBatchedEx(
                                                 handle,
                                                 op_a,
@@ -28,16 +27,16 @@ void matmul_nv_gpu_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha, vo
                                                 info.n,
                                                 info.k,
                                                 &alpha_f16,
-                                                info.a_ptr,
+                                                a,
                                                 CUDA_R_16F,
                                                 info.a_matrix.ld(),
                                                 info.a_matrix.stride,
-                                                info.b_ptr,
+                                                b,
                                                 CUDA_R_16F,
                                                 info.b_matrix.ld(),
                                                 info.b_matrix.stride,
                                                 &beta_f16,
-                                                info.c_ptr,
+                                                c,
                                                 CUDA_R_16F,
                                                 info.c_matrix.ld(),
                                                 info.c_matrix.stride,
