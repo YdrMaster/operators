@@ -108,7 +108,7 @@ void swigluUnionDim_2(cnrtQueue_t queue, void const *a, void const *b, void *c, 
     
 }
 
-void swiglu_bang_f16(SwiGLUBangDescriptor_t desc, void *a, void *b, void *c, void *stream) {
+void swiglu_bang_f16(SwiGLUBangDescriptor_t desc, void const *a, void const *b, void *c, void *stream) {
     auto queue = reinterpret_cast<cnrtQueue_t>(stream);
     auto seq_len = desc->seq_len,
          di = desc->di;
@@ -124,8 +124,8 @@ void swiglu_bang_f16(SwiGLUBangDescriptor_t desc, void *a, void *b, void *c, voi
 }
 infiniopStatus_t bangSwiGLU(SwiGLUBangDescriptor_t desc,
                            void *c,
-                           void *a,
-                           void *b,
+                           void const *a,
+                           void const *b,
                            void *stream){
     if (cnrtSetDevice(desc->device_id) != cnrtSuccess) {
         return STATUS_BAD_DEVICE;

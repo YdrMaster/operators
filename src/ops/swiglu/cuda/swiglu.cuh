@@ -23,12 +23,12 @@ infiniopStatus_t cudaCreateSwiGLUDescriptor(infiniopHandle_t handle,
 
 infiniopStatus_t cudaSwiGLU(SwiGLUCudaDescriptor_t desc,
                             void *c,
-                            void *a,
-                            void *b,
+                            void const *a,
+                            void const *b,
                             void *stream);
 
 infiniopStatus_t cudaDestroySwiGLUDescriptor(SwiGLUCudaDescriptor_t desc);
 
-void swiglu_nv_gpu_f16(SwiGLUCudaDescriptor_t desc, void *c, void *a, void *b, void *stream);
+void swiglu_nv_gpu_f16(SwiGLUCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream);
 
 #endif// __NV_GPU_SWIGLU_H__

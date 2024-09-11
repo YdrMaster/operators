@@ -26,8 +26,8 @@ infiniopStatus_t bangCreateSwiGLUDescriptor(BangHandle_t handle,
 
 infiniopStatus_t bangSwiGLU(SwiGLUBangDescriptor_t desc,
                             void *c,
-                            void *a,
-                            void *b,
+                            void const *a,
+                            void const *b,
                             void *stream);
 
 infiniopStatus_t bangDestroySwiGLUDescriptor(SwiGLUBangDescriptor_t desc);

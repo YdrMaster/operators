@@ -50,7 +50,7 @@ inline float silu(float x) {
     return x * 1.0f / (1.0f + expf(-x));
 }
 
-void swiglu_cpu_f16(SwiGLUCpuDescriptor_t desc, void *c, void *a, void *b) {
+void swiglu_cpu_f16(SwiGLUCpuDescriptor_t desc, void *c, void const *a, void const *b) {
 
     auto seq_len = desc->seq_len,
          di = desc->di;
@@ -60,8 +60,8 @@ void swiglu_cpu_f16(SwiGLUCpuDescriptor_t desc, void *c, void *a, void *b) {
          stride_c = desc->stride_c;
 
     for (int i = 0; i < seq_len; ++i) {
-        auto a_ = reinterpret_cast<uint16_t *>(a) + i * stride_a;
-        auto b_ = reinterpret_cast<uint16_t *>(b) + i * stride_b;
+        auto a_ = reinterpret_cast<const uint16_t *>(a) + i * stride_a;
+        auto b_ = reinterpret_cast<const uint16_t *>(b) + i * stride_b;
         auto c_ = reinterpret_cast<uint16_t *>(c) + i * stride_c;
         for (int j = 0; j < di; ++j) {
             auto a__ = f16_to_f32(a_[j]);
@@ -74,8 +74,8 @@ void swiglu_cpu_f16(SwiGLUCpuDescriptor_t desc, void *c, void *a, void *b) {
 
 infiniopStatus_t cpuSwiGLU(SwiGLUCpuDescriptor_t desc,
                            void *c,
-                           void *a,
-                           void *b,
+                           void const *a,
+                           void const *b,
                            void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
         swiglu_cpu_f16(desc, c, a, b);
