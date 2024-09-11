@@ -3,7 +3,9 @@
 
 #include "status.h"
 
-struct CpuContext;
+struct CpuContext{
+    Device device;
+};
 typedef struct CpuContext* CpuHandle_t;
 
 infiniopStatus_t createCpuHandle(CpuHandle_t* handle_ptr);

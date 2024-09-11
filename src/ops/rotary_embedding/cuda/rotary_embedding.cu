@@ -4,39 +4,65 @@
 
 static __global__ void padding(
     half2 *__restrict__ x_,
-    unsigned int const *__restrict__ pos_,
-    float const theta,
-    unsigned int const leading_dim) {
-    auto dh = blockDim.x;
+    unsigned long const *__restrict__ pos_,
+    float const *__restrict__ sin_,
+    float const *__restrict__ cos_,
+    long const stride0,
+    long const stride1) {
+    auto dk = blockDim.x;
     auto k = threadIdx.x;
+    auto offset = blockIdx.x * stride0 + blockIdx.y * stride1 + k;
+    auto &x = x_[offset];
+    auto pos = pos_[blockIdx.x];
+    auto sincos_offset = pos * dk * 2 + k * 2;
 
-    auto &x = x_[blockIdx.x * leading_dim + blockIdx.y * dh + k];
-    auto pos = float(pos_[blockIdx.x]);
-
-    float sin, cos;
-    sincosf(pos / powf(theta, float(k) / float(dh)), &sin, &cos);
-
-    x = x * half2(cos, cos) + half2(-x.y, x.x) * half2(sin, sin);
+    float sin0 = sin_[sincos_offset], cos0 = cos_[sincos_offset],
+          sin1 = sin_[sincos_offset + 1], cos1 = cos_[sincos_offset + 1];
+    float x0 = __half2float(x.x) * cos0 - __half2float(x.y) * sin0;
+    float x1 = __half2float(x.y) * cos1 + __half2float(x.x) * sin1;
+    x = half2(x0, x1);
 }
 
-constexpr static int
-    BLOCK_SIZE = 1024;
 
-void rotary_embedding_nv_gpu_f16(Tensor t, Tensor pos, float theta, void *stream) {
-    ASSERT_EQ(t.layout->ndim, 3);
-    ASSERT_EQ(pos.layout->ndim, 1);
+void rotary_embedding_nv_gpu_f16(
+    RoPECudaDescriptor_t desc,
+    half2 *t,
+    unsigned long const *pos,
+    float const *sin_, float const *cos_,
+    void *stream) {
+    auto nt = desc->seq_len,
+         nh = desc->nhead,
+         dh = desc->dim;
 
-    auto nt = t.layout->shape[0],
-         nh = t.layout->shape[1],
-         dh = t.layout->shape[2];
-
-    ASSERT_EQ(pos.layout->shape[0], nt);
-    ASSERT(dh < BLOCK_SIZE);
-
-    auto t_ptr = reinterpret_cast<half2 *>(t.data);
-    auto pos_ptr = reinterpret_cast<unsigned int const *>(pos.data);
-    auto leading_dim = t.layout->strides[0] / 4;
+    // batching 2 half together
+    auto stride0 = desc->strides[0] / 2,
+         stride1 = desc->strides[1] / 2;
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
-    padding<<<dim3(nt, nh), dh / 2, 0, cuda_stream>>>(t_ptr, pos_ptr, theta, leading_dim);
+    padding<<<dim3(nt, nh), dh / 2, 0, cuda_stream>>>(t, pos, sin_, cos_, stride0, stride1);
+}
+
+infiniopStatus_t cudaRoPE(RoPECudaDescriptor_t desc,
+                          void *workspace,
+                          unsigned long int workspace_size,
+                          void *t,
+                          void const *pos_ids,
+                          void const *sin_table,
+                          void const *cos_table,
+                          void *stream) {
+    if (t == nullptr || pos_ids == nullptr || sin_table == nullptr || cos_table == nullptr)
+        return STATUS_BAD_PARAM;
+
+    if (dtype_eq(desc->dtype, F16)) {
+        rotary_embedding_nv_gpu_f16(desc,
+                                    reinterpret_cast<half2 *>(t),
+                                    reinterpret_cast<unsigned long const *>(pos_ids),
+                                    reinterpret_cast<float const *>(sin_table),
+                                    reinterpret_cast<float const *>(cos_table),
+                                    stream);
+    } else {
+        return STATUS_BAD_TENSOR_DTYPE;
+    }
+
+    return STATUS_SUCCESS;
 }
