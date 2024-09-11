@@ -1,6 +1,7 @@
 #ifndef __CUDA_SWIGLU_H__
 #define __CUDA_SWIGLU_H__
-
+#include "../../../devices/cuda/cuda_handle.h"
+#include "../../utils.h"
 #include "operators.h"
 
 struct SwiGLUCudaDescriptor {
@@ -15,7 +16,7 @@ struct SwiGLUCudaDescriptor {
 
 typedef struct SwiGLUCudaDescriptor *SwiGLUCudaDescriptor_t;
 
-infiniopStatus_t cudaCreateSwiGLUDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cudaCreateSwiGLUDescriptor(CudaHandle_t handle,
                                             SwiGLUCudaDescriptor_t *desc_ptr,
                                             infiniopTensorDescriptor_t c_dec,
                                             infiniopTensorDescriptor_t a_desc,

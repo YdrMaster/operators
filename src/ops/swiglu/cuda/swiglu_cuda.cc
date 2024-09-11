@@ -2,7 +2,7 @@
 #include "../../utils.h"
 #include "swiglu.cuh"
 
-infiniopStatus_t cudaCreateSwiGLUDescriptor(infiniopHandle_t handle,
+infiniopStatus_t cudaCreateSwiGLUDescriptor(CudaHandle_t handle,
                                             SwiGLUCudaDescriptor_t *desc_ptr,
                                             infiniopTensorDescriptor_t c_desc,
                                             infiniopTensorDescriptor_t a_desc,
