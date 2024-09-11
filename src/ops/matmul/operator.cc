@@ -12,73 +12,79 @@
 #include "bang/matmul_cnnl.h"
 #endif
 
-struct MatmulDescriptor {
-    Device device;
-};
-
-__C MatmulDescriptor *createMatmulDescriptor(Device device, void *config) {
-    switch (device) {
+__C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
+                                                    infiniopMatmulDescriptor_t *desc_ptr,
+                                                    infiniopTensorDescriptor_t c_desc,
+                                                    infiniopTensorDescriptor_t a_desc,
+                                                    infiniopTensorDescriptor_t b_desc) {
+    switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return (MatmulDescriptor *) (new MatmulCpuDescriptor{device});
+            return cpuCreateMatmulDescriptor((CpuHandle_t) handle, (MatmulCpuDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return (MatmulDescriptor *) (new MatmulCudaDescriptor(device));
+            return cudaCreateMatmulDescriptor((CudaHandle_t) handle, (MatmulCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            return (MatmulDescriptor *) (new MatmulBangDescriptor(device));
-        }
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
-    return nullptr;
+    return STATUS_BAD_DEVICE;
 }
 
-__C void destroyMatmulDescriptor(MatmulDescriptor *descriptor) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopGetMatmulWorkspaceSize(infiniopMatmulDescriptor_t desc, uint64_t *size) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (MatmulCpuDescriptor *) (descriptor);
-            break;
+            return cpuGetMatmulWorkspaceSize((MatmulCpuDescriptor_t) desc, size);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return cudaGetMatmulWorkspaceSize((MatmulCudaDescriptor_t) desc, size);
+        }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        // TODO
+#endif
+    }
+    return STATUS_BAD_DEVICE;
+}
+
+__C infiniopStatus_t infiniopMatmul(infiniopMatmulDescriptor_t desc, void *workspace, uint64_t workspace_size, void *c, void const *a, void const *b, float alpha, float beta, void *stream) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuMatmul((MatmulCpuDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            delete (MatmulCudaDescriptor *) (descriptor);
-            break;
+            return cudaMatmul((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            delete (MatmulBangDescriptor *) (descriptor);
-            break;
-        }
+            // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
 }
 
-__C void matmul(MatmulDescriptor *descriptor, Tensor c, float beta, Tensor a, Tensor b, float alpha, void *stream) {
-    switch (descriptor->device) {
+infiniopStatus_t infiniopDestroyMatmulDescriptor(infiniopMatmulDescriptor_t desc) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            matmul_cpu_f16(c, beta, a, b, alpha);
-            break;
+            return cpuDestroyMatmulDescriptor((MatmulCpuDescriptor_t) desc);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            matmul_nv_gpu_f16(c, beta, a, b, alpha, stream);
-            break;
+        case DevNvGpu: {
+            return cudaDestroyMatmulDescriptor((MatmulCudaDescriptor_t) desc);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            matmul_cnnl_f16(c, beta, a, b, alpha, stream);
-            break;
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
 }

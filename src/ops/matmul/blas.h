@@ -17,31 +17,34 @@ typedef struct BlasMatrix {
 
     BlasMatrix() {}
 
-    BlasMatrix(TensorDescriptor *layout) {
+    BlasMatrix(infiniopTensorDescriptor_t layout, infiniopStatus_t *status) {
         if (layout->ndim == 2) {
             this->ndim = 2;
             this->batch = 1;
             this->stride = 0;
             this->rows = layout->shape[0];
             this->cols = layout->shape[1];
-            this->row_stride = layout->strides[0] / layout->dt.size;
-            this->col_stride = layout->strides[1] / layout->dt.size;
+            this->row_stride = layout->strides[0];
+            this->col_stride = layout->strides[1];
         } else if (layout->ndim == 3) {
             this->ndim = 3;
             this->batch = layout->shape[0];
-            this->stride = this->batch == 1 ? 0 : layout->strides[0] / layout->dt.size;
+            this->stride = this->batch == 1 ? 0 : layout->strides[0];
             this->rows = layout->shape[1];
             this->cols = layout->shape[2];
-            this->row_stride = layout->strides[1] / layout->dt.size;
-            this->col_stride = layout->strides[2] / layout->dt.size;
+            this->row_stride = layout->strides[1];
+            this->col_stride = layout->strides[2];
         } else {
-            PANIC(InvalidMatrixShape);
+            *status = STATUS_BAD_TENSOR_SHAPE;
+            return;
         }
 
         if (this->row_stride != 1 && this->col_stride != 1) {
-            ASSERT(false);
-            PANIC(MatrixIsNotContiguous);
+            *status = STATUS_BAD_TENSOR_STRIDES;
+            return;
         }
+
+        *status = STATUS_SUCCESS;
     }
 
     bool match_batch(int batch) const {
@@ -67,20 +70,23 @@ struct MatmulInfo {
     BlasMatrix b_matrix;
     BlasMatrix c_matrix;
 
-    void const *a_ptr;
-    void const *b_ptr;
-    void *c_ptr;
-
     int m, n, k, batch;
 
-    MatmulInfo(Tensor c, Tensor a, Tensor b, bool col_major = true) {
-        a_matrix = BlasMatrix(a.layout);
-        b_matrix = BlasMatrix(b.layout);
-        c_matrix = BlasMatrix(c.layout);
+    bool is_transed = false;
 
-        a_ptr = a.data;
-        b_ptr = b.data;
-        c_ptr = c.data;
+    MatmulInfo(infiniopTensorDescriptor_t c_desc, infiniopTensorDescriptor_t a_desc, infiniopTensorDescriptor_t b_desc, infiniopStatus_t *status, bool col_major = true) {
+        a_matrix = BlasMatrix(a_desc, status);
+        if (*status != STATUS_SUCCESS) {
+            return;
+        }
+        b_matrix = BlasMatrix(b_desc, status);
+        if (*status != STATUS_SUCCESS) {
+            return;
+        }
+        c_matrix = BlasMatrix(c_desc, status);
+        if (*status != STATUS_SUCCESS) {
+            return;
+        }
 
         ASSERT_EQ(c_matrix.rows, a_matrix.rows);// m
         ASSERT_EQ(c_matrix.cols, b_matrix.cols);// n
@@ -88,7 +94,8 @@ struct MatmulInfo {
 
         batch = c_matrix.batch;
         if (!a_matrix.match_batch(batch) || !b_matrix.match_batch(batch)) {
-            PANIC(InvalidBatchSize);
+            *status = STATUS_BAD_PARAM;
+            return;
         }
 
         if ((col_major && c_matrix.col_stride == 1) || (!col_major && c_matrix.row_stride == 1)) {
@@ -96,7 +103,7 @@ struct MatmulInfo {
             b_matrix.transpose();
             a_matrix.transpose();
             std::swap(a_matrix, b_matrix);
-            std::swap(a_ptr, b_ptr);
+            is_transed = true;
         }
 
         m = c_matrix.rows;
