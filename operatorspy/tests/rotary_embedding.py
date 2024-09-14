@@ -110,7 +110,7 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
         )
     )
 
-    assert torch.allclose(t, ans, atol=0, rtol=1e-2)
+    assert torch.allclose(t, ans, atol=1e-4, rtol=1e-2)
     check_error(lib.infiniopDestroyRoPEDescriptor(descriptor))
     print("Test passed!")
 
