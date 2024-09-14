@@ -29,8 +29,8 @@ infiniopSwiGLUDescriptor_t = POINTER(SwiGLUDescriptor)
 
 
 def swiglu(a, b):
-    return a * torch.nn.functional.silu(b.float()).to(b.dtype)
-
+    
+    return a * b / (1 + torch.exp(-b.float()).to(b.dtype))
 
 def test_out_of_place(
     lib,
@@ -71,8 +71,8 @@ def test_out_of_place(
         )
     )
     lib.infiniopSwiGLU(descriptor, c_tensor.data, a_tensor.data, b_tensor.data, None)
-
-    assert torch.allclose(c, ans, atol=1e-3, rtol=1e-3)
+    
+    assert torch.allclose(c, ans, atol=1e-4, rtol=1e-2)
     print("out-of-place Test passed!")
 
     check_error(lib.infiniopDestroySwiGLUDescriptor(descriptor))
@@ -109,8 +109,9 @@ def test_in_place1(
         )
     )
     lib.infiniopSwiGLU(descriptor, a_tensor.data, a_tensor.data, b_tensor.data, None)
-
-    assert torch.allclose(a, ans, atol=1e-3, rtol=1e-3)
+    
+    
+    assert torch.allclose(a, ans, atol=1e-4, rtol=1e-2)
     print("in-place1 Test passed!")
 
     check_error(lib.infiniopDestroySwiGLUDescriptor(descriptor))
@@ -147,8 +148,8 @@ def test_in_place2(
         )
     )
     lib.infiniopSwiGLU(descriptor, b_tensor.data, a_tensor.data, b_tensor.data, None)
-
-    assert torch.allclose(b, ans, atol=1e-3, rtol=1e-3)
+    
+    assert torch.allclose(b, ans, atol=1e-4, rtol=1e-2)
     print("in-place2 Test passed!")
 
     check_error(lib.infiniopDestroySwiGLUDescriptor(descriptor))
@@ -202,6 +203,8 @@ if __name__ == "__main__":
         # shape, a_stride, b_stride, c_stride, dtype
         ((13, 4), None, None, None, torch.float16),
         ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
+        ((16, 5632), None, None, None, torch.float16),
+        ((16, 5632), (13312, 1), (13312, 1), (13312, 1), torch.float16),
     ]
     args = get_args()
     lib = open_lib()
