@@ -2,6 +2,7 @@
 #define CPU_HANDLE_H
 
 #include "status.h"
+#include "operators.h"
 
 struct CpuContext{
     Device device;

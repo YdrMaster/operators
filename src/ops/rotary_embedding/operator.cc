@@ -13,7 +13,7 @@
 #include "bang/rotary_embedding_cnnl.h"
 #endif
 #ifdef ENABLE_ASCEND_NPU
-// #include "ascend/rotary_embedding.h"
+#include "ascend/rotary_embedding.h"
 #endif
 
 struct RoPEDescriptor {
@@ -41,6 +41,16 @@ __C infiniopStatus_t infiniopCreateRoPEDescriptor(infiniopHandle_t handle,
 #ifdef ENABLE_CAMBRICON_MLU
         // TODO
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            return ascendCreateRoPEDescriptor((AscendHandle_t) handle,
+                                              (RoPEAscendDescriptor_t *) desc_ptr,
+                                              t,
+                                              pos_ids,
+                                              sin_table,
+                                              cos_table);
+        }
+#endif
     }
     return STATUS_BAD_DEVICE;
 }
@@ -59,6 +69,12 @@ __C infiniopStatus_t infiniopGetRoPEWorkspaceSize(infiniopRoPEDescriptor_t desc,
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         // TODO
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            return ascendGetRoPEWorkspaceSize((RoPEAscendDescriptor_t) desc,
+                                              size);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -86,6 +102,18 @@ __C infiniopStatus_t infiniopRoPE(infiniopRoPEDescriptor_t desc,
 #ifdef ENABLE_CAMBRICON_MLU
         // TODO
 #endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            return ascendRoPE((RoPEAscendDescriptor_t) desc,
+                              workspace,
+                              workspace_size,
+                              t,
+                              pos_ids,
+                              sin_table,
+                              cos_table,
+                              stream);
+        }
+#endif
     }
     return STATUS_BAD_DEVICE;
 }
@@ -104,6 +132,11 @@ __C infiniopStatus_t infiniopDestroyRoPEDescriptor(infiniopRoPEDescriptor_t desc
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         // TODO
+#endif
+#ifdef ENABLE_ASCEND_NPU
+        case DevAscendNpu: {
+            return ascendDestroyRoPEDescriptor((RoPEAscendDescriptor_t) desc);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
