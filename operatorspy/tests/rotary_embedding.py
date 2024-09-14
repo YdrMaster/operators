@@ -64,11 +64,13 @@ def sin_cos_table(max_seq_len, dim, torch_device, theta):
     return torch.sin(angles), torch.cos(angles)
 
 
-def test(lib, handle, torch_device, shape, dtype=torch.float16):
+def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
     print(
-        f"Testing Rotary Positional Embedding on {torch_device} with shape:{shape} and dtype:{dtype}"
+        f"Testing Rotary Positional Embedding on {torch_device} with shape:{shape} strides:{strides} and dtype:{dtype}"
     )
     t = torch.rand(shape, dtype=dtype, device=torch.device(torch_device))
+    if strides is not None:
+        t = rearrange_tensor(t, strides)
     pos = torch.arange(0, t.shape[0], device=torch.device(torch_device))
     theta = 1e4
     ans = rotary_embedding(t, pos, theta, torch_device)
@@ -116,16 +118,16 @@ def test(lib, handle, torch_device, shape, dtype=torch.float16):
 def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    for shape, dtype in test_cases:
-        test(lib, handle, "cpu", shape, dtype)
+    for shape, strides, dtype in test_cases:
+        test(lib, handle, "cpu", shape, strides, dtype)
     destroy_handle(lib, handle)
 
 
 def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    for shape, dtype in test_cases:
-        test(lib, handle, "cuda", shape, dtype)
+    for shape, strides, dtype in test_cases:
+        test(lib, handle, "cuda", shape, strides, dtype)
     destroy_handle(lib, handle)
 
 
@@ -154,7 +156,11 @@ def test_bang(lib, test_cases):
 
 
 if __name__ == "__main__":
-    test_cases = [((1, 32, 128), torch.float16), ((4, 1, 32), torch.float16)]
+    test_cases = [
+        ((1, 32, 128), None, torch.float16),
+        ((4, 1, 32), None, torch.float16),
+        ((3, 32, 128), (8000, 200, 1), torch.float16),
+    ]
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateRoPEDescriptor.restype = c_int32

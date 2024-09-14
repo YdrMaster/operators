@@ -1,6 +1,6 @@
 #include "rotary_embedding.cuh"
-#include "../../utils.h"
 #include "../../../devices/cuda/common_cuda.h"
+#include "../../utils.h"
 
 infiniopStatus_t cudaCreateRoPEDescriptor(CudaHandle_t handle,
                                           RoPECudaDescriptor_t *desc_ptr,
@@ -30,9 +30,9 @@ infiniopStatus_t cudaCreateRoPEDescriptor(CudaHandle_t handle,
         cos_table->shape[1] != dim ||
         sin_table->shape[0] != cos_table->shape[0])
         return STATUS_BAD_TENSOR_SHAPE;
-    
+
     // TODO: support larger dim in the future
-    if (dim / 2 > MAX_THREADS_PER_BLOCK){
+    if (dim / 2 > MAX_THREADS_PER_BLOCK) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
 
@@ -61,7 +61,6 @@ infiniopStatus_t cudaCreateRoPEDescriptor(CudaHandle_t handle,
         total_seq_len,
         {t->strides[0], t->strides[1]}};
 
-    return STATUS_SUCCESS;                                        
     return STATUS_SUCCESS;
 }
 

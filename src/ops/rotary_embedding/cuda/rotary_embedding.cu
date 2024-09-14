@@ -2,8 +2,8 @@
 #include "rotary_embedding.cuh"
 #include <cuda_fp16.h>
 
-static __global__ void padding(
-    half2 *__restrict__ x_,
+static __global__ void padding_f16(
+    half *__restrict__ x_,
     unsigned long const *__restrict__ pos_,
     float const *__restrict__ sin_,
     float const *__restrict__ cos_,
@@ -11,8 +11,8 @@ static __global__ void padding(
     long const stride1) {
     auto dk = blockDim.x;
     auto k = threadIdx.x;
-    auto offset = blockIdx.x * stride0 + blockIdx.y * stride1 + k;
-    auto &x = x_[offset];
+    auto offset = blockIdx.x * stride0 + blockIdx.y * stride1 + k * 2;
+    auto &x = reinterpret_cast<half2 &>(x_[offset]);
     auto pos = pos_[blockIdx.x];
     auto sincos_offset = pos * dk * 2 + k * 2;
 
@@ -26,7 +26,7 @@ static __global__ void padding(
 
 void rotary_embedding_nv_gpu_f16(
     RoPECudaDescriptor_t desc,
-    half2 *t,
+    half *t,
     unsigned long const *pos,
     float const *sin_, float const *cos_,
     void *stream) {
@@ -35,11 +35,11 @@ void rotary_embedding_nv_gpu_f16(
          dh = desc->dim;
 
     // batching 2 half together
-    auto stride0 = desc->strides[0] / 2,
-         stride1 = desc->strides[1] / 2;
+    auto stride0 = desc->strides[0],
+         stride1 = desc->strides[1];
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
-    padding<<<dim3(nt, nh), dh / 2, 0, cuda_stream>>>(t, pos, sin_, cos_, stride0, stride1);
+    padding_f16<<<dim3(nt, nh), dh / 2, 0, cuda_stream>>>(t, pos, sin_, cos_, stride0, stride1);
 }
 
 infiniopStatus_t cudaRoPE(RoPECudaDescriptor_t desc,
@@ -55,7 +55,7 @@ infiniopStatus_t cudaRoPE(RoPECudaDescriptor_t desc,
 
     if (dtype_eq(desc->dtype, F16)) {
         rotary_embedding_nv_gpu_f16(desc,
-                                    reinterpret_cast<half2 *>(t),
+                                    reinterpret_cast<half *>(t),
                                     reinterpret_cast<unsigned long const *>(pos_ids),
                                     reinterpret_cast<float const *>(sin_table),
                                     reinterpret_cast<float const *>(cos_table),
