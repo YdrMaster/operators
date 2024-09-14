@@ -1,9 +1,8 @@
-#include "../../../devices/cuda/common_cuda.h"
+#include "swiglu_bang.h"
 #include "../../utils.h"
-#include "swiglu.cuh"
 
-infiniopStatus_t cudaCreateSwiGLUDescriptor(CudaHandle_t handle,
-                                            SwiGLUCudaDescriptor_t *desc_ptr,
+infiniopStatus_t bangCreateSwiGLUDescriptor(BangHandle_t handle,
+                                            SwiGLUBangDescriptor_t *desc_ptr,
                                             infiniopTensorDescriptor_t c_desc,
                                             infiniopTensorDescriptor_t a_desc,
                                             infiniopTensorDescriptor_t b_desc) {
@@ -34,7 +33,8 @@ infiniopStatus_t cudaCreateSwiGLUDescriptor(CudaHandle_t handle,
         return STATUS_BAD_PARAM;
     }
 
-    *desc_ptr = new SwiGLUCudaDescriptor{DevNvGpu,
+    *desc_ptr = new SwiGLUBangDescriptor{handle->device,
+                                         handle->device_id,
                                          dtype,
                                          seq_len,
                                          di,
@@ -44,7 +44,7 @@ infiniopStatus_t cudaCreateSwiGLUDescriptor(CudaHandle_t handle,
     return STATUS_SUCCESS;
 }
 
-infiniopStatus_t cudaDestroySwiGLUDescriptor(SwiGLUCudaDescriptor_t desc) {
+infiniopStatus_t bangDestroySwiGLUDescriptor(SwiGLUBangDescriptor_t desc) {
     delete desc;
     return STATUS_SUCCESS;
 }

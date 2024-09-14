@@ -42,6 +42,10 @@ __C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
                                                b_desc,
                                                1);
         }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        // TODO
 #endif
     }
     return STATUS_BAD_DEVICE;

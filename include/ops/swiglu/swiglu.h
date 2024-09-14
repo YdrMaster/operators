@@ -18,8 +18,8 @@ __C __export infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t ha
 
 __C __export infiniopStatus_t infiniopSwiGLU(infiniopSwiGLUDescriptor_t desc,
                                              void *c,
-                                             void *a,
-                                             void *b,
+                                             void const *a,
+                                             void const *b,
                                              void *stream);
 
 __C __export infiniopStatus_t infiniopDestroySwiGLUDescriptor(infiniopSwiGLUDescriptor_t desc);

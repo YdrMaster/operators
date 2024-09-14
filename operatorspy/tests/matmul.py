@@ -86,7 +86,6 @@ def test(
     check_error(
         lib.infiniopGetMatmulWorkspaceSize(descriptor, ctypes.byref(workspace_size))
     )
-    # print(workspace_size)
     workspace = create_workspace(workspace_size.value, a.device)
 
     check_error(
@@ -104,7 +103,6 @@ def test(
     )
 
     assert torch.allclose(c, ans, atol=0, rtol=1e-2)
-
     check_error(lib.infiniopDestroyMatmulDescriptor(descriptor))
 
 
@@ -206,39 +204,6 @@ def test_bang(lib, test_cases):
         )
 
     destroy_handle(lib, handle)
-    
-def test_ascend(lib, test_cases):
-    import torch_npu
-    device = DeviceEnum.DEVICE_NPU
-    handle = create_handle(lib, device)
-    
-    for (
-        alpha,
-        beta,
-        a_shape,
-        b_shape,
-        c_shape,
-        a_stride,
-        b_stride,
-        c_stride,
-        dtype,
-    ) in test_cases:
-        test(
-            lib,
-            handle,
-            "npu",
-            alpha,
-            beta,
-            a_shape,
-            b_shape,
-            c_shape,
-            a_stride,
-            b_stride,
-            c_stride,
-            dtype,
-        )
-
-    destroy_handle(lib, handle) 
 
 
 if __name__ == "__main__":
