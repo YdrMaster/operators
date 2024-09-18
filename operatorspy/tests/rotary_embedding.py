@@ -65,11 +65,13 @@ def sin_cos_table(max_seq_len, dim, torch_device, theta):
     return torch.sin(angles), torch.cos(angles)
 
 
-def test(lib, handle, torch_device, shape, dtype=torch.float16):
+def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
     print(
-        f"Testing Rotary Positional Embedding on {torch_device} with shape:{shape} and dtype:{dtype}"
+        f"Testing Rotary Positional Embedding on {torch_device} with shape:{shape} strides:{strides} and dtype:{dtype}"
     )
     t = torch.rand(shape, dtype=dtype, device=torch.device(torch_device))
+    if strides is not None:
+        t = rearrange_tensor(t, strides)
     pos = torch.arange(0, t.shape[0], device=torch.device(torch_device))
     theta = 1e4
     # ans = rotary_embedding(t, pos, theta, torch_device)
@@ -116,16 +118,8 @@ def test(lib, handle, torch_device, shape, dtype=torch.float16):
             None,
         )
     )
-    # print(ans[0, 7, :])
-    # print(t[0, 7, :])
-    # for i in range(32):
-    #     print(i)
-    #     sum = torch.sum(torch.abs(t[0, i, :] - ans[0, i, :]))
-    #     print(sum)
-    #     if sum > 10:
-    #         print(ans[0, i, :])
-    #         print(t[0, i, :]) 
-    assert torch.allclose(t, ans, atol=1e-3, rtol=1e-3)
+
+    assert torch.allclose(t, ans, atol=1e-4, rtol=1e-2)
     check_error(lib.infiniopDestroyRoPEDescriptor(descriptor))
     print("Test passed!")
 
@@ -133,16 +127,16 @@ def test(lib, handle, torch_device, shape, dtype=torch.float16):
 def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    for shape, dtype in test_cases:
-        test(lib, handle, "cpu", shape, dtype)
+    for shape, strides, dtype in test_cases:
+        test(lib, handle, "cpu", shape, strides, dtype)
     destroy_handle(lib, handle)
 
 
 def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    for shape, dtype in test_cases:
-        test(lib, handle, "cuda", shape, dtype)
+    for shape, strides, dtype in test_cases:
+        test(lib, handle, "cuda", shape, strides, dtype)
     destroy_handle(lib, handle)
 
 
@@ -178,48 +172,14 @@ def test_ascend(lib, test_cases) :
     for shape, dtype in test_cases:
         test(lib, handle, "npu", shape, dtype)
     destroy_handle(lib, handle)
-    
-# def test_ascend(lib):
-#     import torch_npu
-#     device = DeviceEnum.DEVICE_NPU
-#     config = None
-#     descriptor = lib.createRotaryEmbeddingDescriptor(device, config)
-    
-#     # Note: BANG does not support complex calculation, compare with cpu results 
-#     t = torch.rand((1, 32, 128), dtype=torch.float16)
-#     pos = torch.ones((1,), dtype=torch.int32)
-#     sin = torch.ones((2, 128), dtype=torch.float32)
-#     cos = torch.ones((2, 128), dtype=torch.float32)
-#     theta = 1e4
-    
-#     # print(t[0, 0, :])
-    
-#     # ans = rotary_embedding(t, pos, theta, "cpu").half()
-#     t = t.to("npu")
-#     pos = pos.to("npu")
-#     sin = sin.to("npu")
-#     cos = cos.to("npu")
-    
-#     lib.rotaryEmbedding(
-#         descriptor,
-#         to_tensor(t, lib), 
-#         to_tensor(pos, lib), 
-#         to_tensor(sin, lib),
-#         to_tensor(cos, lib), 
-#         c_float(theta),
-#         None
-#     )
-#     print(t[0, 0, :])
-#     # print(ans[:128])
-#     # assert torch.allclose(t.cpu(), ans, atol=1e-3, rtol=1e-3)
-#     print("Test passed!")
-    
-#     lib.destroyRotaryEmbeddingDescriptor(descriptor)
 
 
 if __name__ == "__main__":
-    # test_cases = [((1, 32, 128), torch.float16), ((4, 1, 32), torch.float16)]
-    test_cases = [((1, 32, 128), torch.float16)]
+    test_cases = [
+        ((1, 32, 128), None, torch.float16),
+        ((4, 1, 32), None, torch.float16),
+        ((3, 32, 128), (8000, 200, 1), torch.float16),
+    ]
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateRoPEDescriptor.restype = c_int32
