@@ -61,6 +61,43 @@ __global__ void random_sample_kernel(int *result,
         }
     }
 }
+template<class T, class I>
+void sort_pairs_descending(
+    void *workspace, size_t &size_radix_sort,
+    T const *val_in, T *val_out,
+    I *key_in, I *key_out,
+    int voc, cudaStream_t stream) {
+    cub::DeviceRadixSort::SortPairsDescending(
+        workspace, size_radix_sort,
+        val_in, val_out,
+        key_in, key_out,
+        voc, 0, sizeof(T) * 8, stream);
+}
+template<class T>
+void inclusive_sum(
+    void *workspace, size_t &size_scan,
+    T *data, int voc,
+    cudaStream_t stream) {
+    cub::DeviceScan::InclusiveSum(
+        workspace, size_scan,
+        data, data, voc,
+        stream);
+}
+template<class T, class I>
+void random_sample_workspace(void *workspace, size_t &size_radix_sort, size_t &size_scan,
+                             int voc, cudaStream_t stream) {
+
+
+    sort_pairs_descending<T, I>(nullptr, size_radix_sort,
+                                nullptr, nullptr,
+                                nullptr, nullptr,
+                                voc, stream);
+
+    inclusive_sum<T>(
+        nullptr, size_scan,
+        nullptr, voc,
+        stream);
+}
 void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace, void *result,
                               void *probs,
                               float topp,
@@ -79,23 +116,16 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
     index<<<(voc + 1023) / 1024, 1024, 0, (cudaStream_t) stream>>>(key_in, voc);
     //下面开始计算workspace空间
     size_t size_radix_sort;
-    cub::DeviceRadixSort::SortPairsDescending(
-        nullptr, size_radix_sort,
-        (half *) probs, val_out,
-        key_in, key_out,
-        voc, 0, sizeof(half) * 8, (cudaStream_t) stream);
     size_t size_scan;
-    cub::DeviceScan::InclusiveSum(
-        nullptr, size_scan,
-        val_out, val_out, voc,
-        (cudaStream_t) stream);
-    //计算出workspace总共需要的字节数
+    random_sample_workspace<half, int>(workspace, size_radix_sort, size_scan,
+                                       voc, (cudaStream_t) stream);
+
     cudaMalloc(&workspace, size_radix_sort + size_scan);
-    cub::DeviceRadixSort::SortPairsDescending(
+    sort_pairs_descending<half, int>(
         workspace, size_radix_sort,
         (half *) probs, val_out,
         key_in, key_out,
-        voc, 0, sizeof(half) * 8, (cudaStream_t) stream);//该函数会把排序结果和对应索引保存在val_out和key_out上
+        voc, (cudaStream_t) stream);//该函数会把排序结果和对应索引保存在val_out和key_out上
     //排序结束，然后开始做softmax变换
 
     int BLOCK_DIM = 1024;
@@ -104,9 +134,9 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
                                                                              temperature, voc);
 
 
-    cub::DeviceScan::InclusiveSum(
+    inclusive_sum<half>(
         workspace, size_scan,
-        val_out, val_out, voc,
+        val_out, voc,
         (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
     random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((int *) result,
                                                                    val_out,
