@@ -2,85 +2,106 @@
 #include "ops/rotary_embedding/rotary_embedding.h"
 
 #ifdef ENABLE_CPU
+#include "../../devices/cpu/cpu_handle.h"
 #include "cpu/rotary_embedding_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
+#include "../../devices/cuda/cuda_handle.h"
 #include "cuda/rotary_embedding.cuh"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/rotary_embedding_cnnl.h"
 #endif
 
-struct RotaryEmbeddingDescriptor {
+struct RoPEDescriptor {
     Device device;
 };
 
-__C void *createRotaryEmbeddingDescriptor(Device device, void *config) {
-    switch (device) {
-#ifdef ENABLE_CPU
-        case DevCpu:
-            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingCpuDescriptor{device});
-#endif
-#ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            return (RotaryEmbeddingDescriptor *) (new RotaryEmbeddingCudaDescriptor{device});
-#endif
-#ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            auto bangDescriptor = new RotaryEmbeddingBangDescriptor(device);
-            bangDescriptor->createCnnlDescriptors();
-            return (RotaryEmbeddingDescriptor *) (bangDescriptor);
-        }
-#endif
-        default:
-            PANIC(UnsupportedDevice);
-    }
-    return nullptr;
-};
 
-__C void destroyRotaryEmbeddingDescriptor(RotaryEmbeddingDescriptor *descriptor) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopCreateRoPEDescriptor(infiniopHandle_t handle,
+                                                  infiniopRoPEDescriptor_t *desc_ptr,
+                                                  infiniopTensorDescriptor_t t,
+                                                  infiniopTensorDescriptor_t pos_ids,
+                                                  infiniopTensorDescriptor_t sin_table,
+                                                  infiniopTensorDescriptor_t cos_table) {
+    switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (RotaryEmbeddingCpuDescriptor *) (descriptor);
-            break;
+            return cpuCreateRoPEDescriptor((CpuHandle_t) handle, (RoPECpuDescriptor_t *) desc_ptr, t, pos_ids, sin_table, cos_table);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            delete (RotaryEmbeddingCudaDescriptor *) (descriptor);
-            break;
+        case DevNvGpu: {
+            return cudaCreateRoPEDescriptor((CudaHandle_t) handle, (RoPECudaDescriptor_t *) desc_ptr, t, pos_ids, sin_table, cos_table);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            auto bangDescriptor = (RotaryEmbeddingBangDescriptor *) (descriptor);
-            bangDescriptor->destroyCnnlDescriptors();
-            delete bangDescriptor;
-            break;
-        }
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
 }
 
-__C void rotaryEmbedding(RotaryEmbeddingDescriptor *descriptor, Tensor t, Tensor pos, float theta, void *stream) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopGetRoPEWorkspaceSize(infiniopRoPEDescriptor_t desc, uint64_t *size) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            rotary_embedding_cpu_f16(t, pos, theta);
-            break;
+            return cpuGetRoPEWorkspaceSize((RoPECpuDescriptor_t) desc, size);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            rotary_embedding_nv_gpu_f16(t, pos, theta, stream);
-            break;
+        case DevNvGpu: {
+            return cudaGetRoPEWorkspaceSize((RoPECudaDescriptor_t) desc, size);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            rotary_embedding_cnnl_f16((RotaryEmbeddingBangDescriptor *) (descriptor), t, pos, theta, stream);
-            break;
+        // TODO
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
-};
+    return STATUS_BAD_DEVICE;
+}
+
+__C infiniopStatus_t infiniopRoPE(infiniopRoPEDescriptor_t desc,
+                                  void *workspace,
+                                  uint64_t workspace_size,
+                                  void *t,
+                                  void const *pos_ids,
+                                  void const *sin_table,
+                                  void const *cos_table,
+                                  void *stream) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuRoPE((RoPECpuDescriptor_t) desc, workspace, workspace_size, t, pos_ids, sin_table, cos_table, stream);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return cudaRoPE((RoPECudaDescriptor_t) desc, workspace, workspace_size, t, pos_ids, sin_table, cos_table, stream);
+        }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        // TODO
+#endif
+    }
+    return STATUS_BAD_DEVICE;
+}
+
+__C infiniopStatus_t infiniopDestroyRoPEDescriptor(infiniopRoPEDescriptor_t desc) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuDestroyRoPEDescriptor((RoPECpuDescriptor_t) desc);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return cudaDestroyRoPEDescriptor((RoPECudaDescriptor_t) desc);
+        }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        // TODO
+#endif
+    }
+    return STATUS_BAD_DEVICE;
+}
