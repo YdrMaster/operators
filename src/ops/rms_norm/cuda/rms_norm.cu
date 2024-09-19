@@ -5,13 +5,13 @@
 #include <cub/block/block_reduce.cuh>
 
 // assert BLOCK_SIZE >= blockDim.x
-template<unsigned int BLOCK_SIZE, class Tdata>
+template<unsigned int BLOCK_SIZE, class Tdata, class Wdata>
 static __global__ void rms_norm_padding(
     Tdata *__restrict__ o_,
     unsigned int const stride_y,
     Tdata const *__restrict__ x_,
     unsigned int const stride_x,
-    Tdata const *__restrict__ w_,
+    Wdata const *__restrict__ w_,
     float const epsilon) {
     auto y = o_ + blockIdx.x * stride_y + threadIdx.x;
     auto x = x_[blockIdx.x * stride_x + threadIdx.x];
@@ -27,16 +27,16 @@ static __global__ void rms_norm_padding(
     }
     __syncthreads();
 
-    *y = rms * x * w;
+    *y = rms * x * (Tdata)w;
 }
 
-template<unsigned int BLOCK_SIZE, unsigned int ITEMS_PER_THREAD, class Tdata>
+template<unsigned int BLOCK_SIZE, unsigned int ITEMS_PER_THREAD, class Tdata, class Wdata>
 static __global__ void rms_norm_folding(
     Tdata *__restrict__ y,
     unsigned int const stride_y,
     Tdata const *__restrict__ x,
     unsigned int const stride_x,
-    Tdata const *__restrict__ w,
+    Wdata const *__restrict__ w,
     float const epsilon,
     unsigned int const items_size) {
     y += blockIdx.x * stride_y;
@@ -76,13 +76,13 @@ static __global__ void rms_norm_folding(
     }
 }
 
-template<unsigned int BLOCK_SIZE, class Tdata>
+template<unsigned int BLOCK_SIZE, class Tdata, class Wdata>
 static __global__ void rms_norm_standard(
     Tdata *__restrict__ y_,
     unsigned int const stride_y,
     Tdata const *__restrict__ x_,
     unsigned int const stride_x,
-    Tdata const *__restrict__ w,
+    Wdata const *__restrict__ w,
     float const epsilon,
     unsigned int const d) {
     auto y = y_ + blockIdx.x * stride_y;
@@ -112,41 +112,61 @@ static __global__ void rms_norm_standard(
     __syncthreads();
 
     for (int i = threadIdx.x; i < d; i += BLOCK_SIZE) {
-        y[i] = rms * x[i] * w[i];
+        y[i] = rms * x[i] * (Tdata)w[i];
     }
 }
 
-
-void rms_norm_nv_gpu_f16(Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    ASSERT_EQ(y.layout->ndim, 2);
-    ASSERT_EQ(x.layout->ndim, 2);
-    ASSERT_EQ(w.layout->ndim, 1);
-
-    auto n = y.layout->shape[0],
-         d = y.layout->shape[1];
-
-    ASSERT_EQ(x.layout->shape[0], n);
-    ASSERT_EQ(x.layout->shape[1], d);
-    ASSERT_EQ(w.layout->shape[0], d);
-
-    auto y_ = reinterpret_cast<half *>(y.data);
-    auto x_ = reinterpret_cast<half const *>(x.data);
-    auto w_ = reinterpret_cast<half const *>(w.data);
+void rms_norm_nv_gpu_f16(RMSNormCudaDescriptor_t desc, void *y, void *x, void *w, float epsilon, void *stream) {
+    auto n = desc->n, d = desc->d;
+    auto y_ = reinterpret_cast<half *>(y);
+    auto x_ = reinterpret_cast<half const *>(x);
 
     // Get strides in terms of elements
-    auto stride_y = y.layout->strides[0] / sizeof(half);
-    auto stride_x = x.layout->strides[0] / sizeof(half);
+    auto stride_y = desc->stride_y;
+    auto stride_x = desc->stride_x;
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
     unsigned int items_per_thread = ROUND_UP_DIV(d, MAX_THREADS_PER_BLOCK);
-    if (items_per_thread == 1) {
-        rms_norm_padding<MAX_THREADS_PER_BLOCK>
-            <<<n, d, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
-    } else if (items_per_thread <= 16) {
-        rms_norm_folding<MAX_THREADS_PER_BLOCK, 16>
-            <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+    int8_t w_datatype = desc->w_datatype;
+    if (w_datatype == 0) {
+        auto w_ = reinterpret_cast<half const *>(w);
+        if (items_per_thread == 1) {
+            rms_norm_padding<MAX_THREADS_PER_BLOCK, half, half>
+                <<<n, d, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
+        } else if (items_per_thread <= 16) {
+            rms_norm_folding<MAX_THREADS_PER_BLOCK, 16, half, half>
+                <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        } else {
+            rms_norm_standard<MAX_THREADS_PER_BLOCK, half, half>
+                <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        }
     } else {
-        rms_norm_standard<MAX_THREADS_PER_BLOCK>
-            <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        auto w_ = reinterpret_cast<float const *>(w);
+        if (items_per_thread == 1) {
+            rms_norm_padding<MAX_THREADS_PER_BLOCK, half, float>
+                <<<n, d, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon);
+        } else if (items_per_thread <= 16) {
+            rms_norm_folding<MAX_THREADS_PER_BLOCK, 16, half, float>
+                <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        } else {
+            rms_norm_standard<MAX_THREADS_PER_BLOCK, half, float>
+                <<<n, MAX_THREADS_PER_BLOCK, 0, cuda_stream>>>(y_, stride_y, x_, stride_x, w_, epsilon, d);
+        }
     }
+}
+
+infiniopStatus_t cudaRMSNorm(RMSNormCudaDescriptor_t desc,
+                                   void *workspace,
+                                   unsigned long int workspace_size,
+                                   void *y, void *x, void *w, float epsilon,
+                                   void *stream){
+    if(cudaSetDevice(desc->device_id) != cudaSuccess){
+        return STATUS_BAD_DEVICE;
+    }
+    if (dtype_eq(desc->dtype, F16)){
+        rms_norm_nv_gpu_f16(desc, y, x, w, epsilon, stream);
+        return STATUS_SUCCESS;
+    }
+
+    return STATUS_BAD_TENSOR_DTYPE;
 }
