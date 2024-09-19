@@ -26,8 +26,8 @@ infiniopStatus_t ascendCreateSwiGLUDescriptor(infiniopHandle_t handle,
 
 infiniopStatus_t ascendSwiGLU(SwiGLUAscendDescriptor_t desc,
                               void *c,
-                              void *a,
-                              void *b,
+                              void const *a,
+                              void const *b,
                               void *stream);
 
 infiniopStatus_t ascendDestroySwiGLUDescriptor(SwiGLUAscendDescriptor_t desc);

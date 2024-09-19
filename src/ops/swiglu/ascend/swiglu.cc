@@ -55,8 +55,8 @@ infiniopStatus_t ascendCreateSwiGLUDescriptor(infiniopHandle_t handle,
 
 infiniopStatus_t ascendSwiGLU(SwiGLUAscendDescriptor_t desc,
                               void *c,
-                              void *a,
-                              void *b,
+                              void const *a,
+                              void const *b,
                               void *stream) {
     auto seq_len = desc->seq_len,
          di = desc->di;
@@ -67,7 +67,7 @@ infiniopStatus_t ascendSwiGLU(SwiGLUAscendDescriptor_t desc,
 
     auto dt = desc->dtype;
 
-    swiglu_kernel_do(c, a, b, 1.0, seq_len, di, sta, stb, stc, dt, stream);
+    swiglu_kernel_do(c, (void *) a, (void *) b, 1.0, seq_len, di, sta, stb, stc, dt, stream);
     return STATUS_SUCCESS;
 }
 
