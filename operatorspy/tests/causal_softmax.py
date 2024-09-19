@@ -30,13 +30,10 @@ infiniopCausalSoftmaxDescriptor_t = POINTER(CausalSoftmaxDescriptor)
 
 
 def causal_softmax(x):
-    device = x.device
     type = x.dtype
-    # x = x.cpu()
     mask = torch.tril(torch.ones_like(x), diagonal=-1).flip(dims=[-2, -1])
     y = x.clone()
-    masked = torch.where(mask == 1.0, torch.tensor(-torch.inf).to(torch.float32).to(device), y.to(torch.float32))
-    # return torch.nn.functional.softmax(masked, dim=-1).to(type)
+    masked = torch.where(mask == 1, -torch.inf, y.to(torch.float32))
     return torch.nn.functional.softmax(masked, dim=-1).to(type)
 
 
@@ -61,6 +58,7 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             descriptor, ctypes.byref(workspace_size)
         )
     )
+    print(workspace_size)
     # workspace = to_tensor(create_workspace(workspace_size.value, x.device), lib)
     workspace = create_workspace(workspace_size.value, x.device)
     check_error(
@@ -116,8 +114,8 @@ def test_ascend(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # x_shape, x_stride
-        ((32, 20, 20), None),
-        # ((32, 20, 512), (20480, 512, 1)),
+        ((32, 20, 512), None),
+        ((32, 20, 512), (20480, 512, 1)),
     ]
     args = get_args()
     lib = open_lib()
