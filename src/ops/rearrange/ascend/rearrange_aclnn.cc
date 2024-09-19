@@ -1,5 +1,5 @@
 #include "rearrange_aclnn.h"
-#include "utils.h"
+#include "../../../utils.h"
 
 RearrangeAclnnDescriptor::RearrangeAclnnDescriptor(Device _device) {
     device = _device;

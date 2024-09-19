@@ -5,7 +5,7 @@
 #include "../../../devices/ascend/tensor_aclnn.h"
 // #include "../../../devices/ascend/common_ascend.h"
 #include "operators.h"
-#include "utils.h"
+#include "../../../utils.h"
 #include <acl/acl_base.h>
 #include <aclnn/acl_meta.h>
 #include <aclnnop/aclnn_rms_norm.h>

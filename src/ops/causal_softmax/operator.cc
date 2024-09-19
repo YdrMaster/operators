@@ -1,4 +1,4 @@
-#include "../utils.h"
+#include "../../utils.h"
 #include "operators.h"
 #include "ops/causal_softmax/causal_softmax.h"
 

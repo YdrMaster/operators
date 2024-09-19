@@ -2,7 +2,6 @@
 #define __ACLNN_CAUSAL_SOFTMAX_H__
 
 #include "operators.h"
-#include "utils.h"
 #include "../../../devices/ascend/tensor_aclnn.h"
 #include "../../../devices/ascend/ascend_handle.h"
 #include <acl/acl_base.h>

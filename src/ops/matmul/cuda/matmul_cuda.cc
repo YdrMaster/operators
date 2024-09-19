@@ -1,6 +1,6 @@
 #include "matmul_cuda.h"
 #include "../../../devices/cuda/common_cuda.h"
-#include "../../utils.h"
+#include "../../../utils.h"
 
 infiniopStatus_t cudaCreateMatmulDescriptor(CudaHandle_t handle,
                                             MatmulCudaDescriptor_t *desc_ptr,

@@ -1,4 +1,4 @@
-#include "../utils.h"
+#include "../../utils.h"
 #include "ops/matmul/matmul.h"
 
 #ifdef ENABLE_CPU

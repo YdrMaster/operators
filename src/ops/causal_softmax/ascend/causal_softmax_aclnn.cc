@@ -1,5 +1,5 @@
 #include "causal_softmax_aclnn.h"
-#include "utils.h"
+#include "../../../utils.h"
 
 CausalSoftmaxAclnnDescriptor::CausalSoftmaxAclnnDescriptor(Device _device) {
     device = _device;

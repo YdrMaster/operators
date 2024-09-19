@@ -1,4 +1,4 @@
-#include "../utils.h"
+#include "../../utils.h"
 #include "ops/rotary_embedding/rotary_embedding.h"
 
 #ifdef ENABLE_CPU

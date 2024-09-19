@@ -1,5 +1,5 @@
 #include "swiglu.h"
-#include "utils.h"
+#include "../../../utils.h"
 
 extern "C" void swiglu_kernel_do(void *c, void *a, void *b,
                                  float beta, int32_t nt, int32_t dh,

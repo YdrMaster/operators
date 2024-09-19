@@ -1,4 +1,4 @@
-#include "../utils.h"
+#include "../../utils.h"
 #include "ops/rms_norm/rms_norm.h"
 
 #ifdef ENABLE_CPU

@@ -1,5 +1,5 @@
 #include "tensor_aclnn.h"
-#include "utils.h"
+#include "../../utils.h"
 
 /// @brief Set aclnnTensorDescriptor from infiniopTensorDescriptor
 /// @param y infiniopTensorDescriptor

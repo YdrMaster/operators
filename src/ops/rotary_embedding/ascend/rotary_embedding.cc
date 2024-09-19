@@ -1,5 +1,5 @@
 #include "rotary_embedding.h"
-#include "utils.h"
+#include "../../../utils.h"
 
 extern "C" void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
                                int32_t nt, int32_t nh, int32_t dh,

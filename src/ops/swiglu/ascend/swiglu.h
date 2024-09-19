@@ -2,7 +2,7 @@
 #define __ACLNN_SWIGLU_H__
 
 #include "operators.h"
-#include "utils.h"
+#include "../../../utils.h"
 #include <acl/acl_base.h>
 
 
