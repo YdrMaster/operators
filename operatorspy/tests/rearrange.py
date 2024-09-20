@@ -41,12 +41,15 @@ def test(
     print(
         f"Testing Rerrange on {torch_device} with x_shape:{x_shape} x_stride:{x_stride} y_shape:{y_shape} y_stride:{y_stride} x_dtype:{x_dtype}"
     )
+
     x = torch.rand(x_shape, dtype=x_dtype).to(torch_device)
     y = torch.zeros(y_shape, dtype=x_dtype).to(torch_device)
+
     if x_stride is not None:
         x = rearrange_tensor(x, x_stride)
     if y_stride is not None:
         y = rearrange_tensor(y, y_stride)
+    
     x_tensor = to_tensor(x, lib)
     y_tensor = to_tensor(y, lib)
 
