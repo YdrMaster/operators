@@ -8,64 +8,71 @@ infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t handle,
                                          infiniopTensorDescriptor_t a,
                                          infiniopTensorDescriptor_t b) {
     uint64_t ndim = c->ndim;
-    if (ndim > 5 || ndim != a->ndim || ndim != b->ndim) {
+    if (!isValidBroadcastShape(a, b, c)) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    for (size_t i = 0; i < ndim; ++i) {
-        if (a->shape[i] != b->shape[i] || a->shape[i] != c->shape[i]) {
-            return STATUS_BAD_TENSOR_SHAPE;
-        }
+    if (!is_contiguous(a) || !is_contiguous(b) || !is_contiguous(c)) {
+        return STATUS_BAD_TENSOR_STRIDES;
     }
     if (!dtype_eq(c->dt, F16) || c->dt != a->dt || c->dt != b->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
-
-    // promote to dimension 4 if dimension is less than 4
-    ndim = std::max(4UL, ndim);
-    const auto &old_dim = a->ndim;
-
-    // convert shape and stride arrays to int32_t
-    int32_t *shape = new int32_t[ndim];
-    int32_t *strides = new int32_t[ndim];
-    for (size_t i = 0; i < ndim; ++i) {
-        shape[i] = i < old_dim ? static_cast<int32_t>(c->shape[i]) : 1;
-        strides[i] = i < old_dim ? static_cast<int32_t>(c->strides[i]) : 1;
+    bool broadcasted = false;
+    if (ndim != a->ndim || ndim != b->ndim) {
+        broadcasted = true;
+    } else {
+        for (uint64_t i = 0; i < ndim; ++i) {
+            if (c->shape[i] != a->shape[i] || c->shape[i] != b->shape[i]) {
+                broadcasted = true;
+                break;
+            }
+        }
     }
 
-    // create and set tensor descriptors for tensors a, b, and c
-    cudnnTensorDescriptor_t tensor_desc;
-    checkCudnnError(cudnnCreateTensorDescriptor(&tensor_desc));
-    checkCudnnError(cudnnSetTensorNdDescriptor(tensor_desc, CUDNN_DATA_HALF, ndim, shape, strides));
+    uint64_t c_data_size = std::accumulate(c->shape, c->shape + c->ndim, 1ULL, std::multiplies<uint64_t>());
 
-    // set operator descriptor
-    cudnnOpTensorDescriptor_t op_desc;
-    checkCudnnError(cudnnCreateOpTensorDescriptor(&op_desc));
-    checkCudnnError(cudnnSetOpTensorDescriptor(
-        op_desc, CUDNN_OP_TENSOR_ADD, CUDNN_DATA_FLOAT, CUDNN_NOT_PROPAGATE_NAN));
+    // get the adjusted strides for a and b
+    int64_t *a_strides = new int64_t[ndim];
+    int64_t *b_strides = new int64_t[ndim];
+    for (size_t i = 0; i < ndim; ++i) {
+        a_strides[i] = (i < ndim - a->ndim || c->shape[i] != a->shape[i + a->ndim - ndim]) ? 0 : a->strides[i + a->ndim - ndim];
+        b_strides[i] = (i < ndim - b->ndim || c->shape[i] != b->shape[i + b->ndim - ndim]) ? 0 : b->strides[i + b->ndim - ndim];
+    }
 
-    const float alpha = 1.0f;
-    const float beta = 0.0f;
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, handle->device_id);
+
+    int64_t *a_strides_d, *b_strides_d, *c_strides_d;
+    checkCudaErrorWithCode(cudaMalloc(&a_strides_d, ndim * sizeof(int64_t)), STATUS_MEMORY_NOT_ALLOCATED);
+    checkCudaErrorWithCode(cudaMalloc(&b_strides_d, ndim * sizeof(int64_t)), STATUS_MEMORY_NOT_ALLOCATED);
+    checkCudaErrorWithCode(cudaMalloc(&c_strides_d, ndim * sizeof(int64_t)), STATUS_MEMORY_NOT_ALLOCATED);
+    checkCudaErrorWithCode(cudaMemcpy(a_strides_d, a_strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaMemcpy(b_strides_d, b_strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaMemcpy(c_strides_d, c->strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
 
     *desc_ptr = new AddCudaDescriptor{
         DevNvGpu,
         c->dt,
         handle->device_id,
-        &handle->cudnn_handle,
-        tensor_desc,
-        op_desc,
-        alpha,
-        beta};
+        ndim,
+        c_data_size,
+        static_cast<uint64_t>(prop.maxGridSize[0]),
+        a_strides_d,
+        b_strides_d,
+        c_strides_d,
+        broadcasted,
+    };
 
-    delete[] shape;
-    delete[] strides;
+    delete[] a_strides;
+    delete[] b_strides;
 
     return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc) {
-    checkCudnnError(cudnnDestroyOpTensorDescriptor(desc->op_desc));
-    checkCudnnError(cudnnDestroyTensorDescriptor(desc->tensor_desc));
-    desc->handle = nullptr;
+    cudaFree((void *) desc->a_strides);
+    cudaFree((void *) desc->b_strides);
+    cudaFree((void *) desc->c_strides);
     delete desc;
     return STATUS_SUCCESS;
 }

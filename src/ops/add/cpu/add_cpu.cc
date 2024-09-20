@@ -2,38 +2,66 @@
 #include "../../../devices/cpu/common_cpu.h"
 #include "../../utils.h"
 
+inline void incrementOne(uint64_t *indices, uint64_t const *shape, uint64_t ndim) {
+    for (int64_t i = ndim - 1; i >= 0; --i) {
+        if (++indices[i] != shape[i]) {
+            return;
+        }
+        indices[i] = 0;
+    }
+}
+
+inline uint64_t compactToFlat(uint64_t const *indices, uint64_t const *strides, uint64_t ndim) {
+    return std::inner_product(indices, indices + ndim, strides, uint64_t(0));
+}
+
 infiniopStatus_t cpuCreateAddDescriptor(infiniopHandle_t,
                                         AddCpuDescriptor_t *desc_ptr,
                                         infiniopTensorDescriptor_t c,
                                         infiniopTensorDescriptor_t a,
                                         infiniopTensorDescriptor_t b) {
     uint64_t ndim = c->ndim;
-    if (ndim != a->ndim || ndim != b->ndim) {
+    if (!isValidBroadcastShape(a, b, c)) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    for (size_t i = 0; i < ndim; ++i) {
-        if (a->shape[i] != b->shape[i] || a->shape[i] != c->shape[i]) {
-            return STATUS_BAD_TENSOR_SHAPE;
-        }
-        if (a->strides[i] != b->strides[i] || a->strides[i] != c->strides[i]) {
-            return STATUS_BAD_TENSOR_STRIDES;
-        }
+    if (!is_contiguous(a) || !is_contiguous(b) || !is_contiguous(c)) {
+        return STATUS_BAD_TENSOR_STRIDES;
     }
     if (!dtype_eq(c->dt, F16) || c->dt != a->dt || c->dt != b->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
-    uint64_t data_size = std::accumulate(a->shape, a->shape + ndim, 1ULL, std::multiplies<uint64_t>());
+    uint64_t c_data_size = std::accumulate(c->shape, c->shape + c->ndim, 1ULL, std::multiplies<uint64_t>());
+
+    // get the adjusted strides for a and b
+    uint64_t *a_strides = new uint64_t[ndim];
+    uint64_t *b_strides = new uint64_t[ndim];
+    for (size_t i = 0; i < ndim; ++i) {
+        a_strides[i] = (i < ndim - a->ndim || c->shape[i] != a->shape[i + a->ndim - ndim]) ? 0 : a->strides[i + a->ndim - ndim];
+        b_strides[i] = (i < ndim - b->ndim || c->shape[i] != b->shape[i + b->ndim - ndim]) ? 0 : b->strides[i + b->ndim - ndim];
+    }
+
+    uint64_t *c_indices = new uint64_t[ndim];
+    std::fill(c_indices, c_indices + ndim, 0);
 
     *desc_ptr = new AddCpuDescriptor{
         DevCpu,
         c->dt,
-        data_size};
+        ndim,
+        c_data_size,
+        c->shape,
+        a_strides,
+        b_strides,
+        c_indices,
+    };
 
     return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cpuDestroyAddDescriptor(AddCpuDescriptor_t desc) {
+    delete[] desc->a_strides;
+    delete[] desc->b_strides;
+    delete[] desc->c_indices;
     delete desc;
     return STATUS_SUCCESS;
 }
@@ -42,8 +70,12 @@ void add_cpu_f16(AddCpuDescriptor_t desc, void *c, void const *a, void const *b)
     auto a_ = reinterpret_cast<uint16_t const *>(a);
     auto b_ = reinterpret_cast<uint16_t const *>(b);
     auto c_ = reinterpret_cast<uint16_t *>(c);
-    for (uint64_t i = 0; i < desc->data_size; ++i) {
-        c_[i] = f32_to_f16(f16_to_f32(a_[i]) + f16_to_f32(b_[i]));
+    const auto &indices = desc->c_indices;
+
+    for (uint64_t i = 0; i < desc->c_data_size; ++i, incrementOne(indices, desc->c_shape, desc->ndim)) {
+        auto a_index = compactToFlat(indices, desc->a_strides, desc->ndim);
+        auto b_index = compactToFlat(indices, desc->b_strides, desc->ndim);
+        c_[i] = f32_to_f16(f16_to_f32(a_[a_index]) + f16_to_f32(b_[b_index]));
     }
 }
 

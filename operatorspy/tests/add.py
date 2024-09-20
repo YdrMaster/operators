@@ -27,29 +27,30 @@ infiniopAddDescriptor_t = POINTER(AddDescriptor)
 
 
 def add(x, y):
-    return x + y
+    return torch.add(x, y)
 
 
 def test(
     lib,
     handle,
     torch_device,
-    tensor_shape,
-    tensor_stride=None,
+    c_shape, 
+    a_shape, 
+    b_shape,
     tensor_dtype=torch.float16,
     inplace=Inplace.OUT_OF_PLACE,
 ):
     print(
-        f"Testing Add on {torch_device} with tensor_shape:{tensor_shape} tensor_stride:{tensor_stride} dtype:{tensor_dtype} inplace: {inplace.name}"
+        f"Testing Add on {torch_device} with c_shape:{c_shape} a_shape:{a_shape} b_shape:{b_shape} dtype:{tensor_dtype} inplace: {inplace.name}"
     )
-    if torch_device == "cuda" and inplace == Inplace.INPLACE_B:
-        print("Unsupported test: CUDA does not support inplace b")
+    if a_shape != b_shape and inplace != Inplace.OUT_OF_PLACE:
+        print("Unsupported test: broadcasting does not support in-place")
         return
 
-    a = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
-    b = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
-    c = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) if inplace == Inplace.OUT_OF_PLACE else (a if inplace == Inplace.INPLACE_A else b)
-
+    a = torch.rand(a_shape, dtype=tensor_dtype).to(torch_device)
+    b = torch.rand(b_shape, dtype=tensor_dtype).to(torch_device)
+    c = torch.rand(c_shape, dtype=tensor_dtype).to(torch_device) if inplace == Inplace.OUT_OF_PLACE else (a if inplace == Inplace.INPLACE_A else b)
+    
     ans = add(a, b)
 
     a_tensor = to_tensor(a, lib)
@@ -67,7 +68,7 @@ def test(
         )
     )
     lib.infiniopAdd(
-        descriptor, None, 0, c_tensor.data, a_tensor.data, b_tensor.data, None
+        descriptor, c_tensor.data, a_tensor.data, b_tensor.data, None
     )
     assert torch.allclose(c, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyAddDescriptor(descriptor))
@@ -76,16 +77,16 @@ def test(
 def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    for x_shape, x_stride, inplace in test_cases:
-        test(lib, handle, "cpu", x_shape, x_stride, inplace=inplace)
+    for c_shape, a_shape, b_shape, inplace in test_cases:
+        test(lib, handle, "cpu", c_shape, a_shape, b_shape, inplace=inplace)
     destroy_handle(lib, handle)
 
 
 def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    for x_shape, x_stride, inplace in test_cases:
-        test(lib, handle, "cuda", x_shape, x_stride, inplace=inplace)
+    for c_shape, a_shape, b_shape, inplace in test_cases:
+        test(lib, handle, "cuda", c_shape, a_shape, b_shape, inplace=inplace)
     destroy_handle(lib, handle)
 
 
@@ -94,18 +95,25 @@ def test_bang(lib, test_cases):
 
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
-    for x_shape, x_stride in test_cases:
-        test(lib, handle, "mlu", x_shape, x_stride)
+    for c_shape, a_shape, b_shape, inplace in test_cases:
+        test(lib, handle, "mlu", c_shape, a_shape, b_shape, inplace=inplace)
     destroy_handle(lib, handle)
 
 
 if __name__ == "__main__":
     test_cases = [
-        # x_shape, x_stride, inplace
-        ((32, 20, 512), None, Inplace.OUT_OF_PLACE),
-        ((32, 20, 512), None, Inplace.INPLACE_A),
-        ((32, 20, 512), None, Inplace.INPLACE_B),
-        ((32), None, Inplace.OUT_OF_PLACE),
+        # c_shape, a_shape, b_shape, inplace
+        ((32, 150, 512000), (32, 150, 512000), (32, 150, 512000), Inplace.OUT_OF_PLACE),
+        ((32, 150, 51200), (32, 150, 51200), (32, 150, 1), Inplace.OUT_OF_PLACE),
+        ((32, 150, 51200), (32, 150, 51200), (32, 150, 51200), Inplace.OUT_OF_PLACE),
+        ((2, 20, 3), (2, 1, 3), (2, 20, 3), Inplace.OUT_OF_PLACE),
+        ((32, 20, 512), (32, 20, 512), (32, 20, 512), Inplace.INPLACE_A),
+        ((32, 20, 512), (32, 20, 512), (32, 20, 512), Inplace.INPLACE_B),
+        ((32, 256, 112, 112), (32, 256, 112, 1), (32, 256, 112, 112), Inplace.OUT_OF_PLACE),
+        ((32, 256, 112, 112), (32, 256, 112, 112), (32, 256, 112, 112), Inplace.OUT_OF_PLACE),
+        ((2, 4, 3), (2, 1, 3), (4, 3), Inplace.OUT_OF_PLACE),
+        ((2, 3, 4, 5), (2, 3, 4, 5), (5,), Inplace.OUT_OF_PLACE),
+        ((3, 2, 4, 5), (4, 5), (3, 2, 1, 1), Inplace.OUT_OF_PLACE),
     ]
     args = get_args()
     lib = open_lib()
@@ -120,8 +128,6 @@ if __name__ == "__main__":
     lib.infiniopAdd.restype = c_int32
     lib.infiniopAdd.argtypes = [
         infiniopAddDescriptor_t,
-        c_void_p,
-        c_uint64,
         c_void_p,
         c_void_p,
         c_void_p,
@@ -140,4 +146,4 @@ if __name__ == "__main__":
         test_bang(lib, test_cases)
     if not (args.cpu or args.cuda or args.bang):
         test_cpu(lib, test_cases)
-    print("Test passed!")
+    print("\033[92mTest passed!\033[0m")

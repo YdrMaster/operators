@@ -25,7 +25,7 @@ typedef struct DataLayout {
 typedef struct DataLayout DT;
 
 // clang-format off
-const static struct DataLayout
+constexpr static struct DataLayout
     I8   = {1, 1, 1,  7,  0},
     I16  = {1, 1, 2, 15,  0},
     I32  = {1, 1, 4, 31,  0},

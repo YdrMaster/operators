@@ -4,17 +4,20 @@
 #include "../../../devices/cuda/common_cuda.h"
 #include "../../../devices/cuda/cuda_handle.h"
 #include "operators.h"
-#include <cudnn.h>
+#include <cuda_fp16.h>
+#include <numeric>
 
 struct AddCudaDescriptor {
     Device device;
     DT dtype;
     int device_id;
-    cudnnHandle_t *handle;
-    cudnnTensorDescriptor_t tensor_desc;
-    cudnnOpTensorDescriptor_t op_desc;
-    const float alpha;
-    const float beta;
+    uint64_t ndim;
+    uint64_t c_data_size;
+    uint64_t max_grid_size;
+    int64_t const *a_strides;
+    int64_t const *b_strides;
+    int64_t const *c_strides;
+    bool broadcasted;
 };
 
 typedef struct AddCudaDescriptor *AddCudaDescriptor_t;

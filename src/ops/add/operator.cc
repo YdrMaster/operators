@@ -34,7 +34,7 @@ __C infiniopStatus_t infiniopCreateAddDescriptor(
     return STATUS_BAD_DEVICE;
 }
 
-__C infiniopStatus_t infiniopAdd(infiniopAddDescriptor_t desc, void *workspace, uint64_t workspace_size, void *c, void const *a, void const *b, void *stream) {
+__C infiniopStatus_t infiniopAdd(infiniopAddDescriptor_t desc, void *c, void const *a, void const *b, void *stream) {
     switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:

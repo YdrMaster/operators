@@ -3,10 +3,16 @@
 
 #include "operators.h"
 #include <numeric>
+
 struct AddCpuDescriptor {
     Device device;
     DT dtype;
-    uint64_t data_size;
+    uint64_t ndim;
+    uint64_t c_data_size;
+    uint64_t const *c_shape;
+    uint64_t const *a_strides;
+    uint64_t const *b_strides;
+    uint64_t *c_indices;
 };
 
 typedef struct AddCpuDescriptor *AddCpuDescriptor_t;
