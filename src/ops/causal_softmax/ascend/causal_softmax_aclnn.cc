@@ -120,18 +120,6 @@ infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor
                             CHECK_RET(ret == ACL_SUCCESS,
                                       LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret));
                         });
-    // auto ret = aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize(ta,
-    //                                                             nullptr,
-    //                                                             tmask,
-    //                                                             1.0, 0,
-    //                                                             tout,
-    //                                                             &workspaceSize,
-    //                                                             &(*executor));
-
-    // CHECK_RET(ret == ACL_SUCCESS,
-    //           LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret));
-    // aclSetAclOpExecutorRepeatable(*executor);
-    // pool.push(std::move(*executor));
     *size = workspaceSize +
             numElements(maskDesc->shape, maskDesc->ndim) * aclDataTypeSize(maskDesc->dataType);
 
@@ -180,10 +168,6 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
                 numElements(maskDesc->shape, maskDesc->ndim) * ele_size,
                 ACL_MEMCPY_HOST_TO_DEVICE);
 
-    // // Get executor from handle
-    // auto &pool = desc->handle->aclnn_handles;
-    // auto executor = pool.pop();
-
     use_aclnn_compute((AscendHandle_t) handle,
                       [&](aclOpExecutor *&executor) {
                           AclSetTensorAddr(executor, 0, ta, data);
@@ -198,21 +182,6 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
                           CHECK_RET(ret == ACL_SUCCESS,
                                     LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBias failed. ERROR: %d\n", ret));
                       });
-
-    // AclSetTensorAddr(*executor, 0, ta, data);
-    // AclSetTensorAddr(*executor, 2, tmask, workspace);
-    // AclSetTensorAddr(*executor, 3, tout, data);
-
-    // workspace = (void *) ((uint16_t *) workspace + numElements(maskDesc->shape, maskDesc->ndim));
-    // auto ret = aclnnMaskedSoftmaxWithRelPosBias(workspace,
-    //                                             desc->workspaceSize,
-    //                                             *executor,
-    //                                             stream);
-    // CHECK_RET(ret == ACL_SUCCESS,
-    //           LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBias failed. ERROR: %d\n", ret));
-    // aclDestroyAclOpExecutor(*executor);
-
-    // pool.push(std::move(*executor));
 
     return STATUS_SUCCESS;
 }

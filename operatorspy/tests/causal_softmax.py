@@ -42,9 +42,13 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
         f"Testing CausalSoftmax on {torch_device} with x_shape:{x_shape} x_stride:{x_stride} dtype:{x_dtype}"
     )
     x = torch.rand(x_shape, dtype=x_dtype).to(torch_device)
-    ans = causal_softmax(x)
+    
+    
     if x_stride is not None:
         x = rearrange_tensor(x, x_stride)
+        
+    ans = causal_softmax(x)
+
     x_tensor = to_tensor(x, lib)
     descriptor = infiniopCausalSoftmaxDescriptor_t()
     check_error(
@@ -52,6 +56,7 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             handle, ctypes.byref(descriptor), x_tensor.descriptor
         )
     )
+    
     workspace_size = c_uint64(0)
     check_error(
         lib.infiniopGetCausalSoftmaxWorkspaceSize(
@@ -59,6 +64,7 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
         )
     )
     workspace = create_workspace(workspace_size.value, x.device)
+    
     check_error(
         lib.infiniopCausalSoftmax(
             descriptor,
@@ -68,7 +74,9 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
             None,
         )
     )
+    
     assert torch.allclose(x, ans, atol=0, rtol=1e-2)
+    
     check_error(lib.infiniopDestroyCausalSoftmaxDescriptor(descriptor))
 
 
