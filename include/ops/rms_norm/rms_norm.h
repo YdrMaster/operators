@@ -16,12 +16,12 @@ __C __export infiniopStatus_t infiniopCreateRMSNormDescriptor(
     infiniopTensorDescriptor_t y_desc,
     infiniopTensorDescriptor_t x_desc,
     infiniopTensorDescriptor_t w_desc,
-    int8_t w_datatype);
+    float epsilon);
 
 __C __export infiniopStatus_t infiniopGetRMSNormWorkspaceSize(infiniopRMSNormDescriptor_t desc, uint64_t *size);
 
 __C __export infiniopStatus_t infiniopRMSNorm(infiniopRMSNormDescriptor_t desc, void *workspace, uint64_t workspace_size,
-    void *y, void *x, void *w, float epsilon, void *stream);
+    void *y, void *x, void *w, void *stream);
 
 __C __export infiniopStatus_t infiniopDestroyRMSNormDescriptor(infiniopRMSNormDescriptor_t desc);
 

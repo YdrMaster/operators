@@ -116,10 +116,11 @@ static __global__ void rms_norm_standard(
     }
 }
 
-void rms_norm_nv_gpu_f16(RMSNormCudaDescriptor_t desc, void *y, void *x, void *w, float epsilon, void *stream) {
+void rms_norm_nv_gpu_f16(RMSNormCudaDescriptor_t desc, void *y, void *x, void *w, void *stream) {
     auto n = desc->n, d = desc->d;
     auto y_ = reinterpret_cast<half *>(y);
     auto x_ = reinterpret_cast<half const *>(x);
+    auto epsilon = desc->epsilon;
 
     // Get strides in terms of elements
     auto stride_y = desc->stride_y;
@@ -127,8 +128,8 @@ void rms_norm_nv_gpu_f16(RMSNormCudaDescriptor_t desc, void *y, void *x, void *w
 
     auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
     unsigned int items_per_thread = ROUND_UP_DIV(d, MAX_THREADS_PER_BLOCK);
-    int8_t w_datatype = desc->w_datatype;
-    if (w_datatype == 0) {
+    auto w_datatype = desc->w_datatype;
+    if (dtype_eq(w_datatype, F16)) {
         auto w_ = reinterpret_cast<half const *>(w);
         if (items_per_thread == 1) {
             rms_norm_padding<MAX_THREADS_PER_BLOCK, half, half>
@@ -158,13 +159,13 @@ void rms_norm_nv_gpu_f16(RMSNormCudaDescriptor_t desc, void *y, void *x, void *w
 infiniopStatus_t cudaRMSNorm(RMSNormCudaDescriptor_t desc,
                                    void *workspace,
                                    unsigned long int workspace_size,
-                                   void *y, void *x, void *w, float epsilon,
+                                   void *y, void *x, void *w,
                                    void *stream){
     if(cudaSetDevice(desc->device_id) != cudaSuccess){
         return STATUS_BAD_DEVICE;
     }
     if (dtype_eq(desc->dtype, F16)){
-        rms_norm_nv_gpu_f16(desc, y, x, w, epsilon, stream);
+        rms_norm_nv_gpu_f16(desc, y, x, w, stream);
         return STATUS_SUCCESS;
     }
 

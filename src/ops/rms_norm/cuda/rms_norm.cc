@@ -6,7 +6,7 @@ infiniopStatus_t cudaCreateRMSNormDescriptor(CudaHandle_t handle, RMSNormCudaDes
                                     infiniopTensorDescriptor_t y_desc,
                                     infiniopTensorDescriptor_t x_desc,
                                     infiniopTensorDescriptor_t w_desc,
-                                    int8_t w_datatype) {
+                                    float epsilon) {
     if (y_desc->ndim != 2 || x_desc->ndim != 2 || w_desc->ndim != 1) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
@@ -20,6 +20,7 @@ infiniopStatus_t cudaCreateRMSNormDescriptor(CudaHandle_t handle, RMSNormCudaDes
 
     unsigned long int stride_y = y_desc->strides[0];
     unsigned long int stride_x = x_desc->strides[0];
+    auto w_datatype = w_desc->dt;
     *desc_ptr = new RMSNormCudaDescriptor{
         handle->device,
         handle->device_id,
@@ -28,7 +29,8 @@ infiniopStatus_t cudaCreateRMSNormDescriptor(CudaHandle_t handle, RMSNormCudaDes
         d,
         stride_y,
         stride_x,
-        w_datatype};
+        w_datatype,
+        epsilon};
 
     return STATUS_SUCCESS;
 }

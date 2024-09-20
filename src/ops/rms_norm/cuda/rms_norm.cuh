@@ -12,7 +12,8 @@ struct RMSNormCudaDescriptor {
     unsigned long int d;
     unsigned long int stride_y;
     unsigned long int stride_x;
-    int8_t w_datatype;
+    DT w_datatype;
+    float epsilon;
 };
 
 typedef struct RMSNormCudaDescriptor *RMSNormCudaDescriptor_t;
@@ -22,14 +23,14 @@ infiniopStatus_t cudaCreateRMSNormDescriptor(CudaHandle_t handle,
                                                     infiniopTensorDescriptor_t y_desc,
                                                     infiniopTensorDescriptor_t x_desc,
                                                     infiniopTensorDescriptor_t w_desc,
-                                                    int8_t w_datatype);
+                                                    float epsilon);
 
 infiniopStatus_t cudaGetRMSNormWorkspaceSize(RMSNormCudaDescriptor_t desc, unsigned long int *size);
 
 infiniopStatus_t cudaRMSNorm(RMSNormCudaDescriptor_t desc,
                                    void *workspace,
                                    unsigned long int workspace_size,
-                                   void *y, void *x, void *w, float epsilon,
+                                   void *y, void *x, void *w,
                                    void *stream);
 
 infiniopStatus_t cudaDestroyRMSNormDescriptor(RMSNormCudaDescriptor_t desc);

@@ -52,7 +52,7 @@ def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16
     check_error(
         lib.infiniopCreateRMSNormDescriptor(
             handle, ctypes.byref(descriptor), y_tensor.descriptor, x_tensor.descriptor,
-            w_tensor.descriptor, w_dataType
+            w_tensor.descriptor, w_dataType, eps
         )
     )
     workspace_size = c_uint64(0)
@@ -70,7 +70,6 @@ def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16
             y_tensor.data,
             x_tensor.data,
             w_tensor.data,
-            eps,
             None,
         )
     )
@@ -116,6 +115,7 @@ if __name__ == "__main__":
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
         c_int32,
+        c_float,
     ]
 
     lib.infiniopGetRMSNormWorkspaceSize.restype = c_int32
@@ -132,7 +132,6 @@ if __name__ == "__main__":
         c_void_p,
         c_void_p,
         c_void_p,
-        c_float,
         c_void_p,
     ]
     lib.infiniopDestroyRMSNormDescriptor.restype = c_int32

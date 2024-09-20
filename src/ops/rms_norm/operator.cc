@@ -22,15 +22,15 @@ __C infiniopStatus_t infiniopCreateRMSNormDescriptor(
     infiniopTensorDescriptor_t y_desc,
     infiniopTensorDescriptor_t x_desc,
     infiniopTensorDescriptor_t w_desc,
-    int8_t w_datatype) {
+    float epsilon) {
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuCreateRMSNormDescriptor(handle, (RMSNormCpuDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, w_datatype);
+            return cpuCreateRMSNormDescriptor(handle, (RMSNormCpuDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, epsilon);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateRMSNormDescriptor((CudaHandle_t)handle, (RMSNormCudaDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, w_datatype);
+            return cudaCreateRMSNormDescriptor((CudaHandle_t)handle, (RMSNormCudaDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, epsilon);
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
@@ -65,15 +65,15 @@ __C infiniopStatus_t infiniopGetRMSNormWorkspaceSize(infiniopRMSNormDescriptor_t
 }
 
 __C infiniopStatus_t infiniopRMSNorm(infiniopRMSNormDescriptor_t desc, void *workspace, uint64_t workspace_size,
-                                        void *y, void *x, void *w, float epsilon, void *stream) {
+                                        void *y, void *x, void *w, void *stream) {
     switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuRMSNorm((RMSNormCpuDescriptor_t) desc, workspace, workspace_size, y, x, w, epsilon, stream);
+            return cpuRMSNorm((RMSNormCpuDescriptor_t) desc, workspace, workspace_size, y, x, w, stream);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaRMSNorm((RMSNormCudaDescriptor_t) desc, workspace, workspace_size, y, x, w, epsilon, stream);
+            return cudaRMSNorm((RMSNormCudaDescriptor_t) desc, workspace, workspace_size, y, x, w, stream);
         }
 
 #endif

@@ -4,7 +4,7 @@
 #include <cmath>
 
 infiniopStatus_t cpuCreateRMSNormDescriptor(infiniopHandle_t, RMSNormCpuDescriptor_t *desc_ptr,
-    infiniopTensorDescriptor_t y_desc, infiniopTensorDescriptor_t x_desc, infiniopTensorDescriptor_t w_desc, int8_t w_datatype) {
+    infiniopTensorDescriptor_t y_desc, infiniopTensorDescriptor_t x_desc, infiniopTensorDescriptor_t w_desc, float epsilon) {
     if (y_desc->ndim != 2 || x_desc->ndim != 2 || w_desc->ndim != 1) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
@@ -18,6 +18,7 @@ infiniopStatus_t cpuCreateRMSNormDescriptor(infiniopHandle_t, RMSNormCpuDescript
 
     uint64_t stride_y = y_desc->strides[0];
     uint64_t stride_x = y_desc->strides[0];
+    auto w_datatype = w_desc->dt;
 
     *desc_ptr = new RMSNormCpuDescriptor{
         DevCpu,
@@ -26,7 +27,8 @@ infiniopStatus_t cpuCreateRMSNormDescriptor(infiniopHandle_t, RMSNormCpuDescript
         d,
         stride_y,
         stride_x,
-        w_datatype};
+        w_datatype,
+        epsilon};
 
     return STATUS_SUCCESS;
 }
@@ -41,17 +43,18 @@ infiniopStatus_t cpuDestroyRMSNormDescriptor(RMSNormCpuDescriptor_t desc) {
     return STATUS_SUCCESS;
 }
 
-void rms_norm_cpu_f16(RMSNormCpuDescriptor_t desc, void *y, void *x, void *w, float epsilon) {
+void rms_norm_cpu_f16(RMSNormCpuDescriptor_t desc, void *y, void *x, void *w) {
     auto n = desc->n, d = desc->d;
     auto stride_y = desc->stride_y;
     auto stride_x = desc->stride_x;
+    auto epsilon = desc->epsilon;
 
     auto y_ptr = reinterpret_cast<uint16_t *>(y);
     auto x_ptr = reinterpret_cast<uint16_t *>(x);
     void const *w_ptr = w;
     void const *w_ = nullptr;
-    int8_t w_datatype = desc->w_datatype;
-    if (w_datatype == 0) {
+    auto w_datatype = desc->w_datatype;
+    if (dtype_eq(w_datatype, F16)) {
         w_ = reinterpret_cast<uint16_t const *>(w_ptr);
     } else {
         w_ = reinterpret_cast<float const *>(w_ptr);
@@ -71,7 +74,7 @@ void rms_norm_cpu_f16(RMSNormCpuDescriptor_t desc, void *y, void *x, void *w, fl
         for (size_t j = 0; j < d; ++j) {
             auto x__ = f16_to_f32(x_[j]);
             float w__ = 0.0f;
-            if (w_datatype == 0) {
+            if (dtype_eq(w_datatype, F16)) {
                 w__ = f16_to_f32(static_cast<uint16_t const *>(w_)[j]);
             } else {
                 w__ = static_cast<float const *>(w_)[j];
@@ -85,10 +88,10 @@ void rms_norm_cpu_f16(RMSNormCpuDescriptor_t desc, void *y, void *x, void *w, fl
 infiniopStatus_t cpuRMSNorm(RMSNormCpuDescriptor_t desc,
                                   void *workspace,
                                   uint64_t workspace_size,
-                                  void *y, void *x, void *w, float epsilon, 
+                                  void *y, void *x, void *w, 
                                   void *stream) {
     if(dtype_eq(desc->dtype, F16)) {
-        rms_norm_cpu_f16(desc, y, x, w, epsilon);
+        rms_norm_cpu_f16(desc, y, x, w);
         return STATUS_SUCCESS;
     }
 
