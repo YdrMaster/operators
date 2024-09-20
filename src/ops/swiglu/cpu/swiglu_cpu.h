@@ -23,8 +23,8 @@ infiniopStatus_t cpuCreateSwiGLUDescriptor(infiniopHandle_t handle,
 
 infiniopStatus_t cpuSwiGLU(SwiGLUCpuDescriptor_t desc,
                            void *c,
-                           void *a,
-                           void *b,
+                           void const *a,
+                           void const *b,
                            void *stream);
 
 infiniopStatus_t cpuDestroySwiGLUDescriptor(SwiGLUCpuDescriptor_t desc);

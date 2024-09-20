@@ -1,27 +1,67 @@
 #include "common_cpu.h"
 
-float f16_to_f32(uint16_t code) {
-    union {
-        uint32_t u32;
-        float f32;
-    } ans{0};
-    ans.u32 = ((code & 0x8000) << 16) |
-              ((code & 0x7C00) == 0 ? 0 : (((code & 0x7C00) >> 10) + 112) << 23) |
-              ((code & 0x03FF) << 13);
-    return ans.f32;
+float f16_to_f32(uint16_t h) {
+    uint32_t sign = (h & 0x8000) << 16; // Extract the sign bit
+    int32_t exponent = (h >> 10) & 0x1F;// Extract the exponent
+    uint32_t mantissa = h & 0x3FF;      // Extract the mantissa (fraction part)
+
+    if (exponent == 31) {// Special case for Inf and NaN
+        if (mantissa != 0) {
+            // NaN: Set float32 NaN
+            uint32_t f32 = sign | 0x7F800000 | (mantissa << 13);
+            return *(float *) &f32;
+        } else {
+            // Infinity
+            uint32_t f32 = sign | 0x7F800000;
+            return *(float *) &f32;
+        }
+    } else if (exponent == 0) {// Subnormal float16 or zero
+        if (mantissa == 0) {
+            // Zero (positive or negative)
+            uint32_t f32 = sign;// Just return signed zero
+            return *(float *) &f32;
+        } else {
+            // Subnormal: Convert to normalized float32
+            exponent = -14;                  // Set exponent for subnormal numbers
+            while ((mantissa & 0x400) == 0) {// Normalize mantissa
+                mantissa <<= 1;
+                exponent--;
+            }
+            mantissa &= 0x3FF;// Clear the leading 1 bit
+            uint32_t f32 = sign | ((exponent + 127) << 23) | (mantissa << 13);
+            return *(float *) &f32;
+        }
+    } else {
+        // Normalized float16
+        uint32_t f32 = sign | ((exponent + 127 - 15) << 23) | (mantissa << 13);
+        return *(float *) &f32;
+    }
 }
 
 uint16_t f32_to_f16(float val) {
-    union {
-        float f32;
-        uint32_t u32;
-    } x{val};
-    return (static_cast<uint16_t>(x.u32 >> 16) & (1 << 15)) |
-           (((x.u32 >> 23) & mask_low(8)) >= 112
-                ? static_cast<uint16_t>(
-                      std::min((x.u32 >> 23 & mask_low(8)) - 127 + 15,
-                               static_cast<uint32_t>(31)))
-                : 0)
-               << 10 |
-           static_cast<uint16_t>(x.u32 >> 13) & mask_low(10);
+    uint32_t f32 = *(uint32_t *) &val;            // Read the bits of the float32
+    uint16_t sign = (f32 >> 16) & 0x8000;         // Extract the sign bit
+    int32_t exponent = ((f32 >> 23) & 0xFF) - 127;// Extract and de-bias the exponent
+    uint32_t mantissa = f32 & 0x7FFFFF;           // Extract the mantissa (fraction part)
+
+    if (exponent == 128) {// Special case for Inf and NaN
+        if (mantissa != 0) {
+            // NaN
+            return sign | 0x7C00 | (mantissa >> 13);// Convert the NaN payload
+        } else {
+            // Infinity
+            return sign | 0x7C00;
+        }
+    } else if (exponent > 15) {  // Overflow: Larger than float16 max
+        return sign | 0x7C00;    // Return infinity
+    } else if (exponent >= -14) {// Normalized float16
+        return sign | ((exponent + 15) << 10) | (mantissa >> 13);
+    } else if (exponent >= -24) {     // Subnormal float16 (leading denormals)
+        mantissa |= 0x800000;         // Add implicit leading 1
+        int32_t shift = -exponent - 1;// Calculate shift for subnormal numbers
+        return sign | (mantissa >> (13 + shift));
+    } else {
+        // Too small for subnormal: return signed zero
+        return sign;
+    }
 }
