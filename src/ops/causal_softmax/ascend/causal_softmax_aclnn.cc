@@ -51,12 +51,6 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     auto status = aDesc->fromInfiniOpTensorDescriptor(_y);
     status = outDesc->fromInfiniOpTensorDescriptor(_y);
 
-    // auto a_s = aDesc->toString();
-    // printf("aDesc:\n%s\n", a_s);
-
-    // a_s = outDesc->toString();
-    // printf("outDesc:\n%s\n", a_s);
-
     // Set mask Desc
     auto &maskDesc = (*desc_ptr)->maskDesc;
     auto mask_shape = new std::vector<int64_t>(3);
@@ -80,10 +74,6 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     maskDesc->storageShape = mask_shape->data();
     maskDesc->storageNdim = mask_shape->size();
 
-    // a_s = maskDesc->toString();
-
-    // printf("maskDesc:\n%s\n", a_s);
-
     // Create aclTensor
     status = aDesc->createTensor();
     status = maskDesc->createTensor();
@@ -103,8 +93,6 @@ infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor
     aclTensor *tmask = maskDesc->t;
     aclTensor *tout = outDesc->t;
 
-    // auto &pool = handle->aclnn_handles;
-    // auto executor = pool.pop();
     uint64_t workspaceSize;
 
     use_aclnn_workspace((AscendHandle_t) handle,
