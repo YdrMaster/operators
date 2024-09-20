@@ -18,16 +18,30 @@
 __C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
                                                     infiniopMatmulDescriptor_t *desc_ptr,
                                                     infiniopTensorDescriptor_t c_desc,
+                                                    float alpha,
                                                     infiniopTensorDescriptor_t a_desc,
-                                                    infiniopTensorDescriptor_t b_desc) {
+                                                    infiniopTensorDescriptor_t b_desc,
+                                                    float beta) {
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuCreateMatmulDescriptor((CpuHandle_t) handle, (MatmulCpuDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return cpuCreateMatmulDescriptor((CpuHandle_t) handle,
+                                             (MatmulCpuDescriptor_t *) desc_ptr,
+                                             c_desc,
+                                             alpha,
+                                             a_desc,
+                                             b_desc,
+                                             beta);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateMatmulDescriptor((CudaHandle_t) handle, (MatmulCudaDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return cudaCreateMatmulDescriptor((CudaHandle_t) handle,
+                                              (MatmulCudaDescriptor_t *) desc_ptr,
+                                              c_desc,
+                                              alpha,
+                                              a_desc,
+                                              b_desc,
+                                              beta);
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
@@ -38,8 +52,10 @@ __C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
             return aclnnCreateMatmulDescriptor((AscendHandle_t) handle,
                                                (MatmulAclnnDescriptor_t *) desc_ptr,
                                                c_desc,
+                                               alpha,
                                                a_desc,
                                                b_desc,
+                                               beta,
                                                1);
         }
 
@@ -82,17 +98,15 @@ __C infiniopStatus_t infiniopMatmul(infiniopMatmulDescriptor_t desc,
                                     void *c,
                                     void const *a,
                                     void const *b,
-                                    float alpha,
-                                    float beta,
                                     void *stream) {
     switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuMatmul((MatmulCpuDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha);
+            return cpuMatmul((MatmulCpuDescriptor_t) desc, workspace, workspace_size, c, a, b);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            return cudaMatmul((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, beta, a, b, alpha, stream);
+            return cudaMatmul((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, a, b, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
             // TODO
@@ -103,10 +117,8 @@ __C infiniopStatus_t infiniopMatmul(infiniopMatmulDescriptor_t desc,
                                workspace,
                                workspace_size,
                                c,
-                               beta,
                                a,
                                b,
-                               alpha,
                                stream);
 #endif
     }

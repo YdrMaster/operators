@@ -6,6 +6,8 @@ MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device device) {
     cDesc = new aclnnTensorDescriptor();
     aDesc = new aclnnTensorDescriptor();
     bDesc = new aclnnTensorDescriptor();
+    alpha = 1.0;
+    beta = 0;
     mt = 1;
     workspaceSize = 0;
 }
@@ -13,12 +15,16 @@ MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device device) {
 infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
                                              MatmulAclnnDescriptor_t *desc_ptr,
                                              infiniopTensorDescriptor_t c_desc,
+                                             float alpha,
                                              infiniopTensorDescriptor_t a_desc,
                                              infiniopTensorDescriptor_t b_desc,
+                                             float beta,
                                              int8_t mt) {
     *desc_ptr = new MatmulAclnnDescriptor(handle->device);
     (*desc_ptr)->handle = handle;
     (*desc_ptr)->mt = mt;
+    (*desc_ptr)->alpha = alpha;
+    (*desc_ptr)->beta = beta;
 
     auto &cDesc = (*desc_ptr)->cDesc;
     auto &aDesc = (*desc_ptr)->aDesc;
@@ -27,10 +33,6 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
     auto status = cDesc->fromInfiniOpTensorDescriptor(c_desc);
     status = aDesc->fromInfiniOpTensorDescriptor(a_desc);
     status = bDesc->fromInfiniOpTensorDescriptor(b_desc);
-
-    // printf("%s\n", cDesc->toString());
-    // printf("%s\n", aDesc->toString());
-    // printf("%s\n", bDesc->toString());
 
     status = cDesc->createTensor();
     status = aDesc->createTensor();
@@ -61,7 +63,7 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
                             // auto ret =
                             //     aclnnBatchMatMulGetWorkspaceSize(ta, tb, tc, desc->mt, &workspaceSize, executor);
                             auto ret =
-                                aclnnGemmGetWorkspaceSize(ta, tb, tc, 1.0, 0, transA, transB, tc,
+                                aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
                                                           desc->mt, &workspaceSize, executor);
                             CHECK_RET(ret == ACL_SUCCESS,
                                       LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
@@ -77,10 +79,8 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
                              void *workspace,
                              uint64_t workspace_size,
                              void *c,
-                             float beta,
                              void const *a,
                              void const *b,
-                             float alpha,
                              void *stream) {
     auto &cDesc = desc->cDesc;
     auto &aDesc = desc->aDesc;
@@ -119,80 +119,3 @@ infiniopStatus_t aclnnDestroyMatmulDescriptor(MatmulAclnnDescriptor_t desc) {
 
     return STATUS_SUCCESS;
 }
-
-
-// void matmul_aclnn_f16(MatmulAclnnDescriptor *descriptor, Tensor c, float beta,
-//                       Tensor a, Tensor b, float alpha, void *stream) {
-//     // Copy tensor layout to descriptor
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->aDesc, a.layout);
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->bDesc, b.layout);
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->cDesc, c.layout);
-
-//     // char *descStra = aclnnTensorDescToString(descriptor->aDesc);
-//     // if (descStra) {
-//     //     printf("%s", descStra);
-//     // } else {
-//     //     printf("Failed to print.\n");
-//     // }
-
-//     // char *descStrb = aclnnTensorDescToString(descriptor->bDesc);
-//     // if (descStrb) {
-//     //     printf("%s", descStrb);
-//     // } else {
-//     //     printf("Failed to print.\n");
-//     // }
-
-//     // char *descStrc = aclnnTensorDescToString(descriptor->cDesc);
-//     // if (descStrc) {
-//     //     printf("%s", descStrc);
-//     // } else {
-//     //     printf("Failed to print.\n");
-//     // }
-
-//     // Create aclTensor
-//     aclTensor *self;
-//     aclTensor *other;
-//     aclTensor *out;
-
-//     aclnnCreateTensor(descriptor->aDesc, a.data, &self);
-//     aclnnCreateTensor(descriptor->bDesc, b.data, &other);
-//     aclnnCreateTensor(descriptor->cDesc, c.data, &out);
-
-//     // Get workspaceSize
-//     uint64_t workspaceSize = 0;
-//     aclOpExecutor *executor;
-//     // TODO
-//     int8_t cubeMathType = 1;
-//     auto ret = aclnnBatchMatMulGetWorkspaceSize(self, other, out, cubeMathType,
-//                                                 &workspaceSize, &executor);
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclnnBatchMatMulGetWorkspaceSize failed. ERROR: %d\n",
-//                         ret););
-//     // Malloc workspace on device
-//     void *workspaceAddr = nullptr;
-//     if (workspaceSize > 0) {
-//         ret = aclrtMalloc(&workspaceAddr, workspaceSize,
-//                           ACL_MEM_MALLOC_HUGE_FIRST);
-//         CHECK_RET(ret == ACL_SUCCESS,
-//                   LOG_PRINT("allocate workspace failed. ERROR: %d\n", ret););
-//     }
-//     // Call aclnnBatchMatMul
-//     ret = aclnnBatchMatMul(workspaceAddr, workspaceSize, executor, stream);
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclnnBatchMatMul failed. ERROR: %d\n", ret););
-
-//     // Wait device work
-//     ret = aclrtSynchronizeStream(stream);
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclrtSynchronizeStream failed. ERROR: %d\n", ret););
-
-//     aclDestroyTensor(self);
-//     aclDestroyTensor(other);
-//     aclDestroyTensor(out);
-
-//     if (workspaceSize > 0) {
-//         aclrtFree(workspaceAddr);
-//     }
-
-//     return;
-// }

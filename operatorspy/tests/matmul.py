@@ -59,14 +59,14 @@ def test(
     b = torch.rand(b_shape, dtype=dtype).to(torch_device)
     c = torch.zeros(c_shape, dtype=dtype).to(torch_device)
 
-    ans = matmul(c, beta, a, b, alpha)
-
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
     if c_stride is not None:
         c = rearrange_tensor(c, c_stride)
+
+    ans = matmul(c, beta, a, b, alpha)
 
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
@@ -77,8 +77,10 @@ def test(
             handle,
             ctypes.byref(descriptor),
             c_tensor.descriptor,
+            alpha,
             a_tensor.descriptor,
             b_tensor.descriptor,
+            beta
         )
     )
 
@@ -96,13 +98,12 @@ def test(
             c_tensor.data,
             a_tensor.data,
             b_tensor.data,
-            alpha,
-            beta,
             None,
         )
     )
 
     assert torch.allclose(c, ans, atol=0, rtol=1e-2)
+
     check_error(lib.infiniopDestroyMatmulDescriptor(descriptor))
 
 
@@ -206,9 +207,45 @@ def test_bang(lib, test_cases):
     destroy_handle(lib, handle)
 
 
+def test_ascend(lib, test_cases):
+    import torch_npu
+    
+    device = DeviceEnum.DEVICE_NPU
+    handle = create_handle(lib, device)
+
+    for (
+        alpha,
+        beta,
+        a_shape,
+        b_shape,
+        c_shape,
+        a_stride,
+        b_stride,
+        c_stride,
+        dtype,
+    ) in test_cases:
+        test(
+            lib,
+            handle,
+            "npu",
+            alpha,
+            beta,
+            a_shape,
+            b_shape,
+            c_shape,
+            a_stride,
+            b_stride,
+            c_stride,
+            dtype,
+        )
+
+    destroy_handle(lib, handle)
+
+
 if __name__ == "__main__":
     test_cases = [
         # alpha, beta, a_shape, b_shape, c_shape, a_stride, b_stride, c_stride, dtype
+        (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
         (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
         # (
         #     1.0,
@@ -230,8 +267,10 @@ if __name__ == "__main__":
         infiniopHandle_t,
         POINTER(infiniopMatmulDescriptor_t),
         infiniopTensorDescriptor_t,
+        c_float,
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
+        c_float,
     ]
 
     lib.infiniopGetMatmulWorkspaceSize.restype = c_int32
@@ -248,8 +287,6 @@ if __name__ == "__main__":
         c_void_p,
         c_void_p,
         c_void_p,
-        c_float,
-        c_float,
         c_void_p,
     ]
 
