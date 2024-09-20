@@ -67,12 +67,18 @@ infiniopStatus_t aclnnTensorDescriptor::destroyTensor() {
         return STATUS_EXECUTION_FAILED;
     }
     t = nullptr;
+    shape = nullptr;
+    strides = nullptr;
+
     return STATUS_SUCCESS;
 }
 
 aclnnTensorDescriptor::~aclnnTensorDescriptor() {
     if (this->t) {
         destroyTensor();
+    } else {
+        delete shape;
+        delete strides;
     }
 }
 

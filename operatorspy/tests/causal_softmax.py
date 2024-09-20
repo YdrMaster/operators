@@ -42,10 +42,10 @@ def test(lib, handle, torch_device, x_shape, x_stride=None, x_dtype=torch.float1
         f"Testing CausalSoftmax on {torch_device} with x_shape:{x_shape} x_stride:{x_stride} dtype:{x_dtype}"
     )
     x = torch.rand(x_shape, dtype=x_dtype).to(torch_device)
-     
+    
     if x_stride is not None:
         x = rearrange_tensor(x, x_stride)
-        
+    
     ans = causal_softmax(x)
 
     x_tensor = to_tensor(x, lib)
