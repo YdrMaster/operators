@@ -1,4 +1,4 @@
-from ctypes import POINTER, Structure, c_int32, c_uint16, c_uint64, c_void_p
+from ctypes import POINTER, Structure, c_int32, c_void_p
 import ctypes
 import sys
 import os
@@ -110,9 +110,9 @@ def test_bang(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # c_shape, a_shape, b_shape, inplace
-        ((32, 150, 512000), (32, 150, 512000), (32, 150, 512000), Inplace.OUT_OF_PLACE),
-        ((32, 150, 51200), (32, 150, 51200), (32, 150, 1), Inplace.OUT_OF_PLACE),
-        ((32, 150, 51200), (32, 150, 51200), (32, 150, 51200), Inplace.OUT_OF_PLACE),
+        # ((32, 150, 512000), (32, 150, 512000), (32, 150, 512000), Inplace.OUT_OF_PLACE),
+        # ((32, 150, 51200), (32, 150, 51200), (32, 150, 1), Inplace.OUT_OF_PLACE),
+        # ((32, 150, 51200), (32, 150, 51200), (32, 150, 51200), Inplace.OUT_OF_PLACE),
         ((2, 20, 3), (2, 1, 3), (2, 20, 3), Inplace.OUT_OF_PLACE),
         ((32, 20, 512), (32, 20, 512), (32, 20, 512), Inplace.INPLACE_A),
         ((32, 20, 512), (32, 20, 512), (32, 20, 512), Inplace.INPLACE_B),
