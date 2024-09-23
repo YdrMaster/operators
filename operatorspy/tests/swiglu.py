@@ -48,7 +48,6 @@ def test_out_of_place(
     a = torch.rand(shape, dtype=dtype).to(torch_device)
     b = torch.rand(shape, dtype=dtype).to(torch_device)
     c = torch.rand(shape, dtype=dtype).to(torch_device)
-    ans = swiglu(a, b)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
@@ -57,6 +56,8 @@ def test_out_of_place(
     if c_stride is not None:
         c = rearrange_tensor(c, c_stride)
 
+    ans = swiglu(a, b)
+    
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
     c_tensor = to_tensor(c, lib)
@@ -89,13 +90,14 @@ def test_in_place1(
 ):
     a = torch.rand(shape, dtype=dtype).to(torch_device)
     b = torch.rand(shape, dtype=dtype).to(torch_device)
-    ans = swiglu(a, b)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
 
+    ans = swiglu(a, b)
+    
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
     descriptor = infiniopSwiGLUDescriptor_t()
@@ -128,13 +130,14 @@ def test_in_place2(
 ):
     a = torch.rand(shape, dtype=dtype).to(torch_device)
     b = torch.rand(shape, dtype=dtype).to(torch_device)
-    ans = swiglu(a, b)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
 
+    ans = swiglu(a, b)
+    
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
     descriptor = infiniopSwiGLUDescriptor_t()
@@ -217,8 +220,8 @@ if __name__ == "__main__":
         # shape, a_stride, b_stride, c_stride, dtype
         # ((13, 4), None, None, None, torch.float16),
         # ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
-        # ((13, 1024), (1024, 1), (1024, 1), (1024, 1), torch.float16)
-        ((13, 1024), None, None, None, torch.float16)
+        ((13, 1024), (1024, 1), (1024, 1), (1024, 1), torch.float16),
+        ((13, 1024), None, None, None, torch.float16),
     ]
     args = get_args()
     lib = open_lib()
