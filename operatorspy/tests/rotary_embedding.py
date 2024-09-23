@@ -233,3 +233,5 @@ if __name__ == "__main__":
         test_bang(lib, test_cases)
     if args.ascend:
         test_ascend(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang or args.ascend):
+        test_cpu(lib, test_cases)
