@@ -34,10 +34,13 @@ def rms_norm(x, w, eps):
     return w * hidden_states.to(input_dtype)
 
 
-def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16, w_dtype=torch.float16):
-    y = torch.zeros((16, 2048), dtype=y_dtype).to(torch_device)
-    x = torch.rand((16, 2048), dtype=x_dtype).to(torch_device)
-    w = torch.ones((2048,), dtype=w_dtype).to(torch_device)
+def test(lib, handle, torch_device, y_shape, x_shape, w_shape, dtype=torch.float16, w_dtype=torch.float16):
+    print(f"Testing RMS_Norm on {torch_device} with y_shape:{y_shape} x_shape:{x_shape} w_shape:{w_shape}"
+        f" dtype:{dtype} w_dtype:{w_dtype}")
+
+    y = torch.zeros(y_shape, dtype=dtype).to(torch_device)
+    x = torch.rand(x_shape, dtype=dtype).to(torch_device)
+    w = torch.ones(w_shape, dtype=w_dtype).to(torch_device)
 
     y_tensor = to_tensor(y, lib)
     x_tensor = to_tensor(x, lib)
@@ -52,7 +55,7 @@ def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16
     check_error(
         lib.infiniopCreateRMSNormDescriptor(
             handle, ctypes.byref(descriptor), y_tensor.descriptor, x_tensor.descriptor,
-            w_tensor.descriptor, w_dataType, eps
+            w_tensor.descriptor, eps
         )
     )
     workspace_size = c_uint64(0)
@@ -65,7 +68,7 @@ def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16
     check_error(
         lib.infiniopRMSNorm(
             descriptor,
-            workspace.data if workspace is not None else None,
+            workspace.data_ptr() if workspace is not None else None,
             workspace_size.value,
             y_tensor.data,
             x_tensor.data,
@@ -78,33 +81,39 @@ def test(lib, handle, torch_device, y_dtype=torch.float16, x_dtype=torch.float16
     # print("=======================================================")
     # print(y)
 
-    assert torch.allclose(y.to(y_dtype), ans.to(y_dtype), atol=1e-3, rtol=1e-3)
+    assert torch.allclose(y.to(dtype), ans.to(dtype), atol=1e-3, rtol=1e-3)
     check_error(lib.infiniopDestroyRMSNormDescriptor(descriptor))
     print("Test passed!")
 
-def test_cpu(lib):
+def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    test(lib, handle, "cpu")
-    test(lib, handle, "cpu", torch.float16, torch.float16, torch.float32)
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "cpu", y_shape, x_shape, w_shape, dtype, w_dtype)
     destroy_handle(lib, handle)
 
-def test_cuda(lib):
+def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    test(lib, handle, "cuda")
-    test(lib, handle, "cuda", torch.float16, torch.float16, torch.float32)
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "cuda", y_shape, x_shape, w_shape, dtype, w_dtype)
     destroy_handle(lib, handle)
 
-def test_bang(lib):
+def test_bang(lib, test_cases):
     import torch_mlu
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
-    test(lib, handle, "mlu")
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "mlu", y_shape, x_shape, w_shape, dtype, w_dtype)
     destroy_handle(lib, handle)
 
 
 if __name__ == "__main__":
+    test_cases = [
+        # y_shape, x_shape, w_shape, dtype, w_dtype
+        ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float16),
+        ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float32),
+    ]
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateRMSNormDescriptor.restype = c_int32
@@ -114,7 +123,6 @@ if __name__ == "__main__":
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
-        c_int32,
         c_float,
     ]
 
@@ -140,10 +148,10 @@ if __name__ == "__main__":
     ]
 
     if args.cpu:
-        test_cpu(lib)
+        test_cpu(lib, test_cases)
     if args.cuda:
-        test_cuda(lib)
+        test_cuda(lib, test_cases)
     if args.bang:
-        test_bang(lib)
+        test_bang(lib, test_cases)
     if not (args.cpu or args.cuda or args.bang):
-        test_cpu(lib)
+        test_cpu(lib, test_cases)
