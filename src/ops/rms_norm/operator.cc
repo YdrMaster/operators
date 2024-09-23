@@ -1,85 +1,110 @@
 #include "../utils.h"
+#include "operators.h"
 #include "ops/rms_norm/rms_norm.h"
 
 #ifdef ENABLE_CPU
 #include "cpu/rms_norm_cpu.h"
 #endif
 #ifdef ENABLE_NV_GPU
+#include "../../devices/cuda/common_cuda.h"
 #include "cuda/rms_norm.cuh"
+#include "../../devices/cuda/cuda_handle.h"
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
+#include "../../devices/bang/bang_handle.h"
 #include "bang/rms_norm_cnnl.h"
 #include "bang/rms_norm_bang.h"
 #endif
 
-struct RMSNormDescriptor {
-    Device device;
-};
-
-__C void *createRMSNormDescriptor(Device device, void *config) {
-    switch (device) {
+__C infiniopStatus_t infiniopCreateRMSNormDescriptor(
+    infiniopHandle_t handle,
+    infiniopRMSNormDescriptor_t *desc_ptr,
+    infiniopTensorDescriptor_t y_desc,
+    infiniopTensorDescriptor_t x_desc,
+    infiniopTensorDescriptor_t w_desc,
+    float epsilon) {
+    switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return (RMSNormDescriptor *) (new RMSNormCpuDescriptor{device});
+            return cpuCreateRMSNormDescriptor(handle, (RMSNormCpuDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, epsilon);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            return (RMSNormDescriptor *) (new RMSNormCudaDescriptor{device});
+        case DevNvGpu: {
+            return cudaCreateRMSNormDescriptor((CudaHandle_t)handle, (RMSNormCudaDescriptor_t *) desc_ptr, y_desc, x_desc, w_desc, epsilon);
+        }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            return (RMSNormDescriptor *) (new RMSNormBangDescriptor(device));
+            return bangCreateRMSNormDescriptor((BangHandle_t) handle, (RMSNormBangDescriptor_t *) desc_ptr, y_desc);
         }
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
-    return nullptr;
+    return STATUS_BAD_DEVICE;
 }
 
-__C void destroyRMSNormDescriptor(RMSNormDescriptor *descriptor) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopGetRMSNormWorkspaceSize(infiniopRMSNormDescriptor_t desc, uint64_t *size) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            delete (RMSNormCpuDescriptor *) (descriptor);
-            break;
+            return cpuGetRMSNormWorkspaceSize((RMSNormCpuDescriptor_t) desc, size);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            delete (RMSNormCudaDescriptor *) (descriptor);
-            break;
+        case DevNvGpu: {
+            return cudaGetRMSNormWorkspaceSize((RMSNormCudaDescriptor_t) desc, size);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            delete (RMSNormBangDescriptor *) (descriptor);
-            break;
+            return bangGetRMSNormWorkspaceSize((RMSNormBangDescriptor_t) desc, size);
         }
+
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
 }
 
-__C void rmsNorm(RMSNormDescriptor *descriptor, Tensor y, Tensor x, Tensor w, float epsilon, void *stream) {
-    switch (descriptor->device) {
+__C infiniopStatus_t infiniopRMSNorm(infiniopRMSNormDescriptor_t desc, void *workspace, uint64_t workspace_size,
+                                        void *y, void *x, void *w, void *stream) {
+    switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            rms_norm_cpu_f16(y, x, w, epsilon);
-            break;
+            return cpuRMSNorm((RMSNormCpuDescriptor_t) desc, workspace, workspace_size, y, x, w, stream);
 #endif
 #ifdef ENABLE_NV_GPU
-        case DevNvGpu:
-            rms_norm_nv_gpu_f16(y, x, w, epsilon, stream);
-            break;
+        case DevNvGpu: {
+            return cudaRMSNorm((RMSNormCudaDescriptor_t) desc, workspace, workspace_size, y, x, w, stream);
+        }
+
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu:
-            // Using BANGC Kernel
-            rms_norm_bang_f16(y, x, w, epsilon, stream);
-            // rms_norm_cnnl_f16(y, x, w, epsilon, stream);
-            break;
+        case DevCambriconMlu: {
+            return bangRMSNorm((RMSNormBangDescriptor_t) desc, workspace, workspace_size, data, stream);
+        }
+
 #endif
-        default:
-            PANIC(UnsupportedDevice);
     }
+    return STATUS_BAD_DEVICE;
+}
+
+__C infiniopStatus_t infiniopDestroyRMSNormDescriptor(infiniopRMSNormDescriptor_t desc) {
+    switch (desc->device) {
+#ifdef ENABLE_CPU
+        case DevCpu:
+            return cpuDestroyRMSNormDescriptor((RMSNormCpuDescriptor_t) desc);
+#endif
+#ifdef ENABLE_NV_GPU
+        case DevNvGpu: {
+            return cudaDestroyRMSNormDescriptor((RMSNormCudaDescriptor_t) desc);
+        }
+
+#endif
+#ifdef ENABLE_CAMBRICON_MLU
+        case DevCambriconMlu: {
+            return bangDestroyRMSNormDescriptor((RMSNormBangDescriptor_t) desc);
+        }
+
+#endif
+    }
+    return STATUS_BAD_DEVICE;
 }

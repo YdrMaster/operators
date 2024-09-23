@@ -1,4 +1,5 @@
-from ctypes import c_float, c_void_p
+from ctypes import POINTER, Structure, c_int32, c_uint64, c_void_p, c_float
+import ctypes
 import sys
 import os
 
@@ -6,13 +7,24 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from operatorspy import (
     open_lib,
     to_tensor,
-    CTensor,
     DeviceEnum,
+    infiniopHandle_t,
+    infiniopTensorDescriptor_t,
+    create_handle,
+    destroy_handle,
+    check_error,
+    rearrange_tensor,
+    create_workspace,
 )
 
 from operatorspy.tests.test_utils import get_args
 import torch
 
+class RMSNormDescriptor(Structure):
+    _fields_ = [("device", c_int32)]
+
+
+infiniopRMSNormDescriptor_t = POINTER(RMSNormDescriptor)
 
 def rms_norm(x, w, eps):
     input_dtype = x.dtype
@@ -22,61 +34,124 @@ def rms_norm(x, w, eps):
     return w * hidden_states.to(input_dtype)
 
 
-def test(lib, descriptor, torch_device):
-    y = torch.zeros((16, 13312), dtype=torch.float16).to(torch_device)
-    x = torch.rand((16, 2048), dtype=torch.float16).to(torch_device)
-    w = torch.ones((2048,), dtype=torch.float16).to(torch_device)
+def test(lib, handle, torch_device, y_shape, x_shape, w_shape, dtype=torch.float16, w_dtype=torch.float16):
+    print(f"Testing RMS_Norm on {torch_device} with y_shape:{y_shape} x_shape:{x_shape} w_shape:{w_shape}"
+        f" dtype:{dtype} w_dtype:{w_dtype}")
+
+    y = torch.zeros(y_shape, dtype=dtype).to(torch_device)
+    x = torch.rand(x_shape, dtype=dtype).to(torch_device)
+    w = torch.ones(w_shape, dtype=w_dtype).to(torch_device)
+
+    y_tensor = to_tensor(y, lib)
+    x_tensor = to_tensor(x, lib)
+    w_tensor = to_tensor(w, lib)
 
     eps = 1e-5
     ans = rms_norm(x, w, eps)
-    lib.rmsNorm(
-        descriptor, to_tensor(y, lib, [16, 2048], [26624, 2]), to_tensor(x, lib), to_tensor(w, lib), eps, None
+
+    descriptor = infiniopRMSNormDescriptor_t()
+    w_dataType = 0 if w_dtype==torch.float16 else 1
+
+    check_error(
+        lib.infiniopCreateRMSNormDescriptor(
+            handle, ctypes.byref(descriptor), y_tensor.descriptor, x_tensor.descriptor,
+            w_tensor.descriptor, eps
+        )
+    )
+    workspace_size = c_uint64(0)
+    check_error(
+        lib.infiniopGetRMSNormWorkspaceSize(
+            descriptor, ctypes.byref(workspace_size)
+        )
+    )
+    workspace = create_workspace(workspace_size.value, y.device)
+    check_error(
+        lib.infiniopRMSNorm(
+            descriptor,
+            workspace.data_ptr() if workspace is not None else None,
+            workspace_size.value,
+            y_tensor.data,
+            x_tensor.data,
+            w_tensor.data,
+            None,
+        )
     )
 
     # print(ans)
     # print("=======================================================")
-    # print(y[:, :2048])
-    assert torch.allclose(y[:, :2048], ans, atol=1e-3, rtol=1e-3)
+    # print(y)
+
+    assert torch.allclose(y.to(dtype), ans.to(dtype), atol=1e-3, rtol=1e-3)
+    check_error(lib.infiniopDestroyRMSNormDescriptor(descriptor))
     print("Test passed!")
 
-
-def test_cpu(lib):
+def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
-    descriptor = lib.createRMSNormDescriptor(device, None)
-    test(lib, descriptor, "cpu")
-    lib.destroyRMSNormDescriptor(descriptor)
+    handle = create_handle(lib, device)
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "cpu", y_shape, x_shape, w_shape, dtype, w_dtype)
+    destroy_handle(lib, handle)
 
-
-def test_cuda(lib):
+def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
-    descriptor = lib.createRMSNormDescriptor(device, None)
-    test(lib, descriptor, "cuda")
-    lib.destroyRMSNormDescriptor(descriptor)
+    handle = create_handle(lib, device)
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "cuda", y_shape, x_shape, w_shape, dtype, w_dtype)
+    destroy_handle(lib, handle)
 
-def test_bang(lib):
+def test_bang(lib, test_cases):
     import torch_mlu
     device = DeviceEnum.DEVICE_BANG
-    descriptor = lib.createRMSNormDescriptor(device, None)
-    test(lib, descriptor, "mlu")
-    lib.destroyRMSNormDescriptor(descriptor)
+    handle = create_handle(lib, device)
+    for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
+        test(lib, handle, "mlu", y_shape, x_shape, w_shape, dtype, w_dtype)
+    destroy_handle(lib, handle)
 
 
 if __name__ == "__main__":
+    test_cases = [
+        # y_shape, x_shape, w_shape, dtype, w_dtype
+        ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float16),
+        ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float32),
+    ]
     args = get_args()
     lib = open_lib()
-    lib.createRMSNormDescriptor.restype = c_void_p
-    lib.destroyRMSNormDescriptor.argtypes = [c_void_p]
-    lib.rmsNorm.argtypes = [
-        c_void_p,
-        CTensor,
-        CTensor,
-        CTensor,
+    lib.infiniopCreateRMSNormDescriptor.restype = c_int32
+    lib.infiniopCreateRMSNormDescriptor.argtypes = [
+        infiniopHandle_t,
+        POINTER(infiniopRMSNormDescriptor_t),
+        infiniopTensorDescriptor_t,
+        infiniopTensorDescriptor_t,
+        infiniopTensorDescriptor_t,
         c_float,
+    ]
+
+    lib.infiniopGetRMSNormWorkspaceSize.restype = c_int32
+    lib.infiniopGetRMSNormWorkspaceSize.argtypes = [
+        infiniopRMSNormDescriptor_t,
+        POINTER(c_uint64),
+    ]
+
+    lib.infiniopRMSNorm.restypes = c_int32
+    lib.infiniopRMSNorm.argtypes = [
+        infiniopRMSNormDescriptor_t,
+        c_void_p,
+        c_uint64,
+        c_void_p,
+        c_void_p,
+        c_void_p,
         c_void_p,
     ]
+    lib.infiniopDestroyRMSNormDescriptor.restype = c_int32
+    lib.infiniopDestroyRMSNormDescriptor.argtypes = [
+        infiniopRMSNormDescriptor_t,
+    ]
+
     if args.cpu:
-        test_cpu(lib)
+        test_cpu(lib, test_cases)
     if args.cuda:
-        test_cuda(lib)
+        test_cuda(lib, test_cases)
     if args.bang:
-        test_bang(lib)
+        test_bang(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang):
+        test_cpu(lib, test_cases)
