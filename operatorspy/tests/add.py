@@ -15,8 +15,15 @@ from operatorspy import (
     check_error,
 )
 
-from operatorspy.tests.test_utils import get_args, Inplace
+from operatorspy.tests.test_utils import get_args
+from enum import Enum, auto
 import torch
+
+
+class Inplace(Enum):
+    OUT_OF_PLACE = auto()
+    INPLACE_A = auto()
+    INPLACE_B = auto()
 
 
 class AddDescriptor(Structure):
