@@ -86,8 +86,8 @@ infiniopStatus_t cpuCreateRoPEDescriptor(CpuHandle_t handle,
     if (!dtype_eq(sin_table->dt, F32) || !dtype_eq(cos_table->dt, F32))
         return STATUS_BAD_TENSOR_DTYPE;
 
-    if (!dtype_eq(pos_ids->dt, U64))
-        return STATUS_BAD_TENSOR_DTYPE;
+    // if (!dtype_eq(pos_ids->dt, U64))
+    //     return STATUS_BAD_TENSOR_DTYPE;
 
     *desc_ptr = new RoPECpuDescriptor{
         handle->device,

@@ -47,8 +47,8 @@ if has_config("cpu") then
 
         set_languages("cxx17")
         add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
-        add_cxflags("-fopenmp")
-        add_ldflags("-fopenmp")
+        -- add_cxflags("-fopenmp")
+        -- add_ldflags("-fopenmp")
     target_end()
 
 end
@@ -154,13 +154,13 @@ if has_config("ascend-npu") then
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         
         -- Add operator 
-        -- add_linkdirs("src/ops/swiglu/ascend/build/lib")
-        -- add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
-        -- add_links("libswiglu.so")
-        -- add_links("librope.so")
+        add_linkdirs("src/ops/swiglu/ascend/build/lib")
+        add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
+        add_links("libswiglu.so")
+        add_links("librope.so")
 
-        -- add_rpathdirs("src/ops/swiglu/ascend/build/lib")
-        -- add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
+        add_rpathdirs("src/ops/swiglu/ascend/build/lib")
+        add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
         
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
 
