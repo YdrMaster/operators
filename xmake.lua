@@ -61,7 +61,6 @@ if has_config("nv-gpu") then
         if is_plat("windows") then
             add_cuflags("-Xcompiler=/utf-8", "--expt-relaxed-constexpr", "--allow-unsupported-compiler")
         else
-            add_cxxflags("-fPIC")
             add_cuflags("-Xcompiler=-fPIC")
             add_culdflags("-Xcompiler=-fPIC")
             add_cxxflags("-fPIC")
