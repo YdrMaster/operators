@@ -19,6 +19,7 @@ __C __export infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescripto
                                                    uint64_t workspace_size,
                                                    void *result,
                                                    void *probs,
+                                                   float random_val,
                                                    float topp,
                                                    int topk,
                                                    float temperature,

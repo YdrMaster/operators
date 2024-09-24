@@ -38,6 +38,7 @@ infiniopStatus_t cpuDestroyRandomSampleDescriptor(RandomSampleCpuDescriptor_t de
 void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
                             void *result,
                             void *probs,
+                            float random_val,
                             float topp,
                             int topk,
                             float temperature) {
@@ -94,18 +95,17 @@ void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
         end = topk;
     }
     //利用随机数随机输出满足同时满足topk,topp的某个元素在原始向量的index
-    //float randomVal = (float)rand() / RAND_MAX;
-    float randomVal = 0.75;
+
     float sum_s = 0.0f;
     for (int i = 0; i < end; i++) {
         sum_s += f16_to_f32(logits_[i]);
     }
-    randomVal *= sum_s;
+    random_val *= sum_s;
 
     sum_s = 0.0f;
     for (int i = 0; i < end; i++) {
         sum_s += f16_to_f32(logits_[i]);
-        if (randomVal < sum_s) {
+        if (random_val < sum_s) {
             index_[0] = indexTmp[i];
             break;
         }
@@ -118,6 +118,7 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  uint64_t workspace_size,
                                  void *result,
                                  void *probs,
+                                 float random_val,
                                  float topp,
                                  int topk,
                                  float temperature,
@@ -126,6 +127,7 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
         causal_softmax_cpu_f16(desc,
                                result,
                                probs,
+                               random_val,
                                topp,
                                topk,
                                temperature);

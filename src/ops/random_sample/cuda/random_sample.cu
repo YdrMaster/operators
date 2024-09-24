@@ -38,6 +38,7 @@ __global__ void index(int *key_in, int voc) {
 template<class T>
 __global__ void random_sample_kernel(int *result,
                                      T *val_out,
+                                     float random_val,
                                      float topp,
                                      int topk,
                                      int *key_out) {
@@ -52,10 +53,10 @@ __global__ void random_sample_kernel(int *result,
     } else {
         end = topk;
     }
-    T randomVal = 0.75;
-    randomVal *= val_out[end - 1];
+
+    random_val *= val_out[end - 1];
     for (int i = 0; i < end; i++) {
-        if (randomVal < val_out[i]) {
+        if (random_val < val_out[i]) {
             result[0] = key_out[i];
             break;
         }
@@ -100,6 +101,7 @@ void random_sample_workspace(void *workspace, size_t &size_radix_sort, size_t &s
 }
 void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace, void *result,
                               void *probs,
+                              float random_val,
                               float topp,
                               int topk,
                               float temperature,
@@ -140,6 +142,7 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
         (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
     random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((int *) result,
                                                                    val_out,
+                                                                   random_val,
                                                                    topp,
                                                                    topk,
                                                                    key_out);
@@ -153,6 +156,7 @@ infiniopStatus_t cudaRandomSample(RandomSampleCudaDescriptor_t desc,
                                   uint64_t workspace_size,
                                   void *result,
                                   void *probs,
+                                  float random_val,
                                   float topp,
                                   int topk,
                                   float temperature,
@@ -161,7 +165,7 @@ infiniopStatus_t cudaRandomSample(RandomSampleCudaDescriptor_t desc,
         return STATUS_BAD_DEVICE;
     }
     if (dtype_eq(desc->dtype, F16)) {
-        random_sample_nv_gpu_f16(desc, workspace, result, probs, topp, topk, temperature, stream);
+        random_sample_nv_gpu_f16(desc, workspace, result, probs, random_val, topp, topk, temperature, stream);
         return STATUS_SUCCESS;
     }
 

@@ -28,7 +28,7 @@ class RandomSampleDescriptor(Structure):
 infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 
 
-def random_sample(data, topp, topk, voc, temperature):
+def random_sample(data, random_val, topp, topk, voc, temperature):
     indices = torch.zeros([topk], dtype = torch.int32)
     dataNp = data.clone().detach()
     sorted_indices = torch.arange(voc)
@@ -63,16 +63,16 @@ def random_sample(data, topp, topk, voc, temperature):
         end = topk
     
     
-    rad = 0.75
-    sum_s = 0
-    for i in range(end):
-        sum_s += dataNp[i]
-    rad *= sum_s
     
     sum_s = 0
     for i in range(end):
         sum_s += dataNp[i]
-        if(rad < sum_s):
+    random_val *= sum_s
+    
+    sum_s = 0
+    for i in range(end):
+        sum_s += dataNp[i]
+        if(random_val < sum_s):
             return indices[i].to(torch.int32)
 
 
@@ -85,12 +85,13 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     
     
     indices = torch.zeros([1], dtype = torch.int32).to(torch_device)
+    random_val = 0.7
     topp = 0.9
     topk = 3
     temperature = 2.0
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
-    ans = random_sample(data.to("cpu"), topp, topk, voc, temperature)
+    ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
     
     descriptor = infiniopRandomSampleDescriptor_t()
     check_error(
@@ -112,6 +113,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
             workspace_size.value,
             indices_tensor.data,
             x_tensor.data,
+            random_val,
             topp,
             topk,
             temperature,
@@ -173,6 +175,7 @@ if __name__ == "__main__":
         c_uint64,
         c_uint64,
         c_void_p,
+        c_float,
         c_float,
         c_int32,
         c_float,

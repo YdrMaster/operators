@@ -8,7 +8,7 @@
 const int SRC_MAX_SIZE = 1024 * 32;
 __nram__  char nram_buffer[NRAM_MAX_SIZE];
 template <typename T>
-__mlu_global__ void random_sampleX(T const *source, int *indices, int *indGdram, T *globalTopk, T *globalSum, float topp, int topk, float temperature, int voc){
+__mlu_global__ void random_sampleX(T const *source, int *indices, int *indGdram, T *globalTopk, T *globalSum, float random_val, float topp, int topk, float temperature, int voc){
     const int maxNum = SRC_MAX_SIZE/sizeof(T);
     int wSize = 128 / sizeof(T);
     int segNum = maxNum / wSize;
@@ -149,10 +149,10 @@ __mlu_global__ void random_sampleX(T const *source, int *indices, int *indGdram,
         else{
             end = topk;
         }
-        T randomVal = 0.75;
-        randomVal *= destSum[end - 1];
+        
+        random_val *= destSum[end - 1];
         for(int i = 0; i < end; i++){
-            if(randomVal < destSum[i]){
+            if(random_val < destSum[i]){
                 indices[0] = indGdram[i];
                 break;
             }
@@ -162,7 +162,7 @@ __mlu_global__ void random_sampleX(T const *source, int *indices, int *indGdram,
 }
 
 template <typename T>
-__mlu_global__ void random_sampleD(T const *source, int *indices, int *indGdram, T *globalTopk, T *globalSum, float topp, int topk, float temperature, int voc){
+__mlu_global__ void random_sampleD(T const *source, int *indices, int *indGdram, T *globalTopk, T *globalSum, float random_val, float topp, int topk, float temperature, int voc){
     const int maxNum = SRC_MAX_SIZE/sizeof(T);
     
     int wSize = 128 / sizeof(T);
@@ -387,10 +387,10 @@ __mlu_global__ void random_sampleD(T const *source, int *indices, int *indGdram,
         else{
             end = topk;
         }
-        T randomVal = 0.75;
-        randomVal *= srcTopk[end - 1];
+        
+        random_val *= srcTopk[end - 1];
         for(int i = 0; i < end; i++){
-            if(randomVal < srcTopk[i]){
+            if(random_val < srcTopk[i]){
                 indices[0] = indGdram[i];
                 break;
             }
@@ -400,7 +400,7 @@ __mlu_global__ void random_sampleD(T const *source, int *indices, int *indGdram,
 }
 
 template<typename T>
-void random_sampleUnion(cnrtQueue_t queue, void const *source, void *indices, float topp, int topk, float temperature, int voc) {
+void random_sampleUnion(cnrtQueue_t queue, void const *source, void *indices, float random_val, float topp, int topk, float temperature, int voc) {
     auto logits_ = reinterpret_cast<const T *>(source);
     auto index_ = reinterpret_cast<int *>(indices);
     cnrtDim3_t k_dim;
@@ -420,10 +420,10 @@ void random_sampleUnion(cnrtQueue_t queue, void const *source, void *indices, fl
     T *globalSum;
     CNRT_CHECK(cnrtMalloc((void**)&globalSum, sizeof(T)));
     if(voc >= taskNum * maxNum){
-        random_sampleD<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, topp, topk, temperature, voc);
+        random_sampleD<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
     }
     else{
-        random_sampleX<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, topp, topk, temperature, voc);
+        random_sampleX<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
     }
     cnrtQueueSync(queue);
     
@@ -434,6 +434,7 @@ void random_sampleUnion(cnrtQueue_t queue, void const *source, void *indices, fl
 
 void random_sample_bang_f16(RandomSampleBangDescriptor_t desc, void *workspace, void *result,
                                     void *probs,
+                                    float random_val,
                                     float topp,
                                     int topk,
                                     float temperature,
@@ -441,13 +442,14 @@ void random_sample_bang_f16(RandomSampleBangDescriptor_t desc, void *workspace, 
     auto queue = reinterpret_cast<cnrtQueue_t>(stream);
     int voc = desc->voc;
     
-    random_sampleUnion<half>(queue, probs, result, topp, topk, temperature, voc);
+    random_sampleUnion<half>(queue, probs, result, random_val, topp, topk, temperature, voc);
 }
 infiniopStatus_t bangRandomSample(RandomSampleBangDescriptor_t desc,
                                     void *workspace,
                                     unsigned long int workspace_size,
                                     void *result,
                                     void *probs,
+                                    float random_val,
                                     float topp,
                                     int topk,
                                     float temperature,
@@ -456,7 +458,7 @@ infiniopStatus_t bangRandomSample(RandomSampleBangDescriptor_t desc,
         return STATUS_BAD_DEVICE;
     }
     if (dtype_eq(desc->dtype, F16)) {
-        random_sample_bang_f16(desc, workspace, result, probs, topp, topk, temperature, stream);
+        random_sample_bang_f16(desc, workspace, result, probs, random_val, topp, topk, temperature, stream);
         return STATUS_SUCCESS;
     }
     return STATUS_BAD_TENSOR_DTYPE;

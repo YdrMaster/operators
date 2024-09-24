@@ -61,6 +61,7 @@ __C infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescriptor_t desc,
                                           uint64_t workspace_size,
                                           void *result,
                                           void *probs,
+                                          float random_val,
                                           float topp,
                                           int topk,
                                           float temperature,
@@ -68,15 +69,15 @@ __C infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescriptor_t desc,
     switch (desc->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuRandomSample((RandomSampleCpuDescriptor_t) desc, workspace, workspace_size, result, probs, topp, topk, temperature, stream);
+            return cpuRandomSample((RandomSampleCpuDescriptor_t) desc, workspace, workspace_size, result, probs, random_val, topp, topk, temperature, stream);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            return cudaRandomSample((RandomSampleCudaDescriptor_t) desc, workspace, workspace_size, result, probs, topp, topk, temperature, stream);
+            return cudaRandomSample((RandomSampleCudaDescriptor_t) desc, workspace, workspace_size, result, probs, random_val, topp, topk, temperature, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
-            return bangRandomSample((RandomSampleBangDescriptor_t) desc, workspace, workspace_size, result, probs, topp, topk, temperature, stream);
+            return bangRandomSample((RandomSampleBangDescriptor_t) desc, workspace, workspace_size, result, probs, random_val, topp, topk, temperature, stream);
         }
 #endif
     }
