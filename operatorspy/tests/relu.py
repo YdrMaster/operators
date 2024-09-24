@@ -48,7 +48,7 @@ def test(
         f"Testing Relu on {torch_device} with tensor_shape:{tensor_shape} dtype:{tensor_dtype} inplace: {inplace.name}"
     )
 
-    x = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device)
+    x = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) * 2 - 1
     y = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) if inplace == Inplace.OUT_OF_PLACE else x
     
     ans = relu(x)

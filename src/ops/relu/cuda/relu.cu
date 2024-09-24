@@ -18,31 +18,6 @@ namespace infini {
             y = __hgt(other.y, __half(0.0f)) ? other.y : __half(0.0f);
             return *this;
         }
-
-        __device__ bool operator==(const half2 &other) const {
-            return __heq(x, other.x) && __heq(y, other.y);
-        }
-
-        __device__ bool operator!=(const half2 &other) const {
-            return !(*this == other);
-        }
-
-        // less than if any component is less than the counterpart
-        __device__ bool operator<(const half2 &other) const {
-            return __hlt(x, other.x) || __hlt(y, other.y);
-        }
-
-        __device__ bool operator<=(const half2 &other) const {
-            return *this < other || *this == other;
-        }
-
-        __device__ bool operator>(const half2 &other) const {
-            return !(*this <= other);
-        }
-
-        __device__ bool operator>=(const half2 &other) const {
-            return !(*this < other);
-        }
     };
 }// namespace infini
 
@@ -56,7 +31,11 @@ __global__ void relu(
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + offset;
 
     if (idx < data_size) {
-        y[idx] = x[idx] < Tdata(0) ? Tdata(0) : x[idx];
+        if constexpr (std::is_same<Tdata, infini::half2>::value) {
+            y[idx] = x[idx];
+        } else {
+            y[idx] = x[idx] < Tdata(0) ? Tdata(0) : x[idx];
+        }
     }
 }
 
