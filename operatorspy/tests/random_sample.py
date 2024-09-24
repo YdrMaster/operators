@@ -32,7 +32,7 @@ def random_sample(data, topp, topk, voc, temperature):
     indices = torch.zeros([topk], dtype = torch.int32)
     dataNp = data.clone().detach()
     sorted_indices = torch.arange(voc)
-    #print(dataNp)
+    
     for i in range(topk):
         for j in range(i + 1, voc):
             if(dataNp[i] < dataNp[j]):
@@ -48,8 +48,7 @@ def random_sample(data, topp, topk, voc, temperature):
     indices = sorted_indices[:topk] 
     
     dataNp = dataNp[sorted_indices]
-    #print(dataNp)
-    #print(indices, data[indices])
+    
     globalM = dataNp[0]
     dataNp = (dataNp - globalM) / temperature
     dataNp = torch.softmax(dataNp, dim = 0)
@@ -63,13 +62,13 @@ def random_sample(data, topp, topk, voc, temperature):
     else:
         end = topk
     
-    #rad = torch.rand(1)
+    
     rad = 0.75
     sum_s = 0
     for i in range(end):
         sum_s += dataNp[i]
     rad *= sum_s
-    #print(rad)
+    
     sum_s = 0
     for i in range(end):
         sum_s += dataNp[i]
@@ -81,7 +80,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     print(
         f"Testing RandomSample on {torch_device} with voc:{voc} dtype:{x_dtype}"
     )
-    #voc = 20
+    
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
     
     
