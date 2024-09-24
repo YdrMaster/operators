@@ -54,9 +54,9 @@ __global__ void random_sample_kernel(int *result,
         end = topk;
     }
 
-    random_val *= val_out[end - 1];
+    random_val *= static_cast<float>(val_out[end - 1]);
     for (int i = 0; i < end; i++) {
-        if (random_val < val_out[i]) {
+        if (random_val < static_cast<float>(val_out[i])) {
             result[0] = key_out[i];
             break;
         }

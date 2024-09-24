@@ -85,7 +85,7 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     
     
     indices = torch.zeros([1], dtype = torch.int32).to(torch_device)
-    random_val = 0.7
+    random_val = 0.92
     topp = 0.9
     topk = 3
     temperature = 2.0
