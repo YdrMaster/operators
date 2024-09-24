@@ -51,22 +51,35 @@ __global__ void add(
     }
 }
 
-void add_nv_gpu_f16(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream) {
-    auto data_size = desc->c_data_size / 4;
+template<typename Tdata, typename BTdata>
+void add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const *b, uint64_t data_size, uint64_t pack_size, uint64_t offset, void *stream) {
+    if (data_size == 0) {
+        return;
+    }
     dim3 blockDims = dim3(std::min(static_cast<uint64_t>(MAX_THREADS_PER_BLOCK), data_size));
     dim3 gridDims = dim3(std::min(ROUND_UP_DIV(data_size, blockDims.x), desc->max_grid_size));
     uint64_t step = gridDims.x * blockDims.x;
 
-    auto a_ptr = reinterpret_cast<const half4 *>(a);
-    auto b_ptr = reinterpret_cast<const half4 *>(b);
-    auto c_ptr = reinterpret_cast<half4 *>(c);
-
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
     for (uint64_t i = 0; i < data_size; i += step) {
-        add<half4, half><<<gridDims, blockDims, 0, cuda_stream>>>(
-            c_ptr, a_ptr, b_ptr, desc->a_strides, desc->b_strides, desc->c_strides, data_size, desc->ndim, i, desc->broadcasted, 4);
+        add<Tdata, BTdata><<<gridDims, blockDims, 0, cuda_stream>>>(
+            c, a, b, desc->a_strides, desc->b_strides, desc->c_strides, offset + data_size, desc->ndim, offset + i, desc->broadcasted, pack_size);
     }
+}
+
+void add_nv_gpu_f16(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream) {
+    auto data_size = desc->c_data_size / 4;
+    auto a_half4 = reinterpret_cast<const half4 *>(a);
+    auto b_half4 = reinterpret_cast<const half4 *>(b);
+    auto c_half4 = reinterpret_cast<half4 *>(c);
+    add_nv_gpu<half4, half>(desc, c_half4, a_half4, b_half4, data_size, 4, 0, stream);
+
+    auto remainder = desc->c_data_size % 4;
+    auto a_half = reinterpret_cast<const half *>(a);
+    auto b_half = reinterpret_cast<const half *>(b);
+    auto c_half = reinterpret_cast<half *>(c);
+    add_nv_gpu<half, half>(desc, c_half, a_half, b_half, remainder, 1, data_size * 4, stream);
 }
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
