@@ -8,12 +8,28 @@ typedef struct DataLayout {
         size : 7,
         mantissa : 8,
         exponent : 8;
+
+    bool operator==(const DataLayout &other) const {
+        union TypePun {
+            DataLayout layout;
+            unsigned int i;
+        } pun;
+        pun.layout = *this;
+        auto a_ = pun.i;
+        pun.layout = other;
+        auto b_ = pun.i;
+        return a_ == b_;
+    }
+
+    bool operator!=(const DataLayout &other) const {
+        return !(*this == other);
+    }
 } DataLayout;
 
 typedef struct DataLayout DT;
 
 // clang-format off
-const static struct DataLayout
+constexpr static struct DataLayout
     I8   = {1, 1, 1,  7,  0},
     I16  = {1, 1, 2, 15,  0},
     I32  = {1, 1, 4, 31,  0},
