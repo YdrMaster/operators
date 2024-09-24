@@ -114,6 +114,7 @@ if __name__ == "__main__":
         # ((32, 150, 51200), (32, 150, 51200), (32, 150, 1), Inplace.OUT_OF_PLACE),
         # ((32, 150, 51200), (32, 150, 51200), (32, 150, 51200), Inplace.OUT_OF_PLACE),
         ((1, 3), (1, 3), (1, 3), Inplace.OUT_OF_PLACE),
+        ((), (), (), Inplace.OUT_OF_PLACE),
         ((3, 3), (3, 3), (3, 3), Inplace.OUT_OF_PLACE),
         ((2, 20, 3), (2, 1, 3), (2, 20, 3), Inplace.OUT_OF_PLACE),
         ((32, 20, 512), (32, 20, 512), (32, 20, 512), Inplace.INPLACE_A),
