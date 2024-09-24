@@ -118,4 +118,3 @@ if __name__ == "__main__":
         test_cuda(lib, test_cases)
     if args.bang:
         test_bang(lib, test_cases)
-        
