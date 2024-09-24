@@ -10,11 +10,15 @@ typedef struct DataLayout {
         exponent : 8;
 
     bool operator==(const DataLayout &other) const {
-        return packed == other.packed &&
-               sign == other.sign &&
-               size == other.size &&
-               mantissa == other.mantissa &&
-               exponent == other.exponent;
+        union TypePun {
+            DataLayout layout;
+            unsigned int i;
+        } pun;
+        pun.layout = *this;
+        auto a_ = pun.i;
+        pun.layout = other;
+        auto b_ = pun.i;
+        return a_ == b_;
     }
 
     bool operator!=(const DataLayout &other) const {
