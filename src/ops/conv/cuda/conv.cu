@@ -16,7 +16,7 @@ infiniopStatus_t cudaConv(ConvCudaDescriptor_t desc,
                           void *workspace, uint64_t workspace_size,
                           void *y, void const *x, void const *w,
                           void *stream) {
-    if (dtype_eq(desc->dtype, F16)) {
+    if (desc->dtype == F16) {
         return conv_nv_gpu_f16(desc, workspace, workspace_size, y, x, w);
     }
 
