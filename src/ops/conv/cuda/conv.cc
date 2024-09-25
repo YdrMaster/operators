@@ -19,7 +19,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     if (x->shape[0] != y->shape[0] || w->shape[0] != y->shape[1] || x->shape[1] != w->shape[1]) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    if (!dtype_eq(y->dt, F16) || y->dt != x->dt || y->dt != w->dt) {
+    if (y->dt != F16 || y->dt != x->dt || y->dt != w->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
@@ -42,29 +42,44 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
         y_shape[i] = static_cast<int32_t>(y->shape[i]);
     }
 
+    // get the data types of the tensors and the conv operator
+    CREATE_CHECK_ERROR(auto tensor_dt = dataTypeMap[x->dt], tensor_dt, -1, STATUS_BAD_PARAM);
+    cudnnDataType_t conv_op_dt = [&] {
+        switch (tensor_dt) {
+            case CUDNN_DATA_HALF:
+            case CUDNN_DATA_BFLOAT16:
+            case CUDNN_DATA_FLOAT:
+                return CUDNN_DATA_FLOAT;
+            case CUDNN_DATA_DOUBLE:
+                return CUDNN_DATA_DOUBLE;
+            default:
+                return CUDNN_DATA_INT32;
+        }
+    }();
+
     // create and set tensor descriptors for x
     cudnnTensorDescriptor_t x_desc;
     checkCudnnError(cudnnCreateTensorDescriptor(&x_desc));
-    checkCudnnError(cudnnSetTensorNdDescriptorEx(x_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, ndim, x_shape));
+    checkCudnnError(cudnnSetTensorNdDescriptorEx(x_desc, CUDNN_TENSOR_NCHW, static_cast<cudnnDataType_t>(tensor_dt), ndim, x_shape));
 
     // create and set tensor descriptors for w
     cudnnFilterDescriptor_t w_desc;
     checkCudnnError(cudnnCreateFilterDescriptor(&w_desc));
-    checkCudnnError(cudnnSetFilterNdDescriptor(w_desc, CUDNN_DATA_HALF, CUDNN_TENSOR_NCHW, ndim, w_shape));
+    checkCudnnError(cudnnSetFilterNdDescriptor(w_desc, static_cast<cudnnDataType_t>(tensor_dt), CUDNN_TENSOR_NCHW, ndim, w_shape));
 
     // create and set conv operator descriptor
     cudnnConvolutionDescriptor_t op_desc;
     checkCudnnError(cudnnCreateConvolutionDescriptor(&op_desc));
     checkCudnnError(cudnnSetConvolutionNdDescriptor(
         op_desc, ndim - 2, pad, stride, dilation, CUDNN_CROSS_CORRELATION,
-        CUDNN_DATA_FLOAT));
+        conv_op_dt));
 
     // create and set tensor descriptors for y
     cudnnTensorDescriptor_t y_desc;
     int outDim[ndim];
     checkCudnnError(cudnnGetConvolutionNdForwardOutputDim(op_desc, x_desc, w_desc, ndim, outDim));
     checkCudnnError(cudnnCreateTensorDescriptor(&y_desc));
-    checkCudnnError(cudnnSetTensorNdDescriptorEx(y_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_HALF, ndim, y_shape));
+    checkCudnnError(cudnnSetTensorNdDescriptorEx(y_desc, CUDNN_TENSOR_NCHW, static_cast<cudnnDataType_t>(tensor_dt), ndim, y_shape));
 
     // get the best algorithm
     const int requestedAlgoCount = 1;

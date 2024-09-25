@@ -49,7 +49,7 @@ infiniopStatus_t cpuCreateConvDescriptor(infiniopHandle_t,
     if (x->shape[0] != y->shape[0] || w->shape[0] != y->shape[1] || x->shape[1] != w->shape[1]) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    if (!dtype_eq(y->dt, F16) || y->dt != x->dt || y->dt != w->dt) {
+    if (y->dt != F16 || y->dt != x->dt || y->dt != w->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
@@ -202,7 +202,7 @@ infiniopStatus_t cpuConv(ConvCpuDescriptor_t desc,
                          void *workspace, uint64_t workspace_size,
                          void *y, void const *x, void const *w,
                          void *stream) {
-    if (dtype_eq(desc->dtype, F16)) {
+    if (desc->dtype == F16) {
         conv_cpu_f16(desc, workspace, workspace_size, y, x, w);
         return STATUS_SUCCESS;
     }
