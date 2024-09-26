@@ -66,8 +66,7 @@ __C infiniopStatus_t infiniopDestroyHandle(infiniopHandle_t handle) {
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            delete (AscendHandle_t) handle;
-            return STATUS_SUCCESS;
+            return deleteAscendHandle((AscendHandle_t) handle);
         }
 #endif
     }
