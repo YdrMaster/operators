@@ -19,20 +19,10 @@ typedef struct AscendContext *AscendHandle_t;
 infiniopStatus_t createAscendHandle(AscendHandle_t *handle_ptr, int device_id);
 
 template<typename T>
-void use_aclnn_workspace(AscendHandle_t handle, T const &f) {
-    auto &pool = handle->aclnn_handles;
-    auto executor = pool.pop();
-    f(&(*executor));
-    aclSetAclOpExecutorRepeatable(*executor);
-    pool.push(std::move(*executor));
-}
-
-template <typename T>
-void use_aclnn_compute(AscendHandle_t handle, T const &f) {
+void use_aclnn(AscendHandle_t handle, T const &f) {
     auto &pool = handle->aclnn_handles;
     auto executor = pool.pop();
     f(*executor);
-    aclDestroyAclOpExecutor(*executor);
     pool.push(std::move(*executor));
 }
 

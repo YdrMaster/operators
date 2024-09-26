@@ -41,15 +41,16 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
 
     uint64_t workspaceSize;
     auto &handle = desc->handle;
-    use_aclnn_workspace((AscendHandle_t) handle,
-                        [&](aclOpExecutor **executor) {
-                            auto ret = aclnnInplaceCopyGetWorkspaceSize(td,
-                                                                        ts,
-                                                                        &workspaceSize,
-                                                                        executor);
-                            CHECK_RET(ret == ACL_SUCCESS,
-                                      LOG_PRINT("aclnnInplaceCopyGetWorkspaceSize failed. ERROR: %d\n", ret));
-                        });
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *&executor) {
+                  auto ret = aclnnInplaceCopyGetWorkspaceSize(td,
+                                                              ts,
+                                                              &workspaceSize,
+                                                              &executor);
+                  aclSetAclOpExecutorRepeatable(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnInplaceCopyGetWorkspaceSize failed. ERROR: %d\n", ret));
+              });
     desc->workspaceSize = workspaceSize;
     void *workspaceAddr = nullptr;
     if (workspaceSize > 0) {
@@ -58,17 +59,18 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
                   LOG_PRINT("aclrtMalloc failed, ERROR: %d\n", ret));
     }
 
-    use_aclnn_compute((AscendHandle_t) handle,
-                      [&](aclOpExecutor *&executor) {
-                          AclSetTensorAddr(executor, 0, td, dst);
-                          AclSetTensorAddr(executor, 1, ts, src);
-                          auto ret = aclnnInplaceCopy(workspaceAddr,
-                                                      desc->workspaceSize,
-                                                      executor,
-                                                      stream);
-                          CHECK_RET(ret == ACL_SUCCESS,
-                                    LOG_PRINT("aclnnInplaceCopy failed. ERROR: %d\n", ret));
-                      });
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *executor) {
+                  AclSetTensorAddr(executor, 0, td, dst);
+                  AclSetTensorAddr(executor, 1, ts, src);
+                  auto ret = aclnnInplaceCopy(workspaceAddr,
+                                              desc->workspaceSize,
+                                              executor,
+                                              stream);
+                  aclDestroyAclOpExecutor(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnInplaceCopy failed. ERROR: %d\n", ret));
+              });
 
     return STATUS_SUCCESS;
 }

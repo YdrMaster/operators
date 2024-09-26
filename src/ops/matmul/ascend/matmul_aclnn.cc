@@ -58,17 +58,18 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
     int64_t transA = aDesc->strides[aDesc->ndim - 1] == 1 ? 0 : 1;
     int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
 
-    use_aclnn_workspace((AscendHandle_t) handle,
-                        [&](aclOpExecutor **executor) {
-                            // auto ret =
-                            //     aclnnBatchMatMulGetWorkspaceSize(ta, tb, tc, desc->mt, &workspaceSize, executor);
-                            auto ret =
-                                aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
-                                                          desc->mt, &workspaceSize, executor);
-                            CHECK_RET(ret == ACL_SUCCESS,
-                                      LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
-                            // printf("%s\n", aclGetRecentErrMsg());
-                        });
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *&executor) {
+                  // auto ret =
+                  //     aclnnBatchMatMulGetWorkspaceSize(ta, tb, tc, desc->mt, &workspaceSize, executor);
+                  auto ret =
+                      aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
+                                                desc->mt, &workspaceSize, &executor);
+                  aclSetAclOpExecutorRepeatable(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
+                  // printf("%s\n", aclGetRecentErrMsg());
+              });
     *size = workspaceSize;
     desc->workspaceSize = workspaceSize;
 
@@ -92,9 +93,9 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
 
     auto &handle = desc->handle;
 
-    use_aclnn_compute(
+    use_aclnn(
         (AscendHandle_t) handle,
-        [&](aclOpExecutor *&executor) {
+        [&](aclOpExecutor *executor) {
             AclSetTensorAddr(executor, 0, ta, (void *) a);
             AclSetTensorAddr(executor, 1, tb, (void *) b);
             AclSetTensorAddr(executor, 2, tc, (void *) c);
@@ -104,6 +105,7 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
                                  desc->workspaceSize,
                                  executor,
                                  stream);
+            aclDestroyAclOpExecutor(executor);
             CHECK_RET(ret == ACL_SUCCESS,
                       LOG_PRINT("aclnnBatchMatMul failed. ERROR: %d\n", ret));
         });

@@ -102,19 +102,20 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
     uint64_t workspaceSize;
     auto &handle = desc->handle;
 
-    use_aclnn_workspace((AscendHandle_t) handle,
-                        [&](aclOpExecutor **executor) {
-                            auto ret =
-                                aclnnRmsNormGetWorkspaceSize(tx,
-                                                             tw,
-                                                             desc->epsilon,
-                                                             ty,
-                                                             trstd,
-                                                             &workspaceSize,
-                                                             executor);
-                            CHECK_RET(ret == ACL_SUCCESS,
-                                      LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret));
-                        });
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *&executor) {
+                  auto ret =
+                      aclnnRmsNormGetWorkspaceSize(tx,
+                                                   tw,
+                                                   desc->epsilon,
+                                                   ty,
+                                                   trstd,
+                                                   &workspaceSize,
+                                                   &executor);
+                  aclSetAclOpExecutorRepeatable(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret));
+              });
     *size = workspaceSize +
             numElements(rstdDesc->shape, rstdDesc->ndim) * aclDataTypeSize(rstdDesc->dataType);
 
@@ -144,20 +145,21 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
     auto rstd = (void *) ((uint8_t *) workspace + desc->workspaceSize);
     auto &handle = desc->handle;
 
-    use_aclnn_compute((AscendHandle_t) handle,
-                      [&](aclOpExecutor *&executor) {
-                          AclSetTensorAddr(executor, 0, tx, x);
-                          AclSetTensorAddr(executor, 1, tw, w);
-                          AclSetTensorAddr(executor, 2, ty, y);
-                          AclSetTensorAddr(executor, 3, trstd, rstd);
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *executor) {
+                  AclSetTensorAddr(executor, 0, tx, x);
+                  AclSetTensorAddr(executor, 1, tw, w);
+                  AclSetTensorAddr(executor, 2, ty, y);
+                  AclSetTensorAddr(executor, 3, trstd, rstd);
 
-                          auto ret = aclnnRmsNorm(workspace,
-                                                  desc->workspaceSize,
-                                                  executor,
-                                                  stream);
-                          CHECK_RET(ret == ACL_SUCCESS,
-                                    LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret));
-                      });
+                  auto ret = aclnnRmsNorm(workspace,
+                                          desc->workspaceSize,
+                                          executor,
+                                          stream);
+                  aclDestroyAclOpExecutor(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret));
+              });
 
     return STATUS_SUCCESS;
 }
@@ -170,72 +172,3 @@ infiniopStatus_t aclnnDestroyRMSNormDescriptor(RMSNormAclnnDescriptor_t desc) {
 
     return STATUS_SUCCESS;
 }
-
-// void rms_norm_aclnn_f16(RMSNormAclnnDescriptor *descriptor, Tensor y, Tensor x,
-//                         Tensor w, float epsilon, void *stream) {
-//     // Copy tensor layout to descriptor
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->xDesc, x.layout);
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->wDesc, w.layout);
-//     aclnnSetTensorDescriptorFromTensorLayout(descriptor->yDesc, y.layout);
-
-//     // Create rsdOut Descriptor
-//     descriptor->setRstdDescriptor();
-
-//     // Malloc rstdOut space on device
-//     void *rstd_data = nullptr;
-//     auto rstdDesc = descriptor->rstdDesc;
-//     auto ret =
-//         aclrtMalloc(&rstd_data, numElements(rstdDesc->shape, rstdDesc->ndim),
-//                     ACL_MEM_MALLOC_HUGE_FIRST);
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclrtMalloc failed. ERROR: %d\n", ret));
-
-//     // aclnnCreateTensor
-//     aclTensor *tx;
-//     aclTensor *tgamma;
-//     aclTensor *ty;
-//     aclTensor *trstd;
-
-//     aclnnCreateTensor(descriptor->xDesc, x.data, &tx);
-//     aclnnCreateTensor(descriptor->wDesc, w.data, &tgamma);
-//     aclnnCreateTensor(descriptor->yDesc, y.data, &ty);
-//     aclnnCreateTensor(descriptor->rstdDesc, rstd_data, &trstd);
-
-//     uint64_t workspaceSize = 0;
-//     aclOpExecutor *executor;
-//     // Note: rstdOut can not set nullptr
-//     ret = aclnnRmsNormGetWorkspaceSize(tx, tgamma, epsilon, ty, trstd,
-//                                        &workspaceSize, &executor);
-//     CHECK_RET(
-//         ret == ACL_SUCCESS,
-//         LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret));
-//     // Malloc workpace on device
-//     void *workspaceAddr = nullptr;
-//     if (workspaceSize > 0) {
-//         ret = aclrtMalloc(&workspaceAddr, workspaceSize,
-//                           ACL_MEM_MALLOC_HUGE_FIRST);
-//         CHECK_RET(ret == ACL_SUCCESS,
-//                   LOG_PRINT("aclrtMalloc failed. ERROR: %d\n", ret));
-//     }
-//     // Call aclnnRmsNorm
-//     ret = aclnnRmsNorm(workspaceAddr, workspaceSize, executor,
-//                        reinterpret_cast<aclrtStream>(stream));
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret));
-
-//     // Wait device work
-//     ret = aclrtSynchronizeStream(stream);
-//     CHECK_RET(ret == ACL_SUCCESS,
-//               LOG_PRINT("aclrtSynchronizeStream failed. ERROR: %d\n", ret););
-
-//     aclDestroyTensor(tx);
-//     aclDestroyTensor(tgamma);
-//     aclDestroyTensor(ty);
-//     aclDestroyTensor(trstd);
-
-//     if (workspaceSize > 0) {
-//         aclrtFree(workspaceAddr);
-//     }
-
-//     return;
-// }

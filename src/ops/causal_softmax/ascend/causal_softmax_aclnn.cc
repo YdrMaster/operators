@@ -95,19 +95,20 @@ infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor
 
     uint64_t workspaceSize;
 
-    use_aclnn_workspace((AscendHandle_t) handle,
-                        [&](aclOpExecutor **executor) {
-                            auto ret =
-                                aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize(ta,
-                                                                                 nullptr,
-                                                                                 tmask,
-                                                                                 1.0, 0,
-                                                                                 tout,
-                                                                                 &workspaceSize,
-                                                                                 executor);
-                            CHECK_RET(ret == ACL_SUCCESS,
-                                      LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret));
-                        });
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *&executor) {
+                  auto ret =
+                      aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize(ta,
+                                                                       nullptr,
+                                                                       tmask,
+                                                                       1.0, 0,
+                                                                       tout,
+                                                                       &workspaceSize,
+                                                                       &executor);
+                  aclSetAclOpExecutorRepeatable(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret));
+              });
     *size = workspaceSize +
             numElements(maskDesc->shape, maskDesc->ndim) * aclDataTypeSize(maskDesc->dataType);
 
@@ -156,20 +157,21 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
                 numElements(maskDesc->shape, maskDesc->ndim) * ele_size,
                 ACL_MEMCPY_HOST_TO_DEVICE);
 
-    use_aclnn_compute((AscendHandle_t) handle,
-                      [&](aclOpExecutor *&executor) {
-                          AclSetTensorAddr(executor, 0, ta, data);
-                          AclSetTensorAddr(executor, 2, tmask, workspace);
-                          AclSetTensorAddr(executor, 3, tout, data);
+    use_aclnn((AscendHandle_t) handle,
+              [&](aclOpExecutor *executor) {
+                  AclSetTensorAddr(executor, 0, ta, data);
+                  AclSetTensorAddr(executor, 2, tmask, workspace);
+                  AclSetTensorAddr(executor, 3, tout, data);
 
-                          workspace = (void *) ((uint16_t *) workspace + numElements(maskDesc->shape, maskDesc->ndim));
-                          auto ret = aclnnMaskedSoftmaxWithRelPosBias(workspace,
-                                                                      desc->workspaceSize,
-                                                                      executor,
-                                                                      stream);
-                          CHECK_RET(ret == ACL_SUCCESS,
-                                    LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBias failed. ERROR: %d\n", ret));
-                      });
+                  workspace = (void *) ((uint16_t *) workspace + numElements(maskDesc->shape, maskDesc->ndim));
+                  auto ret = aclnnMaskedSoftmaxWithRelPosBias(workspace,
+                                                              desc->workspaceSize,
+                                                              executor,
+                                                              stream);
+                  aclDestroyAclOpExecutor(executor);
+                  CHECK_RET(ret == ACL_SUCCESS,
+                            LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBias failed. ERROR: %d\n", ret));
+              });
 
     return STATUS_SUCCESS;
 }
