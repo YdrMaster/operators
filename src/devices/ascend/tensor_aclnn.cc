@@ -37,7 +37,8 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     // Infer continuous storageShape
     auto storageShape = new std::vector<int64_t>(ndim);
     for (uint64_t i = 0; i < ndim - 1; ++i) {
-        (*storageShape)[i] = (*shape)[i] * (*strides)[i] / (*shape)[i + 1];
+        (*storageShape)[i] = ((*shape)[i] * (*strides)[i]) /
+                             ((*shape)[i + 1] * (*strides)[i + 1]);
     }
     (*storageShape)[ndim - 1] = (*shape)[ndim - 1];
     this->storageShape = (*storageShape).data();
