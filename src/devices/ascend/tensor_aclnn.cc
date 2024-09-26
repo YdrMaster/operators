@@ -21,6 +21,7 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     } else {
         return STATUS_BAD_TENSOR_DTYPE;
     }
+
     // Set format
     // TODO: Support other format
     aclFormat format = aclFormat::ACL_FORMAT_ND;
@@ -32,8 +33,14 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     this->offset = 0;
     this->dataType = dt;
     this->format = format;
-    // TODO: Support shape diff
-    this->storageShape = (*shape).data();
+
+    // Infer continuous storageShape
+    auto storageShape = new std::vector<int64_t>(ndim);
+    for (uint64_t i = 0; i < ndim - 1; ++i) {
+        (*storageShape)[i] = (*shape)[i] * (*strides)[i] / (*shape)[i + 1];
+    }
+    (*storageShape)[ndim - 1] = (*shape)[ndim - 1];
+    this->storageShape = (*storageShape).data();
     this->storageNdim = ndim;
 
     return STATUS_SUCCESS;

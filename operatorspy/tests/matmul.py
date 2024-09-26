@@ -246,18 +246,17 @@ if __name__ == "__main__":
     test_cases = [
         # alpha, beta, a_shape, b_shape, c_shape, a_stride, b_stride, c_stride, dtype
         (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
-        (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
-        # (
-        #     1.0,
-        #     0.0,
-        #     (1, 2048),
-        #     (2048, 2048),
-        #     (1, 2048),
-        #     (4096, 1),
-        #     (4096, 1),
-        #     (4096, 1),
-        #     torch.float16,
-        # ),
+        (
+            1.0,
+            0.0,
+            (1, 2048),
+            (2048, 2048),
+            (1, 2048),
+            (4096, 1),
+            (4096, 1),
+            (4096, 1),
+            torch.float16,
+        ),
     ]
     args = get_args()
     lib = open_lib()
