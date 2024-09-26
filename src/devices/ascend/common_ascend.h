@@ -33,7 +33,5 @@ extern "C" {
 int64_t numElements(const int64_t *shape, int64_t num);
 const char *dataTypeToString(aclDataType dtype);
 const char *formatToString(aclFormat format);
-void *mallocWorkspace(uint64_t workspaceSize);
-void freeWorkspace(void *workspaceAddr);
 
 #endif
