@@ -87,7 +87,7 @@ def test_cuda(lib, test_cases):
 def test_ascend(lib, test_cases):
     import torch_npu
     
-    device = DeviceEnum.DEVICE_NPU
+    device = DeviceEnum.DEVICE_ASCEND
     handle = create_handle(lib, device)
     for test_case in test_cases:
         x_shape, x_stride = test_case[0]

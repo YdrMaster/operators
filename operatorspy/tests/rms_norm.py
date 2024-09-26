@@ -111,7 +111,7 @@ def test_bang(lib, test_cases):
 
 def test_ascend(lib, test_cases):
     import torch_npu
-    device = DeviceEnum.DEVICE_NPU
+    device = DeviceEnum.DEVICE_ASCEND
     handle = create_handle(lib, device)
     for (y_shape, x_shape, w_shape, dtype, w_dtype) in test_cases:
         test(lib, handle, "npu", y_shape, x_shape, w_shape, dtype, w_dtype)
