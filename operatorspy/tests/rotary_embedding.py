@@ -16,6 +16,7 @@ from operatorspy import (
     check_error,
     rearrange_tensor,
     create_workspace,
+    U64,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -74,12 +75,13 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
     pos = torch.arange(0, t.shape[0], device=torch.device(torch_device))
     theta = 1e4
     ans = rotary_embedding(t, pos, theta, torch_device)
-    pos = pos.to(torch.uint64)
+    pos = pos.to(torch.int64) # use int64 to support older versions of PyTorch
     descriptor = infiniopRoPEDescriptor_t()
     # 2x table length for test
     sin_table, cos_table = sin_cos_table(t.shape[0] * 2, t.shape[2], t.device, theta)
     t_tensor = to_tensor(t, lib)
     pos_tensor = to_tensor(pos, lib)
+    pos_tensor.descriptor.contents.dt = U64  # treat int64 as uint64
     sin_table_tensor = to_tensor(sin_table, lib)
     cos_table_tensor = to_tensor(cos_table, lib)
     check_error(
