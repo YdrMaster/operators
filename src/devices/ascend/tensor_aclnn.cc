@@ -77,6 +77,7 @@ infiniopStatus_t aclnnTensorDescriptor::destroyTensor() {
     t = nullptr;
     shape = nullptr;
     strides = nullptr;
+    storageShape = nullptr;
 
     return STATUS_SUCCESS;
 }
@@ -87,6 +88,7 @@ aclnnTensorDescriptor::~aclnnTensorDescriptor() {
     } else {
         delete shape;
         delete strides;
+        delete storageShape;
     }
 }
 

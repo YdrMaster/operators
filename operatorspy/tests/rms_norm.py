@@ -124,7 +124,7 @@ if __name__ == "__main__":
     test_cases = [
         # y_shape, x_shape, w_shape, dtype, w_dtype
         ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float16),
-        # ((16, 2048), (16, 2048), (2048,), torch.float32, torch.float32),
+        ((16, 2048), (16, 2048), (2048,), torch.float16, torch.float32),
     ]
     args = get_args()
     lib = open_lib()

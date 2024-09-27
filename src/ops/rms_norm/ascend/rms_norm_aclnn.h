@@ -9,12 +9,13 @@
 #include <acl/acl_base.h>
 #include <aclnn/acl_meta.h>
 #include <aclnnop/aclnn_rms_norm.h>
+#include <aclnnop/aclnn_cast.h>
 #include <algorithm>
 
 struct RMSNormAclnnDescriptor {
     Device device;
     AscendHandle_t handle;
-    aclnnTensorDescriptor_t yDesc, xDesc, wDesc, rstdDesc;
+    aclnnTensorDescriptor_t yDesc, xDesc, wDesc, rstdDesc, castDesc;
     uint64_t workspaceSize;
     double epsilon;
 

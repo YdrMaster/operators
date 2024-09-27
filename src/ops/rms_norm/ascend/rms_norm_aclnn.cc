@@ -8,6 +8,7 @@ RMSNormAclnnDescriptor::RMSNormAclnnDescriptor(Device _device) {
     xDesc = new aclnnTensorDescriptor();
     wDesc = new aclnnTensorDescriptor();
     rstdDesc = new aclnnTensorDescriptor();
+    castDesc = nullptr;
     epsilon = 1e-5;
 }
 
@@ -25,14 +26,11 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
     auto &yDesc = (*desc_ptr)->yDesc;
     auto &xDesc = (*desc_ptr)->xDesc;
     auto &wDesc = (*desc_ptr)->wDesc;
+    auto &castDesc = (*desc_ptr)->castDesc;
 
     auto status = yDesc->fromInfiniOpTensorDescriptor(y);
     status = xDesc->fromInfiniOpTensorDescriptor(x);
     status = wDesc->fromInfiniOpTensorDescriptor(w);
-
-    // printf("%s\n", yDesc->toString());
-    // printf("%s\n", xDesc->toString());
-    // printf("%s\n", wDesc->toString());
 
     // Set rstdDesc
     // See: https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha002/apiref/appdevgapi/context/aclnnRmsNorm.md
@@ -51,19 +49,15 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
         }
     }
 
-    // printf("%lu\n", rstd_dim);
     auto rstd_shape = new std::vector<int64_t>(xDesc->ndim, 1);
     auto rstd_strides = new std::vector<int64_t>(xDesc->ndim, 1);
 
     for (uint64_t i = 0; i < rstd_dim; ++i) {
         (*rstd_shape)[i] = (xDesc->shape)[i];
     }
-    // printf("%ld, %ld\n", (*rstd_shape)[0], (*rstd_shape)[1]);
     for (int64_t i = xDesc->ndim - 2; i >= 0; --i) {
         (*rstd_strides)[i] = (*rstd_strides)[i + 1] * (*rstd_shape)[i + 1];
     }
-    // printf("%ld, %ld\n", (*rstd_strides)[0], (*rstd_strides)[1]);
-
 
     auto &rstdDesc = (*desc_ptr)->rstdDesc;
     rstdDesc->ndim = rstd_shape->size();
@@ -75,8 +69,12 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
     rstdDesc->storageShape = rstd_shape->data();
     rstdDesc->storageNdim = rstd_shape->size();
 
-
-    // printf("%s\n", rstdDesc->toString());
+    if (wDesc->dataType != xDesc->dataType) {
+        castDesc = new aclnnTensorDescriptor();
+        status = castDesc->fromInfiniOpTensorDescriptor(w);
+        castDesc->dataType = xDesc->dataType;
+        status = castDesc->createTensor();
+    }
 
     status = yDesc->createTensor();
     status = xDesc->createTensor();
@@ -92,6 +90,7 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
     auto &xDesc = desc->xDesc;
     auto &wDesc = desc->wDesc;
     auto &rstdDesc = desc->rstdDesc;
+    auto &castDesc = desc->castDesc;
 
     // Get Tensor
     aclTensor *ty = yDesc->t;
@@ -106,7 +105,8 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
               [&](aclOpExecutor *&executor) {
                   auto ret =
                       aclnnRmsNormGetWorkspaceSize(tx,
-                                                   tw,
+                                                   castDesc == nullptr ? tw
+                                                                       : castDesc->t,
                                                    desc->epsilon,
                                                    ty,
                                                    trstd,
@@ -118,6 +118,10 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
               });
     *size = workspaceSize +
             numElements(rstdDesc->shape, rstdDesc->ndim) * aclDataTypeSize(rstdDesc->dataType);
+
+    if (castDesc != nullptr) {
+        *size += numElements(castDesc->shape, castDesc->ndim) * aclDataTypeSize(castDesc->dataType);
+    }
 
     desc->workspaceSize = workspaceSize;
 
@@ -135,6 +139,7 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
     auto &xDesc = desc->xDesc;
     auto &wDesc = desc->wDesc;
     auto &rstdDesc = desc->rstdDesc;
+    auto &castDesc = desc->castDesc;
 
     // Get Tensor
     aclTensor *ty = yDesc->t;
@@ -144,11 +149,35 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
 
     auto rstd = (void *) ((uint8_t *) workspace + desc->workspaceSize);
     auto &handle = desc->handle;
+    void *castPtr = nullptr;
+
+    if (castDesc != nullptr) {
+        aclTensor *tcast = castDesc->t;
+        castPtr = (void *) ((float *) rstd + numElements(rstdDesc->shape, rstdDesc->ndim));
+
+        aclOpExecutor *castExecutor = nullptr;
+        uint64_t workspaceSize = 0;
+        auto ret = aclnnCastGetWorkspaceSize(tw, castDesc->dataType, tcast, &workspaceSize, &castExecutor);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnCastGetWorkspaceSize failed. ERROR: %d\n", ret));
+        aclSetAclOpExecutorRepeatable(castExecutor);
+
+        AclSetTensorAddr(castExecutor, 0, tw, w);
+        AclSetTensorAddr(castExecutor, 1, tcast, castPtr);
+        ret = aclnnCast(nullptr, workspaceSize, castExecutor, stream);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnCast failed. ERROR: %d\n", ret));
+        aclDestroyAclOpExecutor(castExecutor);
+    }
 
     use_aclnn((AscendHandle_t) handle,
               [&](aclOpExecutor *executor) {
                   AclSetTensorAddr(executor, 0, tx, x);
-                  AclSetTensorAddr(executor, 1, tw, w);
+                  if (castDesc != nullptr) {
+                      AclSetTensorAddr(executor, 1, castDesc->t, castPtr);
+                  } else {
+                      AclSetTensorAddr(executor, 1, tw, w);
+                  }
                   AclSetTensorAddr(executor, 2, ty, y);
                   AclSetTensorAddr(executor, 3, trstd, rstd);
 
@@ -169,6 +198,9 @@ infiniopStatus_t aclnnDestroyRMSNormDescriptor(RMSNormAclnnDescriptor_t desc) {
     delete desc->wDesc;
     delete desc->xDesc;
     delete desc->rstdDesc;
+    if (desc->castDesc) {
+        delete desc->castDesc;
+    }
 
     return STATUS_SUCCESS;
 }
