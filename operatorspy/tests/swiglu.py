@@ -218,9 +218,10 @@ def test_ascend(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # shape, a_stride, b_stride, c_stride, dtype
-        # ((13, 4), None, None, None, torch.float16),
+        ((13, 4), None, None, None, torch.float16),
         # ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
-        ((13, 1024), (1024, 1), (1024, 1), (1024, 1), torch.float16),
+        # ((13, 4), (8, 1), (8, 1), None, torch.float16),
+        # ((13, 1024), (2048, 1), (2048, 1), (2048, 1), torch.float16),
         ((13, 1024), None, None, None, torch.float16),
     ]
     args = get_args()

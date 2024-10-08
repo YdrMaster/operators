@@ -8,6 +8,21 @@ int64_t numElements(const int64_t *shape, int64_t num) {
     return numEle;
 }
 
+void *mallocWorkspace(uint64_t workspaceSize) {
+    void *workspaceAddr = nullptr;
+    if (workspaceSize > 0) {
+        auto ret = aclrtMalloc(&workspaceAddr, workspaceSize,
+                          ACL_MEM_MALLOC_HUGE_FIRST);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclrtMalloc failed. ERROR: %d\n", ret));
+    }
+    return workspaceAddr;
+}
+
+void freeWorkspace(void *workspaceAddr) {
+    aclrtFree(workspaceAddr);
+}
+
 const char *dataTypeToString(aclDataType dtype) {
     switch (dtype) {
     case ACL_DT_UNDEFINED:
