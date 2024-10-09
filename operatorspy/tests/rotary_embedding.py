@@ -16,6 +16,7 @@ from operatorspy import (
     check_error,
     rearrange_tensor,
     create_workspace,
+    U64,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -99,6 +100,7 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
     sin_table, cos_table = sin_cos_table(t.shape[0] * 2, t.shape[2], t.device, theta)
     t_tensor = to_tensor(t, lib)
     pos_tensor = to_tensor(pos, lib)
+    pos_tensor.descriptor.contents.dt = U64  # treat int64 as uint64
     sin_table_tensor = to_tensor(sin_table, lib)
     cos_table_tensor = to_tensor(cos_table, lib)
     
