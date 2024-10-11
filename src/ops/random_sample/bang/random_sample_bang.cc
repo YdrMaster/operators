@@ -20,7 +20,7 @@ infiniopStatus_t bangCreateRandomSampleDescriptor(BangHandle_t handle,
 }
 
 infiniopStatus_t bangGetRandomSampleWorkspaceSize(RandomSampleBangDescriptor_t desc, unsigned long int *size) {
-    *size = desc->voc * (sizeof(int) + sizeof(uint16_t)) + sizeof(uint16_t);
+    *size = desc->voc * (sizeof(uint64_t) + sizeof(desc->dtype)) + sizeof(desc->dtype);
     return STATUS_SUCCESS;
 }
 

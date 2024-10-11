@@ -433,7 +433,7 @@ void random_sampleUnion(cnrtQueue_t queue, void const *source, void *indices, fl
 }
 
 void random_sample_bang_f16(RandomSampleBangDescriptor_t desc, void *workspace, void *result,
-                                    void *probs,
+                                    void const *probs,
                                     float random_val,
                                     float topp,
                                     int topk,
@@ -448,7 +448,7 @@ infiniopStatus_t bangRandomSample(RandomSampleBangDescriptor_t desc,
                                     void *workspace,
                                     unsigned long int workspace_size,
                                     void *result,
-                                    void *probs,
+                                    void const *probs,
                                     float random_val,
                                     float topp,
                                     int topk,

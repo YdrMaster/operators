@@ -24,8 +24,8 @@ infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
     return STATUS_SUCCESS;
 }
 
-infiniopStatus_t cpuGetRandomSampleWorkspaceSize(RandomSampleCpuDescriptor_t desc, uint64_t *size) {
-    *size = 0;
+infiniopStatus_t cpuGetRandomSampleWorkspaceSize(RandomSampleCpuDescriptor_t desc, unsigned long int *size) {
+    *size = desc->voc * (sizeof(uint64_t) + sizeof(desc->dtype)) + sizeof(desc->dtype);
     return STATUS_SUCCESS;
 }
 
@@ -36,22 +36,31 @@ infiniopStatus_t cpuDestroyRandomSampleDescriptor(RandomSampleCpuDescriptor_t de
 
 
 void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
+                            void *workspace,
                             void *result,
-                            void *probs,
+                            void const *probs,
                             float random_val,
                             float topp,
                             int topk,
                             float temperature) {
     int voc = desc->voc;
-    auto logits_ = reinterpret_cast<uint16_t *>(probs);
+    char *origin = reinterpret_cast<char *>(workspace);
+    //排序得到前k个最大值，按照从大到小顺序存储在logits_前k个位置里面
+    char *logitsTmp = origin + voc * sizeof(uint64_t);
+    uint64_t *indexTmp = (uint64_t *) origin;
+    uint16_t *logits_ = (uint16_t *) logitsTmp;
+
+
+    auto source = reinterpret_cast<const uint16_t *>(probs);
+
+    std::copy(source, source + voc, logits_);
     auto index_ = reinterpret_cast<uint64_t *>(result);
 
     // 如果k大于voc，调整k为voc
     if (topk > voc) {
         topk = voc;
     }
-    //排序得到前k个最大值，按照从大到小顺序存储在logits_前k个位置里面
-    uint64_t *indexTmp = (uint64_t *) malloc(voc * sizeof(uint64_t));
+
     for (int i = 0; i < voc; i++) {
         indexTmp[i] = i;
     }
@@ -110,14 +119,13 @@ void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
             break;
         }
     }
-    free(indexTmp);
 }
 
 infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  void *workspace,
                                  uint64_t workspace_size,
                                  void *result,
-                                 void *probs,
+                                 void const *probs,
                                  float random_val,
                                  float topp,
                                  int topk,
@@ -125,6 +133,7 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
         causal_softmax_cpu_f16(desc,
+                               workspace,
                                result,
                                probs,
                                random_val,

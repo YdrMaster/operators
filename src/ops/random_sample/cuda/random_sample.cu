@@ -29,19 +29,19 @@ __global__ void softmax(
     }
 }
 
-__global__ void index(int *key_in, int voc) {
+__global__ void index(uint64_t *key_in, int voc) {
     int ind = threadIdx.x + blockIdx.x * blockDim.x;
     if (ind < voc) {
-        key_in[ind] = ind;
+        key_in[ind] = static_cast<uint64_t>(ind);
     }
 }
 template<class T>
-__global__ void random_sample_kernel(int *result,
+__global__ void random_sample_kernel(uint64_t *result,
                                      T *val_out,
                                      float random_val,
                                      float topp,
                                      int topk,
-                                     int *key_out) {
+                                     uint64_t *key_out) {
     int end = 0;
     for (end = 0; end < topk; end++) {
         if (val_out[end] >= static_cast<T>(topp)) {
@@ -85,7 +85,7 @@ void inclusive_sum(
         stream);
 }
 template<class T, class I>
-void random_sample_workspace(void *workspace, size_t &size_radix_sort, size_t &size_scan,
+void random_sample_workspace(size_t &size_radix_sort, size_t &size_scan,
                              int voc, cudaStream_t stream) {
 
 
@@ -100,7 +100,7 @@ void random_sample_workspace(void *workspace, size_t &size_radix_sort, size_t &s
         stream);
 }
 void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace, void *result,
-                              void *probs,
+                              void const *probs,
                               float random_val,
                               float topp,
                               int topk,
@@ -112,18 +112,18 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
 
     half *val_out;
     cudaMalloc((void **) &val_out, voc * sizeof(half));
-    int *key_in, *key_out;
-    cudaMalloc((void **) &key_in, voc * sizeof(int));
-    cudaMalloc((void **) &key_out, voc * sizeof(int));
+    uint64_t *key_in, *key_out;
+    cudaMalloc((void **) &key_in, voc * sizeof(uint64_t));
+    cudaMalloc((void **) &key_out, voc * sizeof(uint64_t));
     index<<<(voc + 1023) / 1024, 1024, 0, (cudaStream_t) stream>>>(key_in, voc);
     //下面开始计算workspace空间
     size_t size_radix_sort;
     size_t size_scan;
-    random_sample_workspace<half, int>(workspace, size_radix_sort, size_scan,
-                                       voc, (cudaStream_t) stream);
+    random_sample_workspace<half, uint64_t>(size_radix_sort, size_scan,
+                                            voc, (cudaStream_t) stream);
 
     cudaMalloc(&workspace, size_radix_sort + size_scan);
-    sort_pairs_descending<half, int>(
+    sort_pairs_descending<half, uint64_t>(
         workspace, size_radix_sort,
         (half *) probs, val_out,
         key_in, key_out,
@@ -140,7 +140,7 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
         workspace, size_scan,
         val_out, voc,
         (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
-    random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((int *) result,
+    random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((uint64_t *) result,
                                                                    val_out,
                                                                    random_val,
                                                                    topp,
@@ -155,7 +155,7 @@ infiniopStatus_t cudaRandomSample(RandomSampleCudaDescriptor_t desc,
                                   void *workspace,
                                   uint64_t workspace_size,
                                   void *result,
-                                  void *probs,
+                                  void const *probs,
                                   float random_val,
                                   float topp,
                                   int topk,

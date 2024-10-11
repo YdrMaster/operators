@@ -18,7 +18,7 @@ __C __export infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescripto
                                                    void *workspace,
                                                    uint64_t workspace_size,
                                                    void *result,
-                                                   void *probs,
+                                                   void const *probs,
                                                    float random_val,
                                                    float topp,
                                                    int topk,

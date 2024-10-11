@@ -73,10 +73,10 @@ def random_sample(data, random_val, topp, topk, voc, temperature):
     for i in range(end):
         sum_s += dataNp[i]
         if(random_val < sum_s):
-            return indices[i].to(torch.int32)
+            return indices[i].to(torch.uint64)
 
 
-def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
+def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
     print(
         f"Testing RandomSample on {torch_device} with voc:{voc} dtype:{x_dtype}"
     )
@@ -84,11 +84,8 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
     
     
-    indices = torch.zeros([1], dtype = torch.int32).to(torch_device)
-    random_val = 0.92
-    topp = 0.9
-    topk = 3
-    temperature = 2.0
+    indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
+    
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
     ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
@@ -130,16 +127,16 @@ def test(lib, handle, torch_device, voc, x_dtype=torch.float16):
 def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
-    for voc in test_cases:
-        test(lib, handle, "cpu", voc)
+    for (voc, random_val, topp, topk, temperature) in test_cases:
+        test(lib, handle, "cpu", voc, random_val, topp, topk, temperature)
     destroy_handle(lib, handle)
 
 
 def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
-    for voc in test_cases:
-        test(lib, handle, "cuda", voc)
+    for (voc, random_val, topp, topk, temperature) in test_cases:
+        test(lib, handle, "cuda", voc, random_val, topp, topk, temperature)
     destroy_handle(lib, handle)
 
 
@@ -148,13 +145,19 @@ def test_bang(lib, test_cases):
 
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
-    for voc in test_cases:
-        test(lib, handle, "mlu", voc)
+    for (voc, random_val, topp, topk, temperature) in test_cases:
+        test(lib, handle, "mlu", voc, random_val, topp, topk, temperature)
     destroy_handle(lib, handle)
 
 
 if __name__ == "__main__":
-    test_cases = [32, 20, 512]
+    test_cases = [
+        # voc, random_val, topp, topk, temperature
+        (512, 0.92, 0.8, 3, 0.5),
+        (4096, 0.95, 0.9, 5, 1.0),
+        (16384, 0.85, 0.85, 10, 2.0),
+    ]
+    
     args = get_args()
     lib = open_lib()
     lib.infiniopCreateRandomSampleDescriptor.restype = c_int32
