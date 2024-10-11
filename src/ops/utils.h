@@ -141,28 +141,40 @@ inline uint64_t get_byte_size(infiniopTensorDescriptor_t desc) {
 }
 
 // permute the dimensions of a tensor descriptor
-inline void permute(infiniopTensorDescriptor_t desc, const std::vector<uint64_t> &order) {
+inline infiniopTensorDescriptor_t permute(infiniopTensorDescriptor_t desc, const std::vector<uint64_t> &order) {
     uint64_t ndim = desc->ndim;
-    ASSERT_EQ(order.size(), ndim);
+    if (order.size() != ndim) {
+        return nullptr;
+    }
     uint64_t *shape = new uint64_t[ndim];
     int64_t *strides = new int64_t[ndim];
     for (int i = 0; i < ndim; i++) {
-        ASSERT(std::find(order.begin(), order.end(), i) != order.end());
+        if (std::find(order.begin(), order.end(), i) == order.end()) {
+            return nullptr;
+        }
         shape[i] = desc->shape[order[i]];
         strides[i] = desc->strides[order[i]];
     }
-    delete[] desc->shape;
-    delete[] desc->strides;
-    desc->shape = shape;
-    desc->strides = strides;
+    return new TensorDescriptor{
+        desc->dt, ndim, shape, strides};
+}
+
+// check if the dimensions [dim_start, dim_end] of a tensor descriptor are contiguous
+inline bool is_contiguous(const infiniopTensorDescriptor_t &desc, uint64_t dim_start, uint64_t dim_end) {
+    for (size_t i = dim_start + 1; i <= dim_end; i++) {
+        if (desc->strides[i - 1] != desc->shape[i] * desc->strides[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // merge the dimensions [dim_start, dim_end] of a tensor descriptor
-inline void dim_merge(infiniopTensorDescriptor_t desc, uint64_t dim_start, uint64_t dim_end) {
+inline infiniopTensorDescriptor_t dim_merge(infiniopTensorDescriptor_t desc, uint64_t dim_start, uint64_t dim_end) {
     uint64_t ndim = desc->ndim;
-    ASSERT(dim_start <= dim_end && dim_end < ndim);
-    if (dim_start == dim_end)
-        return;
+    if (dim_start > dim_end || dim_end >= ndim) {
+        return nullptr;
+    }
 
     uint64_t new_ndim = ndim - (dim_end - dim_start);
     uint64_t *new_shape = new uint64_t[new_ndim];
@@ -173,8 +185,8 @@ inline void dim_merge(infiniopTensorDescriptor_t desc, uint64_t dim_start, uint6
         new_strides[index] = desc->strides[i];
         index++;
     }
-    for (size_t i = dim_start + 1; i <= dim_end; i++) {
-        ASSERT_EQ(desc->strides[i - 1], desc->shape[i] * desc->strides[i]);
+    if (!is_contiguous(desc, dim_start, dim_end)) {
+        return nullptr;
     }
     new_shape[index] = 1;
     for (size_t i = dim_start; i <= dim_end; i++) {
@@ -187,17 +199,16 @@ inline void dim_merge(infiniopTensorDescriptor_t desc, uint64_t dim_start, uint6
         new_strides[index] = desc->strides[i];
         index++;
     }
-    delete[] desc->shape;
-    delete[] desc->strides;
-    desc->shape = new_shape;
-    desc->strides = new_strides;
-    desc->ndim = new_ndim;
+    return new TensorDescriptor{
+        desc->dt, new_ndim, new_shape, new_strides};
 }
 
 // split the dimension dim of a tensor descriptor into multiple dimensions
-inline void dim_split(infiniopTensorDescriptor_t desc, uint64_t dim, const std::vector<uint64_t> &dims) {
+inline infiniopTensorDescriptor_t dim_split(infiniopTensorDescriptor_t desc, uint64_t dim, const std::vector<uint64_t> &dims) {
     uint64_t ndim = desc->ndim;
-    ASSERT_EQ(desc->shape[dim], std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<uint64_t>()));
+    if (desc->shape[dim] != std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<uint64_t>())) {
+        return nullptr;
+    }
     uint64_t new_ndim = ndim + dims.size() - 1;
     uint64_t *new_shape = new uint64_t[new_ndim];
     int64_t *new_strides = new int64_t[new_ndim];
@@ -217,11 +228,8 @@ inline void dim_split(infiniopTensorDescriptor_t desc, uint64_t dim, const std::
         new_strides[index] = desc->strides[i];
         index++;
     }
-    delete[] desc->shape;
-    delete[] desc->strides;
-    desc->shape = new_shape;
-    desc->strides = new_strides;
-    desc->ndim = new_ndim;
+    return new TensorDescriptor{
+        desc->dt, new_ndim, new_shape, new_strides};
 }
 
 inline uint64_t get_byte_size(infiniopTensorDescriptor_t desc) {

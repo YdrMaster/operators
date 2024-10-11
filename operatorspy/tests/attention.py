@@ -45,24 +45,31 @@ def attention(q, k, v, k_cache, v_cache, pos):
     n_kv_head = k.shape[0]
 
     # Concatenate key and value caches
-    k_cache = k_cache[:, :pos, :]
-    v_cache = v_cache[:, :pos, :]
-    k = torch.cat([k_cache, k], dim=1)
-    v = torch.cat([v_cache, v], dim=1)
+    k_cache = k_cache[:, :pos, :]  # (n_kv_head, pos, head_dim)
+    v_cache = v_cache[:, :pos, :]  # (n_kv_head, pos, head_dim)
+    k = torch.cat([k_cache, k], dim=1)  # (n_kv_head, total_seq_len, head_dim)
+    v = torch.cat([v_cache, v], dim=1)  # (n_kv_head, total_seq_len, head_dim)
+
+    total_seq_len = k.shape[1]
 
     head_dim = v.shape[-1]
 
     if n_q_head != n_kv_head:
-        q = q.reshape(n_kv_head, -1, head_dim)
+        q = q.reshape(
+            n_kv_head, -1, head_dim
+        )  # (n_kv_head, n_group * seq_len, head_dim)
+
     # Scaled dot-product attention
-    attn_scores = torch.einsum(
-        "hqd,hkd->hqk", q.to(torch.float32), k.to(torch.float32)
-    ).to(
-        type
-    )  # (n_kv_head, n_group *seq_len, total_seq_len)
+    attn_scores = (
+        torch.einsum("hqd,hkd->hqk", q.to(torch.float32), k.to(torch.float32))
+        .to(type)
+        .reshape(n_q_head, -1, total_seq_len)
+    )  # (n_q_head, seq_len, total_seq_len)
     attn_scores = attn_scores / (head_dim**0.5)
 
-    attn_weights = causal_softmax(attn_scores)
+    attn_weights = causal_softmax(attn_scores).reshape(
+        n_kv_head, -1, total_seq_len
+    )  # (n_kv_head, seq_len, total_seq_len)
 
     # Weighted sum of values
     attn_output = (
@@ -89,7 +96,6 @@ def test(
     k_cache_buf_len,
     v_cache_buf_len,
     dtype=torch.float16,
-    out_stride=None,
     q_stride=None,
     k_stride=None,
     v_stride=None,
@@ -102,20 +108,20 @@ def test(
     )
 
     out = torch.zeros([seq_len, n_q_head, head_dim], dtype=dtype, device=torch_device)
-    q = torch.rand([n_q_head, seq_len, head_dim], dtype=dtype).to(torch_device)
-    k = torch.rand([n_kv_head, seq_len, head_dim], dtype=dtype).to(torch_device)
-    v = torch.rand([n_kv_head, seq_len, head_dim], dtype=dtype).to(torch_device)
-    k_cache = torch.rand([n_kv_head, k_cache_buf_len, head_dim], dtype=dtype).to(
-        torch_device
+    q = torch.rand([n_q_head, seq_len, head_dim], dtype=dtype).to(torch_device) * 0.1
+    k = torch.rand([n_kv_head, seq_len, head_dim], dtype=dtype).to(torch_device) * 0.1
+    v = torch.rand([n_kv_head, seq_len, head_dim], dtype=dtype).to(torch_device) * 0.1
+    k_cache = (
+        torch.rand([n_kv_head, k_cache_buf_len, head_dim], dtype=dtype).to(torch_device)
+        * 0.1
     )
-    v_cache = torch.rand([n_kv_head, v_cache_buf_len, head_dim], dtype=dtype).to(
-        torch_device
+    v_cache = (
+        torch.rand([n_kv_head, v_cache_buf_len, head_dim], dtype=dtype).to(torch_device)
+        * 0.1
     )
 
     ans = attention(q, k, v, k_cache, v_cache, pos)
 
-    if out_stride is not None:
-        out = rearrange_tensor(out, out_stride)
     if q_stride is not None:
         q = rearrange_tensor(q, q_stride)
     if k_stride is not None:
@@ -188,7 +194,6 @@ def test_cpu(lib, test_cases):
         k_cache_buf_len,
         v_cache_buf_len,
         dtype,
-        out_stride,
         q_stride,
         k_stride,
         v_stride,
@@ -207,7 +212,6 @@ def test_cpu(lib, test_cases):
             k_cache_buf_len,
             v_cache_buf_len,
             dtype,
-            out_stride,
             q_stride,
             k_stride,
             v_stride,
@@ -231,7 +235,6 @@ def test_cuda(lib, test_cases):
         k_cache_buf_len,
         v_cache_buf_len,
         dtype,
-        out_stride,
         q_stride,
         k_stride,
         v_stride,
@@ -250,7 +253,6 @@ def test_cuda(lib, test_cases):
             k_cache_buf_len,
             v_cache_buf_len,
             dtype,
-            out_stride,
             q_stride,
             k_stride,
             v_stride,
@@ -276,7 +278,6 @@ def test_bang(lib, test_cases):
         k_cache_buf_len,
         v_cache_buf_len,
         dtype,
-        out_stride,
         q_stride,
         k_stride,
         v_stride,
@@ -295,7 +296,6 @@ def test_bang(lib, test_cases):
             k_cache_buf_len,
             v_cache_buf_len,
             dtype,
-            out_stride,
             q_stride,
             k_stride,
             v_stride,
@@ -308,38 +308,53 @@ def test_bang(lib, test_cases):
 
 if __name__ == "__main__":
     test_cases = [
-        # n_q_head, n_kv_head, seq_len, head_dim, pos, k_cache_buf_len, v_cache_buf_len, dtype, out_stride, q_stride, k_stride, v_stride, k_cache_stride, v_cache_stride,
+        # prefill
         (
-            4,
-            4,
-            1,
-            128,
-            4,
-            1024,
-            1024,
-            torch.float16,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
+            32,  # n_q_head
+            4,  # n_kv_head
+            5,  # seq_len
+            64,  # head_dim
+            0,  # pos
+            2048,  # k_cache_buf_len
+            2048,  # v_cache_buf_len
+            torch.float16,  # dtype
+            [64, 2560, 1],  # q_stride
+            [64, 2560, 1],  # k_stride
+            [64, 2560, 1],  # v_stride
+            [64, 11264, 1],  # k_cache_stride
+            [64, 11264, 1],  # v_cache_stride
         ),
+        # decode
         (
-            8,
-            4,
-            2,
-            4,
-            1,
-            8,
-            8,
-            torch.float16,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
+            32,  # n_q_head
+            4,  # n_kv_head
+            1,  # seq_len
+            64,  # head_dim
+            3,  # pos
+            2048,  # k_cache_buf_len
+            2048,  # v_cache_buf_len
+            torch.float16,  # dtype
+            [64, 2560, 1],  # q_stride
+            [64, 2560, 1],  # k_stride
+            [64, 2560, 1],  # v_stride
+            [64, 11264, 1],  # k_cache_stride
+            [64, 11264, 1],  # v_cache_stride
+        ),
+        # for test
+        (
+            8,  # n_q_head
+            4,  # n_kv_head
+            2,  # seq_len
+            16,  # head_dim
+            1,  # pos
+            8,  # k_cache_buf_len
+            8,  # v_cache_buf_len
+            torch.float16,  # dtype
+            None,  # q_stride
+            None,  # k_stride
+            None,  # v_stride
+            None,  # k_cache_stride
+            None,  # v_cache_stride
         ),
     ]
     args = get_args()
