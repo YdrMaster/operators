@@ -119,8 +119,8 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
         )
     )
     
-    print(indices)
-    print(ans)
+    print(indices[0], f"{data[indices[0]]:.8f}")
+    print(ans, f"{data[ans]:.8f}")
     if(torch_device == 'mlu'):
         ans = ans.to(torch.int64)
     assert torch.allclose(indices, ans, atol=0, rtol=1e-3)

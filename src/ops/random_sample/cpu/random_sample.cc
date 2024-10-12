@@ -25,7 +25,7 @@ infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
 }
 
 infiniopStatus_t cpuGetRandomSampleWorkspaceSize(RandomSampleCpuDescriptor_t desc, unsigned long int *size) {
-    *size = desc->voc * (sizeof(uint64_t) + sizeof(desc->dtype)) + sizeof(desc->dtype);
+    *size = desc->voc * (sizeof(uint64_t) + sizeof(desc->dtype));
     return STATUS_SUCCESS;
 }
 

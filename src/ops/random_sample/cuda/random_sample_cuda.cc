@@ -21,7 +21,7 @@ infiniopStatus_t cudaCreateRandomSampleDescriptor(CudaHandle_t handle,
 }
 
 infiniopStatus_t cudaGetRandomSampleWorkspaceSize(RandomSampleCudaDescriptor_t desc, unsigned long int *size) {
-    *size = desc->voc * (sizeof(uint64_t) + sizeof(desc->dtype)) + sizeof(desc->dtype);
+    *size = desc->voc * (2 * sizeof(uint64_t) + sizeof(desc->dtype));
     return STATUS_SUCCESS;
 }
 

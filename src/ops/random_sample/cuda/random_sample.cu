@@ -108,23 +108,23 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
                               void *stream) {
     int voc = desc->voc;
     //下面这段代码在排序
+    char *origin = reinterpret_cast<char *>(workspace);
+    char *keyTmp = origin + voc * sizeof(half);
+    half *val_out = (half *) origin;
 
+    uint64_t *key_in = (uint64_t *) keyTmp;
+    uint64_t *key_out = key_in + voc;
 
-    half *val_out;
-    cudaMalloc((void **) &val_out, voc * sizeof(half));
-    uint64_t *key_in, *key_out;
-    cudaMalloc((void **) &key_in, voc * sizeof(uint64_t));
-    cudaMalloc((void **) &key_out, voc * sizeof(uint64_t));
     index<<<(voc + 1023) / 1024, 1024, 0, (cudaStream_t) stream>>>(key_in, voc);
     //下面开始计算workspace空间
     size_t size_radix_sort;
     size_t size_scan;
     random_sample_workspace<half, uint64_t>(size_radix_sort, size_scan,
                                             voc, (cudaStream_t) stream);
-
-    cudaMalloc(&workspace, size_radix_sort + size_scan);
+    void *workspace_extra;
+    cudaMalloc(&workspace_extra, size_radix_sort + size_scan);
     sort_pairs_descending<half, uint64_t>(
-        workspace, size_radix_sort,
+        workspace_extra, size_radix_sort,
         (half *) probs, val_out,
         key_in, key_out,
         voc, (cudaStream_t) stream);//该函数会把排序结果和对应索引保存在val_out和key_out上
@@ -137,7 +137,7 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
 
 
     inclusive_sum<half>(
-        workspace, size_scan,
+        workspace_extra, size_scan,
         val_out, voc,
         (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
     random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((uint64_t *) result,
@@ -146,9 +146,7 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
                                                                    topp,
                                                                    topk,
                                                                    key_out);
-    cudaFree(val_out);
-    cudaFree(key_in);
-    cudaFree(key_out);
+    cudaFree(workspace_extra);
 }
 
 infiniopStatus_t cudaRandomSample(RandomSampleCudaDescriptor_t desc,
