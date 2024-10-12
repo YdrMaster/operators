@@ -35,14 +35,14 @@ infiniopStatus_t cpuDestroyRandomSampleDescriptor(RandomSampleCpuDescriptor_t de
 }
 
 
-void causal_softmax_cpu_f16(RandomSampleCpuDescriptor_t desc,
-                            void *workspace,
-                            void *result,
-                            void const *probs,
-                            float random_val,
-                            float topp,
-                            int topk,
-                            float temperature) {
+void random_sample_cpu_f16(RandomSampleCpuDescriptor_t desc,
+                           void *workspace,
+                           void *result,
+                           void const *probs,
+                           float random_val,
+                           float topp,
+                           int topk,
+                           float temperature) {
     int voc = desc->voc;
     char *origin = reinterpret_cast<char *>(workspace);
     //排序得到前k个最大值，按照从大到小顺序存储在logits_前k个位置里面
@@ -132,14 +132,14 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  float temperature,
                                  void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
-        causal_softmax_cpu_f16(desc,
-                               workspace,
-                               result,
-                               probs,
-                               random_val,
-                               topp,
-                               topk,
-                               temperature);
+        random_sample_cpu_f16(desc,
+                              workspace,
+                              result,
+                              probs,
+                              random_val,
+                              topp,
+                              topk,
+                              temperature);
         return STATUS_SUCCESS;
     }
 
