@@ -15,6 +15,7 @@ from operatorspy import (
     check_error,
     rearrange_tensor,
     create_workspace,
+    U64,
 )
 
 from operatorspy.tests.test_utils import get_args
@@ -73,7 +74,7 @@ def random_sample(data, random_val, topp, topk, voc, temperature):
     for i in range(end):
         sum_s += dataNp[i]
         if(random_val < sum_s):
-            return indices[i].to(torch.uint64)
+            return indices[i].to(torch.int64)
 
 
 def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
@@ -83,12 +84,10 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
     
-    if(torch_device == 'mlu'):
-        indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
-    else:
-        indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
+    indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
+    indices_tensor.descriptor.contents.dt = U64 # treat int64 as uint64
     ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
     
     descriptor = infiniopRandomSampleDescriptor_t()
@@ -121,8 +120,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     
     print(indices[0], f"{data[indices[0]]:.8f}")
     print(ans, f"{data[ans]:.8f}")
-    if(torch_device == 'mlu'):
-        ans = ans.to(torch.int64)
+    
     assert torch.allclose(indices, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyRandomSampleDescriptor(descriptor))
 
