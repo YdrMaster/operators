@@ -193,8 +193,8 @@ def test_ascend(lib, test_cases) :
 if __name__ == "__main__":
     test_cases = [
         ((1, 32, 128), None, torch.float16),
-        ((4, 16, 256), None, torch.float16),
-        # ((3, 32, 128), (8000, 200, 1), torch.float16),
+        ((4, 1, 32), None, torch.float16),
+        ((3, 32, 128), (8000, 200, 1), torch.float16),
     ]
     args = get_args()
     lib = open_lib()

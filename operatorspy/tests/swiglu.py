@@ -219,10 +219,9 @@ if __name__ == "__main__":
     test_cases = [
         # shape, a_stride, b_stride, c_stride, dtype
         ((13, 4), None, None, None, torch.float16),
-        # ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
-        # ((13, 4), (10, 1), (10, 1), (4, 1), torch.float16),
-        # ((13, 1024), (2048, 1), (2048, 1), (2048, 1), torch.float16),
-        ((13, 1024), None, None, None, torch.float16),
+        ((13, 4), (10, 1), (10, 1), (10, 1), torch.float16),
+        ((16, 5632), None, None, None, torch.float16),
+        ((16, 5632), (13312, 1), (13312, 1), (13312, 1), torch.float16),
     ]
     args = get_args()
     lib = open_lib()
