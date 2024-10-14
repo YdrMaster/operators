@@ -5,7 +5,7 @@
 
 
 infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
-                                                 RandomSampleCpuDescriptor_t *desc_ptr,
+                                                 RandomSampleCpuDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result,
                                                  infiniopTensorDescriptor_t probs) {
     int ndim = probs->ndim;
     if (ndim != 1) {
@@ -15,11 +15,13 @@ infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
         return STATUS_BAD_TENSOR_DTYPE;
     }
     int voc = probs->shape[0];
-
+    int rLength = result->shape[0];
     *desc_ptr = new RandomSampleCpuDescriptor{
         DevCpu,
         probs->dt,
-        voc};
+        voc,
+        result->dt,
+        rLength};
 
     return STATUS_SUCCESS;
 }

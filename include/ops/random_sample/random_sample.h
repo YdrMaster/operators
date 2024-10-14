@@ -10,7 +10,7 @@ typedef struct RandomSampleDescriptor {
 
 typedef RandomSampleDescriptor *infiniopRandomSampleDescriptor_t;
 
-__C __export infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handle, infiniopRandomSampleDescriptor_t *desc_ptr, infiniopTensorDescriptor_t probs);
+__C __export infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handle, infiniopRandomSampleDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result, infiniopTensorDescriptor_t probs);
 
 __C __export infiniopStatus_t infiniopGetRandomSampleWorkspaceSize(infiniopRandomSampleDescriptor_t desc, uint64_t *size);
 

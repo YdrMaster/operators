@@ -94,7 +94,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     descriptor = infiniopRandomSampleDescriptor_t()
     check_error(
         lib.infiniopCreateRandomSampleDescriptor(
-            handle, ctypes.byref(descriptor), x_tensor.descriptor
+            handle, ctypes.byref(descriptor), indices_tensor.descriptor, x_tensor.descriptor
         )
     )
     workspace_size = c_uint64(0)

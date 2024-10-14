@@ -6,12 +6,14 @@ struct RandomSampleCpuDescriptor {
     Device device;
     DT dtype;
     int voc;
+    DT rDtype;
+    int rLength;
 };
 
 typedef struct RandomSampleCpuDescriptor *RandomSampleCpuDescriptor_t;
 
 infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
-                                                 RandomSampleCpuDescriptor_t *,
+                                                 RandomSampleCpuDescriptor_t *, infiniopTensorDescriptor_t result,
                                                  infiniopTensorDescriptor_t probs);
 
 infiniopStatus_t cpuGetRandomSampleWorkspaceSize(RandomSampleCpuDescriptor_t desc, uint64_t *size);

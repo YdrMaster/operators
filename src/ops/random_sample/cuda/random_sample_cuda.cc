@@ -3,19 +3,21 @@
 #include "random_sample.cuh"
 
 infiniopStatus_t cudaCreateRandomSampleDescriptor(CudaHandle_t handle,
-                                                  RandomSampleCudaDescriptor_t *desc_ptr,
+                                                  RandomSampleCudaDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result,
                                                   infiniopTensorDescriptor_t probs) {
     if (probs->ndim != 1) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
 
     int voc = probs->shape[0];
-
+    int rLength = result->shape[0];
     *desc_ptr = new RandomSampleCudaDescriptor{
         handle->device,
         handle->device_id,
         probs->dt,
-        voc};
+        voc,
+        result->dt,
+        rLength};
 
     return STATUS_SUCCESS;
 }

@@ -12,20 +12,20 @@
 #include "bang/random_sample_bang.h"
 #endif
 
-__C infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handle, infiniopRandomSampleDescriptor_t *desc_ptr, infiniopTensorDescriptor_t probs) {
+__C infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handle, infiniopRandomSampleDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result, infiniopTensorDescriptor_t probs) {
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
-            return cpuCreateRandomSampleDescriptor(handle, (RandomSampleCpuDescriptor_t *) desc_ptr, probs);
+            return cpuCreateRandomSampleDescriptor(handle, (RandomSampleCpuDescriptor_t *) desc_ptr, result, probs);
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu:
-            return cudaCreateRandomSampleDescriptor((CudaHandle_t) handle, (RandomSampleCudaDescriptor_t *) desc_ptr, probs);
+            return cudaCreateRandomSampleDescriptor((CudaHandle_t) handle, (RandomSampleCudaDescriptor_t *) desc_ptr, result, probs);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
         case DevCambriconMlu: {
             return bangCreateRandomSampleDescriptor((BangHandle_t) handle,
-                                                    (RandomSampleBangDescriptor_t *) desc_ptr,
+                                                    (RandomSampleBangDescriptor_t *) desc_ptr, result,
                                                     probs);
         }
 #endif

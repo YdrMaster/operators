@@ -10,12 +10,14 @@ struct RandomSampleBangDescriptor {
     int device_id;
     DT dtype;
     int voc;
+    DT rDtype;
+    int rLength;
 };
 
 typedef struct RandomSampleBangDescriptor *RandomSampleBangDescriptor_t;
 
 infiniopStatus_t bangCreateRandomSampleDescriptor(BangHandle_t handle,
-                                                  RandomSampleBangDescriptor_t *desc_ptr,
+                                                  RandomSampleBangDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result,
                                                   infiniopTensorDescriptor_t probs);
 
 infiniopStatus_t bangGetRandomSampleWorkspaceSize(RandomSampleBangDescriptor_t desc, unsigned long int *size);
