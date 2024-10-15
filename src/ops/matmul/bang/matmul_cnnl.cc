@@ -28,7 +28,7 @@ void matmul_cnnl_f16(Tensor c, float beta, Tensor a, Tensor b, float alpha, void
     cnnlMatMulHeuristicResult_t algoResult;
     cnnlMatMulDescCreate(&opDesc);
     cnnlMatMulAlgoCreate(&algo);
-    cnnlCreateMatMulHeuristicResult(&algoResult);    
+    cnnlCreateMatMulHeuristicResult(&algoResult);
 
     cnnlSetMatMulDescAttr(opDesc, CNNL_MATMUL_USE_STRIDE, &use_stride,
                           sizeof(int32_t));
