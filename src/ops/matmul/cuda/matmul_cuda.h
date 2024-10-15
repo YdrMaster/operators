@@ -11,8 +11,8 @@ typedef struct MatmulCudaDescriptor {
     DT dtype;
     int device_id;
     MatmulInfo info;
-    float alpha,
-    float beta,
+    float alpha;
+    float beta;
     std::shared_ptr<Pool<cublasHandle_t>> cublas_handles_t;
 } MatmulCudaDescriptor;
 
