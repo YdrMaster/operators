@@ -100,6 +100,8 @@ def test(
             x_tensor.descriptor,
             w12_tensor.descriptor,
             w3_tensor.descriptor,
+            alpha,
+            residual,
         )
     )
 
@@ -118,8 +120,6 @@ def test(
             x_tensor.data,
             w12_tensor.data,
             w3_tensor.data,
-            alpha,
-            residual,
             None,
         )
     )
@@ -229,6 +229,8 @@ if __name__ == "__main__":
         # num_tokens, hidden_size, intermediate_size, alpha, residual, dtype, x_stride, y_stride
         (4, 4096, 11008, 1.0, True, torch.float16, None, None),
         (4, 4096, 11008, 1.0, True, torch.float16, [8192, 1], [8192, 1]),
+        (4, 4096, 11008, 1.0, False, torch.float16, None, None),
+        (4, 4096, 11008, 1.0, False, torch.float16, [8192, 1], [8192, 1]),
     ]
     args = get_args()
     lib = open_lib()
@@ -241,6 +243,8 @@ if __name__ == "__main__":
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
         infiniopTensorDescriptor_t,
+        c_float,
+        c_bool,
     ]
 
     lib.infiniopGetMLPWorkspaceSize.restype = c_int32
@@ -258,8 +262,6 @@ if __name__ == "__main__":
         c_void_p,
         c_void_p,
         c_void_p,
-        c_float,
-        c_bool,
         c_void_p,
     ]
 

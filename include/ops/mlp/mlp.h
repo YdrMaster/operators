@@ -17,7 +17,9 @@ __C __export infiniopStatus_t infiniopCreateMLPDescriptor(infiniopHandle_t handl
                                                           infiniopTensorDescriptor_t y_desc,
                                                           infiniopTensorDescriptor_t x_desc,
                                                           infiniopTensorDescriptor_t w12_desc,
-                                                          infiniopTensorDescriptor_t w3_desc);
+                                                          infiniopTensorDescriptor_t w3_desc,
+                                                          float alpha,
+                                                          bool residual);
 
 __C __export infiniopStatus_t infiniopGetMLPWorkspaceSize(infiniopMLPDescriptor_t desc, uint64_t *size);
 
@@ -28,8 +30,6 @@ __C __export infiniopStatus_t infiniopMLP(infiniopMLPDescriptor_t desc,
                                           void *x,
                                           void *w12,
                                           void *w3,
-                                          float alpha,
-                                          bool residual,
                                           void *stream);
 
 __C __export infiniopStatus_t infiniopDestroyMLPDescriptor(infiniopMLPDescriptor_t desc);
