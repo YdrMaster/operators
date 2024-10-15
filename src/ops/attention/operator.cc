@@ -24,7 +24,6 @@ struct _AttentionDescriptor {
     uint64_t softmax_workspace_size;
     uint64_t k_cache_offset;
     uint64_t v_cache_offset;
-    float qk_alpha;
 };
 
 typedef struct _AttentionDescriptor *_AttentionDescriptor_t;
@@ -133,8 +132,10 @@ __C __export infiniopStatus_t infiniopCreateAttentionDescriptor(infiniopHandle_t
     uint64_t qk_shape[3] = {n_kv_head, n_group * seq_len, total_seq_len};
     CHECK_STATUS(infiniopCreateTensorDescriptor(&qk_desc, 3, qk_shape, nullptr, q_desc->dt), STATUS_SUCCESS);
     //      matmul1_desc
+    //          qk_alpha
+    float qk_alpha = 1 / sqrt(head_dim);
     infiniopMatmulDescriptor_t matmul1_desc = new MatmulDescriptor;
-    CHECK_STATUS(infiniopCreateMatmulDescriptor(handle, &matmul1_desc, qk_desc, reshaped_q_desc, full_k_desc), STATUS_SUCCESS);
+    CHECK_STATUS(infiniopCreateMatmulDescriptor(handle, &matmul1_desc, qk_desc, qk_alpha, reshaped_q_desc, full_k_desc, 0.0), STATUS_SUCCESS);
     //      matmul1 workspace size
     uint64_t matmul1_workspace_size;
     CHECK_STATUS(infiniopGetMatmulWorkspaceSize(matmul1_desc, &matmul1_workspace_size), STATUS_SUCCESS);
@@ -177,7 +178,7 @@ __C __export infiniopStatus_t infiniopCreateAttentionDescriptor(infiniopHandle_t
     CHECK_STATUS(infiniopCreateTensorDescriptor(&temp_out_desc, 3, temp_out_shape, nullptr, q_desc->dt), STATUS_SUCCESS);
     //      matmul2_desc
     infiniopMatmulDescriptor_t matmul2_desc = new MatmulDescriptor;
-    CHECK_STATUS(infiniopCreateMatmulDescriptor(handle, &matmul2_desc, temp_out_desc, qk_desc, full_v_desc), STATUS_SUCCESS);
+    CHECK_STATUS(infiniopCreateMatmulDescriptor(handle, &matmul2_desc, temp_out_desc, 1.0, qk_desc, full_v_desc, 0.0), STATUS_SUCCESS);
     //      matmul2 workspace size
     uint64_t matmul2_workspace_size;
     CHECK_STATUS(infiniopGetMatmulWorkspaceSize(matmul2_desc, &matmul2_workspace_size), STATUS_SUCCESS);
@@ -219,9 +220,6 @@ __C __export infiniopStatus_t infiniopCreateAttentionDescriptor(infiniopHandle_t
         v_cache_offset = pos * get_byte_strides(v_cache_desc)[1];
     }
 
-    // qk_alpha
-    float qk_alpha = 1 / sqrt(head_dim);
-
     // create attention descriptor
     *(_AttentionDescriptor_t *) desc_ptr = new _AttentionDescriptor{
         handle->device,
@@ -241,7 +239,6 @@ __C __export infiniopStatus_t infiniopCreateAttentionDescriptor(infiniopHandle_t
         softmax_workspace_size,
         k_cache_offset,
         v_cache_offset,
-        qk_alpha,
     };
 
     return STATUS_SUCCESS;
@@ -288,7 +285,7 @@ __C __export infiniopStatus_t infiniopAttention(infiniopAttentionDescriptor_t de
     // matmul1: q * full_k
     CHECK_STATUS(infiniopMatmul(_desc->matmul_desc1,
                                 (char *) _workspace + _desc->matmul1_tensor_size, workspace_size - _desc->matmul1_tensor_size,
-                                _workspace, _q, k_cache, _desc->qk_alpha, 0, stream),
+                                _workspace, _q, k_cache, stream),
                  STATUS_SUCCESS);
     // softmax(qk)
     CHECK_STATUS(infiniopCausalSoftmax(_desc->softmax_desc,
@@ -299,7 +296,7 @@ __C __export infiniopStatus_t infiniopAttention(infiniopAttentionDescriptor_t de
     CHECK_STATUS(infiniopMatmul(_desc->matmul_desc2,
                                 (char *) _workspace + _desc->matmul1_tensor_size + _desc->matmul2_tensor_size,
                                 workspace_size - _desc->matmul1_tensor_size - _desc->matmul2_tensor_size,
-                                (char *) _workspace + _desc->matmul1_tensor_size, _workspace, v_cache, 1, 0, stream),
+                                (char *) _workspace + _desc->matmul1_tensor_size, _workspace, v_cache, stream),
                  STATUS_SUCCESS);
     // rearrange out
     CHECK_STATUS(infiniopRearrange(_desc->rearrange_desc_out, out, (char *) _workspace + _desc->matmul1_tensor_size, stream), STATUS_SUCCESS);
