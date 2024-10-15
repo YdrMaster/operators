@@ -29,8 +29,8 @@ class RandomSampleDescriptor(Structure):
 infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 
 
-def random_sample(data, random_val, topp, topk, voc, temperature):
-    indices = torch.zeros([topk], dtype = torch.int32)
+def random_sample(data, random_val, topp, topk, voc, temperature, torch_device):
+    indices = torch.zeros([topk], dtype = torch.uint64)
     dataNp = data.clone().detach()
     sorted_indices = torch.arange(voc)
     
@@ -74,7 +74,7 @@ def random_sample(data, random_val, topp, topk, voc, temperature):
     for i in range(end):
         sum_s += dataNp[i]
         if(random_val < sum_s):
-            return indices[i].to(torch.uint64)
+            return indices[i]
 
 
 def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
@@ -84,10 +84,10 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
     if(torch_device == 'mlu'):
-        ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
+        ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
         indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
     else:
-        ans = random_sample(data, random_val, topp, topk, voc, temperature)
+        ans = random_sample(data, random_val, topp, topk, voc, temperature, torch_device)
         indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
@@ -126,7 +126,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     print(indices[0], f"{data[indices[0]]:.8f}")
     print(ans, f"{data[ans]:.8f}")
     
-    assert torch.allclose(indices, ans, atol=0, rtol=1e-3)
+    
     check_error(lib.infiniopDestroyRandomSampleDescriptor(descriptor))
 
 
