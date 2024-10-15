@@ -74,7 +74,7 @@ def random_sample(data, random_val, topp, topk, voc, temperature):
     for i in range(end):
         sum_s += dataNp[i]
         if(random_val < sum_s):
-            return indices[i].to(torch.int64)
+            return indices[i].to(torch.uint64)
 
 
 def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
@@ -83,12 +83,17 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     )
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
-    
-    indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
+    if(torch_device == 'mlu'):
+        ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
+        indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
+    else:
+        ans = random_sample(data, random_val, topp, topk, voc, temperature)
+        indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
-    indices_tensor.descriptor.contents.dt = U64 # treat int64 as uint64
-    ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature)
+    if(torch_device == 'mlu'):
+        indices_tensor.descriptor.contents.dt = U64 # treat int64 as uint64
+    
     
     descriptor = infiniopRandomSampleDescriptor_t()
     check_error(

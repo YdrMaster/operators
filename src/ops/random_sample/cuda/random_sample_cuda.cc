@@ -8,7 +8,8 @@ infiniopStatus_t cudaCreateRandomSampleDescriptor(CudaHandle_t handle,
     if (probs->ndim != 1) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-
+    if (!dtype_eq(result->dt, U64))
+        return STATUS_BAD_TENSOR_DTYPE;
     int voc = probs->shape[0];
     int rLength = result->shape[0];
     *desc_ptr = new RandomSampleCudaDescriptor{

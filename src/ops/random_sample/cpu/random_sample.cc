@@ -14,6 +14,8 @@ infiniopStatus_t cpuCreateRandomSampleDescriptor(infiniopHandle_t,
     if (!dtype_eq(probs->dt, F16)) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
+    if (!dtype_eq(result->dt, U64))
+        return STATUS_BAD_TENSOR_DTYPE;
     int voc = probs->shape[0];
     int rLength = result->shape[0];
     *desc_ptr = new RandomSampleCpuDescriptor{
