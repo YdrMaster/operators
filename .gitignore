@@ -13,3 +13,9 @@ __pycache__/
 
 # Lib
 lib/
+
+# Log
+*.log
+
+# Cache
+cache/
