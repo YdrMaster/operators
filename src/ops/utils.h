@@ -29,13 +29,6 @@ inline void assert_true(int expr, const char *msg, const char *file, int line) {
 
 #define ROUND_UP_DIV(x, y) ((x + y - 1) / y)
 
-#define CHECK_STATUS(call, target)                    \
-    do {                                              \
-        if (auto value = (call); value != (target)) { \
-            return value;                             \
-        }                                             \
-    } while (0)
-
 #define CHECK_ERROR(call, target, errCode)            \
     do {                                              \
         if (auto value = (call); value == (target)) { \
@@ -74,20 +67,6 @@ inline std::vector<int64_t> get_byte_strides(infiniopTensorDescriptor_t desc) {
     }
 
     return strides;
-}
-
-inline bool is_contiguous(const uint64_t *shape, const int64_t *strides, uint64_t n) {
-    for (int64_t expected_stride = 1, i = n - 1; i > 0; --i) {
-        if (strides[i] != expected_stride) {
-            return false;
-        }
-        expected_stride *= shape[i];
-    }
-    return true;
-}
-
-inline bool is_contiguous(const infiniopTensorDescriptor_t &desc) {
-    return is_contiguous(desc->shape, desc->strides, desc->ndim);
 }
 
 // calculate the broadcasted shape for two tensors
@@ -167,6 +146,13 @@ inline bool is_contiguous(const infiniopTensorDescriptor_t &desc, uint64_t dim_s
         }
     }
     return true;
+}
+
+inline bool is_contiguous(const infiniopTensorDescriptor_t &desc) {
+    if (desc->ndim == 0) {
+        return true;
+    }
+    return is_contiguous(desc, 0, desc->ndim - 1);
 }
 
 // merge the dimensions [dim_start, dim_end] of a tensor descriptor
