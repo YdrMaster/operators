@@ -83,11 +83,12 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     )
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
+    ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
     if(torch_device == 'mlu'):
-        ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
+        
         indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
     else:
-        ans = random_sample(data, random_val, topp, topk, voc, temperature, torch_device)
+        
         indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
