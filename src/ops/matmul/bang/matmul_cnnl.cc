@@ -37,7 +37,9 @@ infiniopStatus_t bangDestroyMatmulDescriptor(MatmulBangDescriptor_t desc) {
 
 void matmul_cnnl_f16(MatmulBangDescriptor_t desc, void *workspace, void *c, float beta, void const *a, void const *b, float alpha, void *stream) {
     auto info = desc->info;
-
+    if (info.is_transed) {
+        std::swap(a, b);
+    }
     int32_t use_stride = true;
 
     cnnlTensorDescriptor_t aDesc, bDesc, cDesc;
