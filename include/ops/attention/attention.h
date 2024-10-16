@@ -28,9 +28,9 @@ __C __export infiniopStatus_t infiniopAttention(infiniopAttentionDescriptor_t de
                                                 void *workspace,
                                                 uint64_t workspace_size,
                                                 void *out,
-                                                void *q,
-                                                void *k,
-                                                void *v,
+                                                void const *q,
+                                                void const *k,
+                                                void const *v,
                                                 void *k_cache,
                                                 void *v_cache,
                                                 void *stream);
