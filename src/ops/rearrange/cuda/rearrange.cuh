@@ -29,5 +29,5 @@ infiniopStatus_t cudaRearrange(RearrangeCudaDescriptor_t desc,
 
 infiniopStatus_t cudaDestroyRearrangeDescriptor(RearrangeCudaDescriptor_t desc);
 
-void rearrange_nv_gpu(RearrangeCudaDescriptor *, void *y, void const *x, void *stream);
+void rearrange_nv_gpu(RearrangeCudaDescriptor_t, void *y, void const *x, void *stream);
 #endif// __CUDA_REARRANGE_H__

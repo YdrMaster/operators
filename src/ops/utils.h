@@ -3,6 +3,8 @@
 
 #include "data_type.h"
 #include "tensor.h"
+#include <algorithm>
+#include <numeric>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -67,20 +69,6 @@ inline std::vector<int64_t> get_byte_strides(infiniopTensorDescriptor_t desc) {
     return strides;
 }
 
-inline bool is_contiguous(const uint64_t *shape, const int64_t *strides, uint64_t n) {
-    for (int64_t expected_stride = 1, i = n - 1; i > 0; --i) {
-        if (strides[i] != expected_stride) {
-            return false;
-        }
-        expected_stride *= shape[i];
-    }
-    return true;
-}
-
-inline bool is_contiguous(const infiniopTensorDescriptor_t &desc) {
-    return is_contiguous(desc->shape, desc->strides, desc->ndim);
-}
-
 // calculate the broadcasted shape for two tensors
 inline bool getBroadcastShape(const uint64_t *shape1, uint64_t ndim1,
                               const uint64_t *shape2, uint64_t ndim2,
@@ -122,7 +110,6 @@ inline bool isValidBroadcastShape(infiniopTensorDescriptor_t a, infiniopTensorDe
     return isValidBroadcastShape(a, b, c, broadcast_shape, padded_shape1, padded_shape2, broadcast_ndim);
 }
 
-
 inline uint64_t get_byte_size(infiniopTensorDescriptor_t desc) {
     uint64_t dsize = desc->dt.size;
     uint64_t size = 1;
@@ -130,6 +117,105 @@ inline uint64_t get_byte_size(infiniopTensorDescriptor_t desc) {
         size *= desc->shape[i];
     }
     return size * dsize;
+}
+
+// permute the dimensions of a tensor descriptor
+inline infiniopTensorDescriptor_t permute(infiniopTensorDescriptor_t desc, const std::vector<uint64_t> &order) {
+    uint64_t ndim = desc->ndim;
+    if (order.size() != ndim) {
+        return nullptr;
+    }
+    uint64_t *shape = new uint64_t[ndim];
+    int64_t *strides = new int64_t[ndim];
+    for (int i = 0; i < ndim; i++) {
+        if (std::find(order.begin(), order.end(), i) == order.end()) {
+            return nullptr;
+        }
+        shape[i] = desc->shape[order[i]];
+        strides[i] = desc->strides[order[i]];
+    }
+    return new TensorDescriptor{
+        desc->dt, ndim, shape, strides};
+}
+
+// check if the dimensions [dim_start, dim_end] of a tensor descriptor are contiguous
+inline bool is_contiguous(const infiniopTensorDescriptor_t &desc, uint64_t dim_start, uint64_t dim_end) {
+    for (size_t i = dim_start + 1; i <= dim_end; i++) {
+        if (desc->strides[i - 1] != desc->shape[i] * desc->strides[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool is_contiguous(const infiniopTensorDescriptor_t &desc) {
+    if (desc->ndim == 0) {
+        return true;
+    }
+    return is_contiguous(desc, 0, desc->ndim - 1);
+}
+
+// merge the dimensions [dim_start, dim_end] of a tensor descriptor
+inline infiniopTensorDescriptor_t dim_merge(infiniopTensorDescriptor_t desc, uint64_t dim_start, uint64_t dim_end) {
+    uint64_t ndim = desc->ndim;
+    if (dim_start > dim_end || dim_end >= ndim) {
+        return nullptr;
+    }
+
+    uint64_t new_ndim = ndim - (dim_end - dim_start);
+    uint64_t *new_shape = new uint64_t[new_ndim];
+    int64_t *new_strides = new int64_t[new_ndim];
+    uint64_t index = 0;
+    for (size_t i = 0; i < dim_start; i++) {
+        new_shape[index] = desc->shape[i];
+        new_strides[index] = desc->strides[i];
+        index++;
+    }
+    if (!is_contiguous(desc, dim_start, dim_end)) {
+        return nullptr;
+    }
+    new_shape[index] = 1;
+    for (size_t i = dim_start; i <= dim_end; i++) {
+        new_shape[index] *= desc->shape[i];
+    }
+    new_strides[index] = desc->strides[dim_end];
+    index++;
+    for (size_t i = dim_end + 1; i < ndim; i++) {
+        new_shape[index] = desc->shape[i];
+        new_strides[index] = desc->strides[i];
+        index++;
+    }
+    return new TensorDescriptor{
+        desc->dt, new_ndim, new_shape, new_strides};
+}
+
+// split the dimension dim of a tensor descriptor into multiple dimensions
+inline infiniopTensorDescriptor_t dim_split(infiniopTensorDescriptor_t desc, uint64_t dim, const std::vector<uint64_t> &dims) {
+    uint64_t ndim = desc->ndim;
+    if (desc->shape[dim] != std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<uint64_t>())) {
+        return nullptr;
+    }
+    uint64_t new_ndim = ndim + dims.size() - 1;
+    uint64_t *new_shape = new uint64_t[new_ndim];
+    int64_t *new_strides = new int64_t[new_ndim];
+    uint64_t index = 0;
+    for (size_t i = 0; i < dim; i++) {
+        new_shape[index] = desc->shape[i];
+        new_strides[index] = desc->strides[i];
+        index++;
+    }
+    for (size_t i = 0; i < dims.size(); i++) {
+        new_shape[index] = dims[i];
+        new_strides[index] = desc->strides[dim] * desc->shape[dim] / std::accumulate(dims.begin(), dims.begin() + i + 1, 1, std::multiplies<uint64_t>());
+        index++;
+    }
+    for (size_t i = dim + 1; i < ndim; i++) {
+        new_shape[index] = desc->shape[i];
+        new_strides[index] = desc->strides[i];
+        index++;
+    }
+    return new TensorDescriptor{
+        desc->dt, new_ndim, new_shape, new_strides};
 }
 
 #endif// __UTILS_H__
