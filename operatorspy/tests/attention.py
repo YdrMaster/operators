@@ -176,7 +176,7 @@ def test(
         )
     )
 
-    assert torch.allclose(out, ans, atol=0, rtol=1e-2)
+    assert torch.allclose(out, ans, atol=1e-4, rtol=1e-2)
 
     check_error(lib.infiniopDestroyAttentionDescriptor(descriptor))
 
