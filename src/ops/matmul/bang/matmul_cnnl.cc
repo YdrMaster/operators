@@ -31,6 +31,7 @@ infiniopStatus_t bangGetMatmulWorkspaceSize(MatmulBangDescriptor_t desc, uint64_
 }
 
 infiniopStatus_t bangDestroyMatmulDescriptor(MatmulBangDescriptor_t desc) {
+    desc->cnnl_handles = nullptr;
     delete desc;
     return STATUS_SUCCESS;
 }
