@@ -14,6 +14,12 @@ struct MatmulBangDescriptor {
     float beta;
     DT dtype;
     std::shared_ptr<Pool<cnnlHandle_t>> cnnl_handles;
+    cnnlTensorDescriptor_t aDesc;
+    cnnlTensorDescriptor_t bDesc;
+    cnnlTensorDescriptor_t cDesc;
+    cnnlMatMulDescriptor_t opDesc;
+    cnnlMatMulAlgo_t algo;
+    cnnlMatMulHeuristicResult_t algoResult;
 };
 typedef struct MatmulBangDescriptor *MatmulBangDescriptor_t;
 

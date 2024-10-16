@@ -15,34 +15,6 @@ infiniopStatus_t bangCreateMatmulDescriptor(BangHandle_t handle,
     if (*status != STATUS_SUCCESS) {
         return *status;
     }
-    *desc_ptr = new MatmulBangDescriptor{
-        handle->device,
-        handle->device_id,
-        info,
-        alpha,
-        beta,
-        c_desc->dt,
-        handle->cnnl_handles};
-    return STATUS_SUCCESS;
-}
-infiniopStatus_t bangGetMatmulWorkspaceSize(MatmulBangDescriptor_t desc, uint64_t *size) {
-    *size = 0;
-    return STATUS_SUCCESS;
-}
-
-infiniopStatus_t bangDestroyMatmulDescriptor(MatmulBangDescriptor_t desc) {
-    desc->cnnl_handles = nullptr;
-    delete desc;
-    return STATUS_SUCCESS;
-}
-
-void matmul_cnnl_f16(MatmulBangDescriptor_t desc, void *workspace, void *c, float beta, void const *a, void const *b, float alpha, void *stream) {
-    auto info = desc->info;
-    if (info.is_transed) {
-        std::swap(a, b);
-    }
-    int32_t use_stride = true;
-
     cnnlTensorDescriptor_t aDesc, bDesc, cDesc;
     cnnlCreateTensorDescriptor(&aDesc);
     cnnlCreateTensorDescriptor(&bDesc);
@@ -58,34 +30,63 @@ void matmul_cnnl_f16(MatmulBangDescriptor_t desc, void *workspace, void *c, floa
     cnnlMatMulDescCreate(&opDesc);
     cnnlMatMulAlgoCreate(&algo);
     cnnlCreateMatMulHeuristicResult(&algoResult);
-
+    int32_t use_stride = true;
     cnnlSetMatMulDescAttr(opDesc, CNNL_MATMUL_USE_STRIDE, &use_stride,
                           sizeof(int32_t));
+    *desc_ptr = new MatmulBangDescriptor{
+        handle->device,
+        handle->device_id,
+        info,
+        alpha,
+        beta,
+        c_desc->dt,
+        handle->cnnl_handles,
+        aDesc,
+        bDesc,
+        cDesc,
+        opDesc,
+        algo,
+        algoResult};
+    return STATUS_SUCCESS;
+}
+infiniopStatus_t bangGetMatmulWorkspaceSize(MatmulBangDescriptor_t desc, uint64_t *size) {
+    *size = 0;
+    return STATUS_SUCCESS;
+}
 
+infiniopStatus_t bangDestroyMatmulDescriptor(MatmulBangDescriptor_t desc) {
+    desc->cnnl_handles = nullptr;
+    cnnlDestroyTensorDescriptor(desc->aDesc);
+    cnnlDestroyTensorDescriptor(desc->bDesc);
+    cnnlDestroyTensorDescriptor(desc->cDesc);
+    cnnlMatMulDescDestroy(desc->opDesc);
+    cnnlMatMulAlgoDestroy(desc->algo);
+    cnnlDestroyMatMulHeuristicResult(desc->algoResult);
+    delete desc;
+    return STATUS_SUCCESS;
+}
+
+void matmul_cnnl_f16(MatmulBangDescriptor_t desc, void *workspace, void *c, float beta, void const *a, void const *b, float alpha, void *stream) {
+    auto info = desc->info;
+    if (info.is_transed) {
+        std::swap(a, b);
+    }
 
     use_cnnl(desc->cnnl_handles, desc->device_id, (cnrtQueue_t) stream,
              [&](cnnlHandle_t handle) {
                  int count = 0;
-                 cnnlGetBatchMatMulAlgoHeuristic(handle, opDesc, aDesc,
-                                                 bDesc, cDesc,
-                                                 NULL, 1, &algoResult, &count);
+                 cnnlGetBatchMatMulAlgoHeuristic(handle, desc->opDesc, desc->aDesc,
+                                                 desc->bDesc, desc->cDesc,
+                                                 NULL, 1, &desc->algoResult, &count);
                  size_t wsSize;
-                 cnnlGetBatchMatMulHeuristicResult(algoResult, algo, &wsSize);
+                 cnnlGetBatchMatMulHeuristicResult(desc->algoResult, desc->algo, &wsSize);
                  cnrtMalloc(&workspace, wsSize);
-                 cnnlBatchMatMulBCast_v2(handle, opDesc, algo,
-                                         &alpha, aDesc, a,
-                                         bDesc, b,
-                                         &beta, cDesc, c,
+                 cnnlBatchMatMulBCast_v2(handle, desc->opDesc, desc->algo,
+                                         &alpha, desc->aDesc, a,
+                                         desc->bDesc, b,
+                                         &beta, desc->cDesc, c,
                                          workspace, wsSize);
              });
-
-
-    cnnlDestroyTensorDescriptor(aDesc);
-    cnnlDestroyTensorDescriptor(bDesc);
-    cnnlDestroyTensorDescriptor(cDesc);
-    cnnlMatMulDescDestroy(opDesc);
-    cnnlMatMulAlgoDestroy(algo);
-    cnnlDestroyMatMulHeuristicResult(algoResult);
 }
 infiniopStatus_t bangMatmul(MatmulBangDescriptor_t desc, void *workspace, uint64_t workspace_size, void *c, void const *a, void const *b, void *stream) {
     if (cnrtSetDevice(desc->device_id) != cnrtSuccess) {
