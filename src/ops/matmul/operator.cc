@@ -30,7 +30,9 @@ __C infiniopStatus_t infiniopCreateMatmulDescriptor(infiniopHandle_t handle,
         }
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangCreateMatmulDescriptor((BangHandle_t) handle, (MatmulBangDescriptor_t *) desc_ptr, c_desc, alpha, a_desc, b_desc, beta);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -49,7 +51,9 @@ __C infiniopStatus_t infiniopGetMatmulWorkspaceSize(infiniopMatmulDescriptor_t d
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangGetMatmulWorkspaceSize((MatmulBangDescriptor_t) desc, size);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -66,7 +70,9 @@ __C infiniopStatus_t infiniopMatmul(infiniopMatmulDescriptor_t desc, void *works
             return cudaMatmul((MatmulCudaDescriptor_t) desc, workspace, workspace_size, c, a, b, stream);
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-            // TODO
+        case DevCambriconMlu: {
+            return bangMatmul((MatmulBangDescriptor_t) desc, workspace, workspace_size, c, a, b, stream);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
@@ -85,7 +91,9 @@ infiniopStatus_t infiniopDestroyMatmulDescriptor(infiniopMatmulDescriptor_t desc
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        // TODO
+        case DevCambriconMlu: {
+            return bangDestroyMatmulDescriptor((MatmulBangDescriptor_t) desc);
+        }
 #endif
     }
     return STATUS_BAD_DEVICE;
