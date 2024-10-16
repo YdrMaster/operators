@@ -98,9 +98,9 @@ __C __export infiniopStatus_t infiniopMLP(infiniopMLPDescriptor_t desc,
                                           void *workspace,
                                           uint64_t workspace_size,
                                           void *y,
-                                          void *x,
-                                          void *w12,
-                                          void *w3,
+                                          void const *x,
+                                          void const *w12,
+                                          void const *w3,
                                           void *stream) {
     auto _desc = (_MLPDescriptor_t) desc;
     if (workspace_size < _desc->workspace_size) {
