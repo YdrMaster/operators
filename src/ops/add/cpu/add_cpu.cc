@@ -70,7 +70,7 @@ infiniopStatus_t cpuDestroyAddDescriptor(AddCpuDescriptor_t desc) {
 }
 
 template<typename Tdata>
-void add_cpu(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
+infiniopStatus_t add_cpu(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
     auto a_ = reinterpret_cast<Tdata const *>(a);
     auto b_ = reinterpret_cast<Tdata const *>(b);
     auto c_ = reinterpret_cast<Tdata *>(c);
@@ -85,18 +85,17 @@ void add_cpu(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
             c_[i] = a_[a_index] + b_[b_index];
         }
     }
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cpuAdd(AddCpuDescriptor_t desc,
                         void *c, void const *a, void const *b,
                         void *stream) {
     if (desc->dtype == F16) {
-        add_cpu<uint16_t>(desc, c, a, b);
-        return STATUS_SUCCESS;
+        return add_cpu<uint16_t>(desc, c, a, b);
     }
     if (desc->dtype == F32) {
-        add_cpu<float>(desc, c, a, b);
-        return STATUS_SUCCESS;
+        return add_cpu<float>(desc, c, a, b);
     }
     return STATUS_BAD_TENSOR_DTYPE;
 }
