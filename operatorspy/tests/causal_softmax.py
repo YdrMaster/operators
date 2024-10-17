@@ -105,7 +105,6 @@ def test_ascend(lib, test_cases):
     for x_shape, x_stride in test_cases:
         test(lib, handle, "npu", x_shape, x_stride)
 
-    # test(lib, handle, "npu")
     destroy_handle(lib, handle)
 
 if __name__ == "__main__":
