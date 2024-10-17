@@ -69,29 +69,21 @@ infiniopStatus_t cpuDestroyAddDescriptor(AddCpuDescriptor_t desc) {
     return STATUS_SUCCESS;
 }
 
-void add_cpu_f16(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
-    auto a_ = reinterpret_cast<uint16_t const *>(a);
-    auto b_ = reinterpret_cast<uint16_t const *>(b);
-    auto c_ = reinterpret_cast<uint16_t *>(c);
+template<typename Tdata>
+void add_cpu(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
+    auto a_ = reinterpret_cast<Tdata const *>(a);
+    auto b_ = reinterpret_cast<Tdata const *>(b);
+    auto c_ = reinterpret_cast<Tdata *>(c);
     const auto &indices = desc->c_indices;
 
     for (uint64_t i = 0; i < desc->c_data_size; ++i, incrementOne(indices, desc->c_shape, desc->ndim)) {
         auto a_index = compactToFlat(indices, desc->a_strides, desc->ndim);
         auto b_index = compactToFlat(indices, desc->b_strides, desc->ndim);
-        c_[i] = f32_to_f16(f16_to_f32(a_[a_index]) + f16_to_f32(b_[b_index]));
-    }
-}
-
-void add_cpu_f32(AddCpuDescriptor_t desc, void *c, void const *a, void const *b) {
-    auto a_ = reinterpret_cast<float const *>(a);
-    auto b_ = reinterpret_cast<float const *>(b);
-    auto c_ = reinterpret_cast<float *>(c);
-    const auto &indices = desc->c_indices;
-
-    for (uint64_t i = 0; i < desc->c_data_size; ++i, incrementOne(indices, desc->c_shape, desc->ndim)) {
-        auto a_index = compactToFlat(indices, desc->a_strides, desc->ndim);
-        auto b_index = compactToFlat(indices, desc->b_strides, desc->ndim);
-        c_[i] = a_[a_index] + b_[b_index];
+        if constexpr (std::is_same<Tdata, uint16_t>::value) {
+            c_[i] = f32_to_f16(f16_to_f32(a_[a_index]) + f16_to_f32(b_[b_index]));
+        } else {
+            c_[i] = a_[a_index] + b_[b_index];
+        }
     }
 }
 
@@ -99,11 +91,11 @@ infiniopStatus_t cpuAdd(AddCpuDescriptor_t desc,
                         void *c, void const *a, void const *b,
                         void *stream) {
     if (desc->dtype == F16) {
-        add_cpu_f16(desc, c, a, b);
+        add_cpu<uint16_t>(desc, c, a, b);
         return STATUS_SUCCESS;
     }
     if (desc->dtype == F32) {
-        add_cpu_f32(desc, c, a, b);
+        add_cpu<float>(desc, c, a, b);
         return STATUS_SUCCESS;
     }
     return STATUS_BAD_TENSOR_DTYPE;
