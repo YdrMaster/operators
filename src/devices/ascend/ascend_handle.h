@@ -20,9 +20,4 @@ infiniopStatus_t createAscendHandle(AscendHandle_t *handle_ptr, int device_id);
 
 infiniopStatus_t deleteAscendHandle(AscendHandle_t handle_ptr);
 
-template<typename T>
-void use_aclnn(AscendHandle_t handle, T const &f) {
-    aclrtSetDevice(handle->device_id);
-}
-
 #endif

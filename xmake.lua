@@ -145,7 +145,6 @@ if has_config("ascend-npu") then
     add_linkdirs(ASCEND_HOME .. "/../../driver/lib64/driver")
     add_links("libascend_hal.so")
 
-
     target("ascend-npu")
         -- Other configs
         set_kind("static")
