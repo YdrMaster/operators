@@ -2,11 +2,20 @@
 #include "../../utils.h"
 #include "add.cuh"
 
-struct half4 {
-    __half x, y, z, w;
+template<typename T, int N>
+struct vecN {
+    T data[N];
 
-    __device__ half4 operator+(const half4 &other) const {
-        return half4{__hadd(x, other.x), __hadd(y, other.y), __hadd(z, other.z), __hadd(w, other.w)};
+    __device__ vecN operator+(const vecN<T, N> &other) const {
+        vecN<T, N> result;
+        for (int i = 0; i < N; ++i) {
+            result.data[i] = data[i] + other.data[i];
+        }
+        return result;
+    }
+
+    __device__ const T &operator[](int i) const {
+        return data[i];
     }
 };
 
@@ -52,7 +61,7 @@ __global__ void add(
 }
 
 template<typename Tdata, typename BTdata>
-void add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const *b, uint64_t data_size, uint64_t pack_size, uint64_t offset, void *stream) {
+void _add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const *b, uint64_t data_size, uint64_t pack_size, uint64_t offset, void *stream) {
     if (data_size == 0) {
         return;
     }
@@ -68,27 +77,32 @@ void add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const 
     }
 }
 
-void add_nv_gpu_f16(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream) {
-    auto data_size = desc->c_data_size / 4;
-    auto a_half4 = reinterpret_cast<const half4 *>(a);
-    auto b_half4 = reinterpret_cast<const half4 *>(b);
-    auto c_half4 = reinterpret_cast<half4 *>(c);
-    add_nv_gpu<half4, half>(desc, c_half4, a_half4, b_half4, data_size, 4, 0, stream);
+template<typename Tdata, typename TIdata>
+void add_nv_gpu(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream, uint64_t pack_size) {
+    auto data_size = desc->c_data_size / pack_size;
+    auto a_vec = reinterpret_cast<const Tdata *>(a);
+    auto b_vec = reinterpret_cast<const Tdata *>(b);
+    auto c_vec = reinterpret_cast<Tdata *>(c);
+    _add_nv_gpu<Tdata, TIdata>(desc, c_vec, a_vec, b_vec, data_size, pack_size, 0, stream);
 
-    auto remainder = desc->c_data_size % 4;
-    auto a_half = reinterpret_cast<const half *>(a);
-    auto b_half = reinterpret_cast<const half *>(b);
-    auto c_half = reinterpret_cast<half *>(c);
-    add_nv_gpu<half, half>(desc, c_half, a_half, b_half, remainder, 1, data_size * 4, stream);
+    auto remainder = desc->c_data_size % pack_size;
+    auto a_ = reinterpret_cast<const TIdata *>(a);
+    auto b_ = reinterpret_cast<const TIdata *>(b);
+    auto c_ = reinterpret_cast<TIdata *>(c);
+    _add_nv_gpu<TIdata, TIdata>(desc, c_, a_, b_, remainder, 1, data_size * pack_size, stream);
 }
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
                          void *c, void const *a, void const *b,
                          void *stream) {
-    if (!dtype_eq(desc->dtype, F16)) {
-        return STATUS_BAD_TENSOR_DTYPE;
-    }
     checkCudaError(cudaSetDevice(desc->device_id));
-    add_nv_gpu_f16(desc, c, a, b, stream);
-    return STATUS_SUCCESS;
+    if (desc->dtype == F16) {
+        add_nv_gpu<vecN<half, 4>, half>(desc, c, a, b, stream, 4);
+        return STATUS_SUCCESS;
+    }
+    if (desc->dtype == F32) {
+        add_nv_gpu<vecN<float, 4>, float>(desc, c, a, b, stream, 4);
+        return STATUS_SUCCESS;
+    }
+    return STATUS_BAD_TENSOR_DTYPE;
 }
