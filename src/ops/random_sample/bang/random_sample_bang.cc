@@ -14,6 +14,9 @@ infiniopStatus_t bangCreateRandomSampleDescriptor(BangHandle_t handle,
         return STATUS_BAD_TENSOR_DTYPE;
     int voc = probs->shape[0];
     int rLength = result->shape[0];
+    if (result->ndim != 1 && rLength != 1) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
     *desc_ptr = new RandomSampleBangDescriptor{
         handle->device,
         handle->device_id,
