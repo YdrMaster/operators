@@ -127,7 +127,7 @@ inline infiniopTensorDescriptor_t permute(infiniopTensorDescriptor_t desc, const
     }
     uint64_t *shape = new uint64_t[ndim];
     int64_t *strides = new int64_t[ndim];
-    for (size_t i = 0; i < ndim; i++) {
+    for (int i = 0; i < ndim; i++) {
         if (std::find(order.begin(), order.end(), i) == order.end()) {
             return nullptr;
         }
@@ -141,7 +141,7 @@ inline infiniopTensorDescriptor_t permute(infiniopTensorDescriptor_t desc, const
 // check if the dimensions [dim_start, dim_end] of a tensor descriptor are contiguous
 inline bool is_contiguous(const infiniopTensorDescriptor_t &desc, uint64_t dim_start, uint64_t dim_end) {
     for (size_t i = dim_start + 1; i <= dim_end; i++) {
-        if (desc->strides[i - 1] != static_cast<int64_t>(desc->shape[i]) * desc->strides[i]) {
+        if (desc->strides[i - 1] != desc->shape[i] * desc->strides[i]) {
             return false;
         }
     }
@@ -192,7 +192,7 @@ inline infiniopTensorDescriptor_t dim_merge(infiniopTensorDescriptor_t desc, uin
 // split the dimension dim of a tensor descriptor into multiple dimensions
 inline infiniopTensorDescriptor_t dim_split(infiniopTensorDescriptor_t desc, uint64_t dim, const std::vector<uint64_t> &dims) {
     uint64_t ndim = desc->ndim;
-    if (static_cast<int>(desc->shape[dim]) != std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<uint64_t>())) {
+    if (desc->shape[dim] != std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<uint64_t>())) {
         return nullptr;
     }
     uint64_t new_ndim = ndim + dims.size() - 1;
