@@ -49,6 +49,7 @@ __global__ void add(
             auto a_ = reinterpret_cast<const BTdata *>(a);
             auto b_ = reinterpret_cast<const BTdata *>(b);
             auto c_ = reinterpret_cast<BTdata *>(c);
+#pragma unroll
             for (size_t i = 0; i < pack_size; ++i) {
                 auto a_idx = getDstIndex(idx + i, ndim, c_strides, a_strides);
                 auto b_idx = getDstIndex(idx + i, ndim, c_strides, b_strides);
@@ -71,6 +72,7 @@ void _add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const
 
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
+#pragma unroll
     for (uint64_t i = 0; i < data_size; i += step) {
         add<Tdata, BTdata><<<gridDims, blockDims, 0, cuda_stream>>>(
             c, a, b, desc->a_strides, desc->b_strides, desc->c_strides, offset + data_size, desc->ndim, offset + i, desc->broadcasted, pack_size);
@@ -78,7 +80,7 @@ void _add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const
 }
 
 template<typename Tdata, typename TIdata>
-void add_nv_gpu(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream, uint64_t pack_size) {
+infiniopStatus_t add_nv_gpu(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream, uint64_t pack_size) {
     auto data_size = desc->c_data_size / pack_size;
     auto a_vec = reinterpret_cast<const Tdata *>(a);
     auto b_vec = reinterpret_cast<const Tdata *>(b);
@@ -90,6 +92,7 @@ void add_nv_gpu(AddCudaDescriptor_t desc, void *c, void const *a, void const *b,
     auto b_ = reinterpret_cast<const TIdata *>(b);
     auto c_ = reinterpret_cast<TIdata *>(c);
     _add_nv_gpu<TIdata, TIdata>(desc, c_, a_, b_, remainder, 1, data_size * pack_size, stream);
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
@@ -97,12 +100,10 @@ infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
                          void *stream) {
     checkCudaError(cudaSetDevice(desc->device_id));
     if (desc->dtype == F16) {
-        add_nv_gpu<vecN<half, 4>, half>(desc, c, a, b, stream, 4);
-        return STATUS_SUCCESS;
+        return add_nv_gpu<vecN<half2, 4>, half>(desc, c, a, b, stream, 8);
     }
     if (desc->dtype == F32) {
-        add_nv_gpu<vecN<float, 4>, float>(desc, c, a, b, stream, 4);
-        return STATUS_SUCCESS;
+        return add_nv_gpu<vecN<float, 4>, float>(desc, c, a, b, stream, 4);
     }
     return STATUS_BAD_TENSOR_DTYPE;
 }
