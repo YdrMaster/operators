@@ -413,26 +413,30 @@ __mlu_global__ void random_sample(T const *source, uint64_t *indices, uint64_t *
     uint64_t indStart = repeat * taskSize + (taskId < remainT ? taskId * stepHard : remainT * stepHard + (taskId - remainT) * stepEasy);
 
     T *src = (T *)nram_buffer;
-    T localM = source[0];
+    T *srcMax = src + maxNum;
     uint64_t index = 0;
+    
+    T newMax = -INFINITY;
     for(uint64_t r = 0; r < repeat; r++){
         __memcpy(src, source + r * taskSize + taskId * maxNum, maxNum * sizeof(T), GDRAM2NRAM);
-        for(uint64_t j = 0; j < maxNum; j++){
-            if(localM < src[j]){
-                localM = src[j];
-                index = r * taskSize + taskId * maxNum + j;
-            }
+        __bang_argmax(srcMax, src, maxNum);
+        if(newMax < srcMax[0]){
+            newMax = srcMax[0];
+            index = r * taskSize + taskId * maxNum + *((int64_t*)&srcMax[1]);
         }
+        
     }
     if(step){
+        __bang_write_value(src, maxNum, -INFINITY);
         __memcpy(src, source + indStart, step * sizeof(T), GDRAM2NRAM);
-        for(uint64_t j = 0; j < step; j++){
-            if(localM < src[j]){
-                localM = src[j];
-                index = indStart + j;
-            }
+        __bang_argmax(srcMax, src, maxNum);
+        if(newMax < srcMax[0]){
+            newMax = srcMax[0];
+            index = indStart + *((int64_t*)&srcMax[1]);
         }
+        
     }
+    
     indGdram[taskId] = index;
     __sync_all();
     if(taskId == 0){

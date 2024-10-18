@@ -127,7 +127,6 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
             None,
         )
     )
-    
     assert indices[0].type(ans.dtype) == ans or abs(data[indices[0]] - data[ans]) == 0.0, "compute error"
 
 
