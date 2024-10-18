@@ -23,6 +23,13 @@ option("cambricon-mlu")
     add_defines("ENABLE_CAMBRICON_MLU")
 option_end()
 
+option("ascend-npu")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable or disable Ascend NPU kernel")
+    add_defines("ENABLE_ASCEND_NPU")
+option_end()
+
 if is_mode("debug") then
     add_cxflags("-g -O0")
     add_defines("DEBUG_MODE")
@@ -121,6 +128,34 @@ rule_end()
 
 end
 
+if has_config("ascend-npu") then
+
+    add_defines("ENABLE_ASCEND_NPU")
+    local ASCEND_HOME = os.getenv("ASCEND_HOME")
+    local SOC_VERSION = os.getenv("SOC_VERSION")
+
+    -- Add include dirs
+    add_includedirs(ASCEND_HOME .. "/include")
+    add_includedirs(ASCEND_HOME .. "/include/aclnn")
+    add_linkdirs(ASCEND_HOME .. "/lib64")
+    add_links("libascendcl.so")
+    add_links("libnnopbase.so")
+    add_links("libopapi.so")
+    add_links("libruntime.so")  
+    add_linkdirs(ASCEND_HOME .. "/../../driver/lib64/driver")
+    add_links("libascend_hal.so")
+
+    target("ascend-npu")
+        -- Other configs
+        set_kind("static")
+        set_languages("cxx17")
+        -- Add files
+        add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
+        add_cxflags("-lstdc++ -Wall -Werror -fPIC")
+
+    target_end()
+end
+
 target("operators")
     set_kind("shared")
 
@@ -132,6 +167,9 @@ target("operators")
     end
     if has_config("cambricon-mlu") then
         add_deps("cambricon-mlu")
+    end
+    if has_config("ascend-npu") then
+        add_deps("ascend-npu")
     end
     set_languages("cxx17")
     add_files("src/devices/handle.cc")
