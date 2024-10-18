@@ -14,6 +14,10 @@ CausalSoftmaxAclnnDescriptor::CausalSoftmaxAclnnDescriptor(Device _device) {
 infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
                                                     CausalSoftmaxAclnnDescriptor_t *desc_ptr,
                                                     infiniopTensorDescriptor_t y) {
+    if (y->ndim < 2 || y->ndim >= 4) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
+
     // Construct CausalSoftmaxAclnnDescriptor
     *desc_ptr = new CausalSoftmaxAclnnDescriptor(handle->device);
     (*desc_ptr)->handle = reinterpret_cast<AscendHandle_t>(handle);
@@ -154,7 +158,7 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
     }
 
     aclrtMemcpy(workspace,
-                workspace_size * ele_size,
+                workspace_size,
                 mask_matrix,
                 numElements(maskDesc->shape, maskDesc->ndim) * ele_size,
                 ACL_MEMCPY_HOST_TO_DEVICE);
