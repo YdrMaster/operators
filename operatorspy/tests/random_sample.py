@@ -76,8 +76,8 @@ def random_sample(data, random_val, topp, topk, voc, temperature, torch_device):
         if(random_val < sum_s):
             return indices[i]
 
-def random_sample_0(data, torch_device):
-    return torch.argmax(data).type(torch.uint64)
+def random_sample_0(data):
+    return torch.argmax(data)
 def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
     print(
         f"Testing RandomSample on {torch_device} with voc:{voc} dtype:{x_dtype}"
@@ -87,7 +87,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     if(topp > 0 and topk > 0):
         ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
     else:
-        ans = random_sample_0(data, "cpu")
+        ans = random_sample_0(data)
     if(torch_device == 'mlu'):
         
         indices = torch.zeros([1], dtype = torch.int64).to(torch_device)

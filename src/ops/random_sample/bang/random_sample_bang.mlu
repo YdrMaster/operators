@@ -398,7 +398,55 @@ __mlu_global__ void random_sampleD(T const *source, uint64_t *indices, uint64_t 
         __memcpy(globalTopk, srcGlobal, topk * sizeof(T), NRAM2GDRAM);
     }
 }
+template<typename T>
+__mlu_global__ void random_sample(T const *source, uint64_t *indices, uint64_t *indGdram, int voc){
+    const uint64_t maxNum = SRC_MAX_SIZE/sizeof(T);
 
+    uint64_t taskSize = taskDim * maxNum;
+    uint64_t remain = voc % taskSize;
+    uint64_t repeat = (voc - remain) / taskSize;
+
+    uint64_t remainT = remain % taskDim;
+    uint64_t stepEasy = (remain - remainT) / taskDim;
+    uint64_t stepHard = stepEasy + 1;
+    uint64_t step = (taskId < remainT ? stepHard : stepEasy);
+    uint64_t indStart = repeat * taskSize + (taskId < remainT ? taskId * stepHard : remainT * stepHard + (taskId - remainT) * stepEasy);
+
+    T *src = (T *)nram_buffer;
+    T localM = source[0];
+    uint64_t index = 0;
+    for(uint64_t r = 0; r < repeat; r++){
+        __memcpy(src, source + r * taskSize + taskId * maxNum, maxNum * sizeof(T), GDRAM2NRAM);
+        for(uint64_t j = 0; j < maxNum; j++){
+            if(localM < src[j]){
+                localM = src[j];
+                index = r * taskSize + taskId * maxNum + j;
+            }
+        }
+    }
+    if(step){
+        __memcpy(src, source + indStart, step * sizeof(T), GDRAM2NRAM);
+        for(uint64_t j = 0; j < step; j++){
+            if(localM < src[j]){
+                localM = src[j];
+                index = indStart + j;
+            }
+        }
+    }
+    indGdram[taskId] = index;
+    __sync_all();
+    if(taskId == 0){
+        uint64_t globalInd = indGdram[0];
+        T globalM = source[globalInd];
+        for(uint64_t id = 0; id < taskDim; id++){
+            if(globalM < source[indGdram[id]]){
+                globalM = source[indGdram[id]];
+                globalInd = indGdram[id];
+            }
+        }
+        indices[0] = globalInd;
+    }
+}
 template<typename T>
 void random_sampleUnion(cnrtQueue_t queue, void *workspace, void const *source, void *indices, float random_val, float topp, int topk, float temperature, int voc) {
     auto logits_ = reinterpret_cast<const T *>(source);
@@ -412,18 +460,24 @@ void random_sampleUnion(cnrtQueue_t queue, void *workspace, void const *source, 
     k_type = CNRT_FUNC_TYPE_UNION1;
     
     int taskNum = k_dim.x * k_dim.y * k_dim.z;
-    const int maxNum = SRC_MAX_SIZE/sizeof(T);
-    char *origin = reinterpret_cast<char *>(workspace);
-    char *indTmp = origin + taskNum * topk * sizeof(uint64_t);
-    uint64_t *indGdram = (uint64_t *)origin;
-    T *globalTopk = (T *)indTmp;
-    T *globalSum = globalTopk + taskNum * topk;
-    
-    if(voc >= taskNum * maxNum){
-        random_sampleD<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
+    if(topp > 0 && topk > 0){
+        const int maxNum = SRC_MAX_SIZE/sizeof(T);
+        char *origin = reinterpret_cast<char *>(workspace);
+        char *indTmp = origin + taskNum * topk * sizeof(uint64_t);
+        uint64_t *indGdram = (uint64_t *)origin;
+        T *globalTopk = (T *)indTmp;
+        T *globalSum = globalTopk + taskNum * topk;
+        
+        if(voc >= taskNum * maxNum){
+            random_sampleD<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
+        }
+        else{
+            random_sampleX<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
+        }
     }
     else{
-        random_sampleX<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, globalTopk, globalSum, random_val, topp, topk, temperature, voc);
+        uint64_t *indGdram = reinterpret_cast<uint64_t *>(workspace);
+        random_sample<T><<<k_dim, k_type, queue>>>(logits_, index_, indGdram, voc);
     }
     cnrtQueueSync(queue);
     
