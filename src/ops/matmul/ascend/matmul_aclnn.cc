@@ -21,6 +21,11 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
                                              infiniopTensorDescriptor_t b_desc,
                                              float beta,
                                              int8_t mt) {
+
+    if (c_desc->ndim != 2 || a_desc->ndim != 2 || b_desc->ndim != 2) {
+        return STATUS_BAD_TENSOR_SHAPE;
+    }
+
     *desc_ptr = new MatmulAclnnDescriptor(handle->device);
     (*desc_ptr)->handle = handle;
     (*desc_ptr)->mt = mt;
