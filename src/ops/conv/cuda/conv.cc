@@ -19,7 +19,10 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     if (x->shape[0] != y->shape[0] || w->shape[0] != y->shape[1] || x->shape[1] != w->shape[1]) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    if (y->dt != F16 || y->dt != x->dt || y->dt != w->dt) {
+    if (y->dt != F16 && y->dt != F32) {
+        return STATUS_BAD_TENSOR_DTYPE;
+    }
+    if (y->dt != x->dt || y->dt != w->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 

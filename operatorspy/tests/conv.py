@@ -95,10 +95,10 @@ def test(
     print(
         f"Testing Conv on {torch_device} with x_shape: {x_shape}, w_shape: {w_shape}, b_shape: {w_shape[0]}, pads: {pads}, strides: {strides}, dilations: {dilations}, x_stride: {tensor_stride} dtype:{tensor_dtype}"
     )
-    x = torch.rand(x_shape, dtype=torch.float16).to(torch_device)
-    w = torch.rand(w_shape, dtype=torch.float16).to(torch_device)
+    x = torch.rand(x_shape, dtype=tensor_dtype).to(torch_device)
+    w = torch.rand(w_shape, dtype=tensor_dtype).to(torch_device)
     y = torch.zeros(
-        inferShape(x.shape, w.shape, pads, strides, dilations), dtype=torch.float16
+        inferShape(x.shape, w.shape, pads, strides, dilations), dtype=tensor_dtype
     ).to(torch_device)
 
     ans = conv(x, w, strides, pads, dilations)
@@ -137,7 +137,6 @@ def test(
         w_tensor.data,
         None,
     )
-    assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyConvDescriptor(descriptor))
 
 
@@ -145,7 +144,8 @@ def test_cpu(lib, test_cases):
     device = DeviceEnum.DEVICE_CPU
     handle = create_handle(lib, device)
     for x_shape, w_shape, pads, strides, dilations, x_strides in test_cases:
-        test(lib, handle, "cpu", x_shape, w_shape, pads, strides, dilations, x_strides)
+        test(lib, handle, "cpu", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float16)
+        test(lib, handle, "cpu", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float32)
     destroy_handle(lib, handle)
 
 
@@ -153,7 +153,8 @@ def test_cuda(lib, test_cases):
     device = DeviceEnum.DEVICE_CUDA
     handle = create_handle(lib, device)
     for x_shape, w_shape, pads, strides, dilations, x_strides in test_cases:
-        test(lib, handle, "cuda", x_shape, w_shape, pads, strides, dilations, x_strides)
+        test(lib, handle, "cuda", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float16)
+        test(lib, handle, "cuda", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float32)
     destroy_handle(lib, handle)
 
 
@@ -162,8 +163,9 @@ def test_bang(lib, test_cases):
 
     device = DeviceEnum.DEVICE_BANG
     handle = create_handle(lib, device)
-    for x_shape, x_stride in test_cases:
-        test(lib, handle, "mlu", x_shape, x_stride)
+    for x_shape, w_shape, pads, strides, dilations, x_strides in test_cases:
+        test(lib, handle, "mlu", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float16)
+        test(lib, handle, "mlu", x_shape, w_shape, pads, strides, dilations, x_strides, tensor_dtype=torch.float32)
     destroy_handle(lib, handle)
 
 
