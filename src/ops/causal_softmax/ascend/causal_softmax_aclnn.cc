@@ -18,6 +18,10 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
         return STATUS_BAD_TENSOR_SHAPE;
     }
 
+    if (!is_contiguous(y, 0, y->ndim - 1)) {
+        return STATUS_BAD_TENSOR_STRIDES;
+    }
+
     // Construct CausalSoftmaxAclnnDescriptor
     *desc_ptr = new CausalSoftmaxAclnnDescriptor(handle->device);
     (*desc_ptr)->handle = reinterpret_cast<AscendHandle_t>(handle);
