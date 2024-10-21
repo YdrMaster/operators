@@ -133,7 +133,7 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
         key_in, key_out,
         voc, (cudaStream_t) stream);//该函数会把排序结果和对应索引保存在val_out和key_out上
     //排序结束，然后开始做softmax变换
-    if (topp > 0 && topk > 0) {
+    if (topp > 0 && topk > 1) {
         int BLOCK_DIM = 1024;
         int num_blocks = (voc + BLOCK_DIM - 1) / BLOCK_DIM;
         softmax<half, 1024><<<num_blocks, BLOCK_DIM, 0, (cudaStream_t) stream>>>(val_out, topk,

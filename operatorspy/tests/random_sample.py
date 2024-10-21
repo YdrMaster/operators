@@ -84,7 +84,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
     )
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
-    if(topp > 0 and topk > 0):
+    if(topp > 0 and topk > 1):
         ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
     else:
         ans = random_sample_0(data)
@@ -169,6 +169,7 @@ if __name__ == "__main__":
         (512, 0.92, 0, 3, 0.5),
         (4096, 0.95, 0.9, 0, 1.0),
         (16384, 0.85, 0, 0, 2.0),
+        (16384, 0.85, 0, 1, 2.0),
     ]
     
     args = get_args()
