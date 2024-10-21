@@ -163,7 +163,7 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  float temperature,
                                  void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
-        if (topp > 0 && topk > 0) {
+        if (topp > 0 && topk > 1) {
             random_sample_cpu_f16(desc,
                                   workspace,
                                   result,
