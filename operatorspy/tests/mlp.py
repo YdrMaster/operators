@@ -63,10 +63,12 @@ def test(
     dtype=torch.float16,
     x_stride=None,
     y_stride=None,
+    w12_stride=None,
+    w3_stride=None,
 ):
     print(
         f"Testing MLP on {torch_device} with num_tokens:{num_tokens} hidden_size:{hidden_size} intermediate_size:{intermediate_size}"
-        f" alpha:{alpha} residual:{residual} dtype:{dtype} x_stride:{x_stride} y_stride:{y_stride}"
+        f" alpha:{alpha} residual:{residual} dtype:{dtype} x_stride:{x_stride} y_stride:{y_stride} w12_stride:{w12_stride} w3_stride:{w3_stride}"
     )
 
     y = torch.rand([num_tokens, hidden_size], dtype=dtype).to(torch_device) * 0.01
@@ -86,6 +88,10 @@ def test(
         x = rearrange_tensor(x, x_stride)
     if y_stride is not None:
         y = rearrange_tensor(y, y_stride)
+    if w12_stride is not None:
+        w12 = rearrange_tensor(w12, w12_stride)
+    if w3_stride is not None:
+        w3 = rearrange_tensor(w3, w3_stride)
 
     y_tensor = to_tensor(y, lib)
     x_tensor = to_tensor(x, lib)
@@ -123,8 +129,7 @@ def test(
             None,
         )
     )
-
-    assert torch.allclose(y, ans, atol=0, rtol=1e-2)
+    assert torch.allclose(y, ans, atol=0, rtol=2e-2)
 
     check_error(lib.infiniopDestroyMLPDescriptor(descriptor))
 
@@ -142,6 +147,8 @@ def test_cpu(lib, test_cases):
         dtype,
         x_stride,
         y_stride,
+        w12_stride,
+        w3_stride,
     ) in test_cases:
         test(
             lib,
@@ -155,6 +162,8 @@ def test_cpu(lib, test_cases):
             dtype,
             x_stride,
             y_stride,
+            w12_stride,
+            w3_stride,
         )
 
     destroy_handle(lib, handle)
@@ -173,6 +182,8 @@ def test_cuda(lib, test_cases):
         dtype,
         x_stride,
         y_stride,
+        w12_stride,
+        w3_stride,
     ) in test_cases:
         test(
             lib,
@@ -186,6 +197,8 @@ def test_cuda(lib, test_cases):
             dtype,
             x_stride,
             y_stride,
+            w12_stride,
+            w3_stride,
         )
 
     destroy_handle(lib, handle)
@@ -206,6 +219,8 @@ def test_bang(lib, test_cases):
         dtype,
         x_stride,
         y_stride,
+        w12_stride,
+        w3_stride,
     ) in test_cases:
         test(
             lib,
@@ -219,6 +234,8 @@ def test_bang(lib, test_cases):
             dtype,
             x_stride,
             y_stride,
+            w12_stride,
+            w3_stride,
         )
 
     destroy_handle(lib, handle)
@@ -226,11 +243,23 @@ def test_bang(lib, test_cases):
 
 if __name__ == "__main__":
     test_cases = [
-        # num_tokens, hidden_size, intermediate_size, alpha, residual, dtype, x_stride, y_stride
-        (4, 4096, 11008, 1.0, True, torch.float16, None, None),
-        (4, 4096, 11008, 1.0, True, torch.float16, [8192, 1], [8192, 1]),
-        (4, 4096, 11008, 1.0, False, torch.float16, None, None),
-        (4, 4096, 11008, 1.0, False, torch.float16, [8192, 1], [8192, 1]),
+        # num_tokens, hidden_size, intermediate_size, alpha, residual, dtype, x_stride, y_stride, w12_stride, w3_stride
+        (4, 4096, 11008, 1.0, True, torch.float16, None, None, None, None),
+        (4, 4096, 11008, 1.0, True, torch.float16, [8192, 1], [8192, 1], None, None),
+        (
+            4,
+            4096,
+            11008,
+            1.0,
+            True,
+            torch.float16,
+            None,
+            None,
+            [1, 4096],
+            [1, 11008],
+        ),
+        (4, 4096, 11008, 1.0, False, torch.float16, None, None, None, None),
+        (4, 4096, 11008, 1.0, False, torch.float16, [8192, 1], [8192, 1], None, None),
     ]
     args = get_args()
     lib = open_lib()

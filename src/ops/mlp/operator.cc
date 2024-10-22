@@ -35,10 +35,6 @@ __C __export infiniopStatus_t infiniopCreateMLPDescriptor(infiniopHandle_t handl
         return STATUS_BAD_TENSOR_STRIDES;
     }
 
-    if (!is_contiguous(w12_desc) || !is_contiguous(w3_desc)) {
-        return STATUS_BAD_TENSOR_STRIDES;
-    }
-
     // matmul1 desc
     infiniopTensorDescriptor_t desc1 = new TensorDescriptor;
     uint64_t shape1[2] = {x_desc->shape[0], w12_desc->shape[1]};// [num_tokens, 2 * intermediate_size]
@@ -55,7 +51,7 @@ __C __export infiniopStatus_t infiniopCreateMLPDescriptor(infiniopHandle_t handl
     uint64_t shape2[2] = {x_desc->shape[0], w12_desc->shape[1] / 2};// [num_tokens, itermediate_size]
     CHECK_STATUS(infiniopCreateTensorDescriptor(&desc2, 2, shape2, nullptr, x_desc->dt), STATUS_SUCCESS);
     infiniopTensorDescriptor_t desc3 = new TensorDescriptor;
-    int64_t strides3[2] = {w12_desc->strides[0], w12_desc->strides[1]};
+    int64_t strides3[2] = {desc1->strides[0], desc1->strides[1]};
     CHECK_STATUS(infiniopCreateTensorDescriptor(&desc3, 2, shape2, strides3, x_desc->dt), STATUS_SUCCESS);
     infiniopSwiGLUDescriptor_t swiglu_desc = new SwiGLUDescriptor{handle->device};
     CHECK_STATUS(infiniopCreateSwiGLUDescriptor(handle, &swiglu_desc, desc2, desc3, desc3), STATUS_SUCCESS);
