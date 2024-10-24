@@ -18,7 +18,10 @@ infiniopStatus_t cudaCreateReluDescriptor(CudaHandle_t handle,
     if (!is_contiguous(y) || !is_contiguous(x)) {
         return STATUS_BAD_TENSOR_STRIDES;
     }
-    if (y->dt != F16 || y->dt != x->dt) {
+    if (y->dt != F16 && y->dt != F32) {
+        return STATUS_BAD_TENSOR_DTYPE;
+    }
+    if (y->dt != x->dt) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
