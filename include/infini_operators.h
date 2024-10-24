@@ -2,6 +2,7 @@
 #include "ops/add/add.h"
 #include "ops/attention/attention.h"
 #include "ops/causal_softmax/causal_softmax.h"
+#include "ops/conv/conv.h"
 #include "ops/matmul/matmul.h"
 #include "ops/mlp/mlp.h"
 #include "ops/random_sample/random_sample.h"
