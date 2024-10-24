@@ -153,6 +153,11 @@ if has_config("ascend-npu") then
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
 
+        -- Add operator 
+        add_linkdirs("src/ops/swiglu/ascend/build/lib")
+        add_links("libswiglu.so")
+        add_rpathdirs("src/ops/swiglu/ascend/build/lib")
+
     target_end()
 end
 
