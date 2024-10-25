@@ -10,8 +10,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
                                           void const *pads,
                                           void const *strides,
                                           void const *dilations,
-                                          uint64_t n,
-                                          int device_id) {
+                                          uint64_t n) {
     uint64_t ndim = y->ndim;
     if (ndim < 3 || ndim != x->ndim || ndim != w->ndim) {
         return STATUS_BAD_TENSOR_SHAPE;
@@ -90,7 +89,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     const int requestedAlgoCount = 1;
     int algoCounts;
     cudnnConvolutionFwdAlgoPerf_t perf_results[requestedAlgoCount];
-    checkCudnnError(use_cudnn(handle->cudnn_handles_t, device_id,
+    checkCudnnError(use_cudnn(handle->cudnn_handles_t, handle->device_id,
                               [&](cudnnHandle_t handle) { return cudnnFindConvolutionForwardAlgorithm(handle, x_desc, w_desc, op_desc, y_desc, requestedAlgoCount, &algoCounts, perf_results); }));
     if (algoCounts < 1) {
         return STATUS_EXECUTION_FAILED;
@@ -102,7 +101,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     *desc_ptr = new ConvCudaDescriptor{
         DevNvGpu,
         y->dt,
-        device_id,
+        handle->device_id,
         handle->cudnn_handles_t,
         x_desc,
         w_desc,

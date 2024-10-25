@@ -89,7 +89,6 @@ def test(
     dilations,
     tensor_stride=None,
     tensor_dtype=torch.float16,
-    device_id=0,
 ):
     assert len(pads) == len(strides) == len(dilations)
     print(
@@ -119,7 +118,6 @@ def test(
             tuple_to_void_p(strides),
             tuple_to_void_p(dilations),
             len(pads),
-            device_id,
         )
     )
     workspaceSize = ctypes.c_uint64(0)
@@ -226,7 +224,6 @@ if __name__ == "__main__":
         c_void_p,
         c_void_p,
         c_uint64,
-        c_int32
     ]
     lib.infiniopConv.restype = c_int32
     lib.infiniopConv.argtypes = [

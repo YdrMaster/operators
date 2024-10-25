@@ -30,8 +30,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t,
                                           void const *pads,
                                           void const *strides,
                                           void const *dilations,
-                                          uint64_t n,
-                                          int device_id);
+                                          uint64_t n);
 
 infiniopStatus_t cudaGetConvWorkspaceSize(ConvCudaDescriptor_t desc, uint64_t *size);
 

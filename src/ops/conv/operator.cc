@@ -19,8 +19,7 @@ __C infiniopStatus_t infiniopCreateConvDescriptor(
     void *pads,
     void *strides,
     void *dilations,
-    uint64_t n,
-    int device_id) {
+    uint64_t n) {
     switch (handle->device) {
 #ifdef ENABLE_CPU
         case DevCpu:
@@ -28,7 +27,7 @@ __C infiniopStatus_t infiniopCreateConvDescriptor(
 #endif
 #ifdef ENABLE_NV_GPU
         case DevNvGpu: {
-            return cudaCreateConvDescriptor((CudaHandle_t) handle, (ConvCudaDescriptor_t *) desc_ptr, y, x, w, pads, strides, dilations, n, device_id);
+            return cudaCreateConvDescriptor((CudaHandle_t) handle, (ConvCudaDescriptor_t *) desc_ptr, y, x, w, pads, strides, dilations, n);
         }
 
 #endif
