@@ -9,7 +9,6 @@ infiniopStatus_t conv_nv_gpu(ConvCudaDescriptor_t desc, void *workspace, uint64_
                               [&](cudnnHandle_t handle) { return cudnnConvolutionForward(handle, &desc->alpha,
                                                                                          desc->x_desc, x, desc->w_desc, w, desc->op_desc, desc->algo, workspace, workspace_size,
                                                                                          &desc->beta, desc->y_desc, y); }));
-    cudaDeviceSynchronize();
     return STATUS_SUCCESS;
 }
 
