@@ -6,7 +6,8 @@
  * @brief A templated vector struct that supports applying relu on arrays.
  *
  * @tparam T - The access data type for elements in the vector.
- * @tparam TComp - The computation data type used for arithmetic operations. 
+ * @tparam TComp - The computation data type used for arithmetic operations. sizeof(T) should
+ *         be >= sizeof(TComp) 
  * @tparam N - The number of elements of type T in the vector for a single access.
  */
 template<typename T, typename TComp, size_t N>
