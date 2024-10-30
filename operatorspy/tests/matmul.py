@@ -255,6 +255,17 @@ if __name__ == "__main__":
             (4096, 1),
             torch.float16,
         ),
+        (
+            1.0,
+            0.0,
+            (2, 1, 2048),
+            (2, 2048, 2048),
+            (2, 1, 2048),
+            None,
+            None,
+            None,
+            torch.float16,
+        ),
     ]
     args = get_args()
     lib = open_lib()

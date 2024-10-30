@@ -76,14 +76,18 @@ def random_sample(data, random_val, topp, topk, voc, temperature, torch_device):
         if(random_val < sum_s):
             return indices[i]
 
-
+def random_sample_0(data):
+    return torch.argmax(data)
 def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_dtype=torch.float16):
     print(
         f"Testing RandomSample on {torch_device} with voc:{voc} dtype:{x_dtype}"
     )
     
     data = torch.rand((voc), dtype=x_dtype).to(torch_device)
-    ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
+    if(topp > 0 and topk > 1):
+        ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
+    else:
+        ans = random_sample_0(data)
     if(torch_device == 'mlu'):
         
         indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
@@ -123,8 +127,6 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
             None,
         )
     )
-    
-    
     assert indices[0].type(ans.dtype) == ans or abs(data[indices[0]] - data[ans]) == 0.0, "compute error"
 
 
@@ -164,6 +166,10 @@ if __name__ == "__main__":
         (512, 0.92, 0.8, 3, 0.5),
         (4096, 0.95, 0.9, 5, 1.0),
         (16384, 0.85, 0.85, 10, 2.0),
+        (512, 0.92, 0, 3, 0.5),
+        (4096, 0.95, 0.9, 0, 1.0),
+        (16384, 0.85, 0, 0, 2.0),
+        (16384, 0.85, 0, 1, 2.0),
     ]
     
     args = get_args()
