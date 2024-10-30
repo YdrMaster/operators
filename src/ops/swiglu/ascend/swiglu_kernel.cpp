@@ -70,8 +70,6 @@ __aicore__ inline void KernelSwiGLU<T>::Init(GM_ADDR c, GM_ADDR a, GM_ADDR b,
     _copy_len = _tile_len * sizeof(T) % 32 == 0
                     ? _tile_len
                     : (_tile_len * sizeof(T) + 31) / 32 * 32 / sizeof(T);
-    // DEBUG
-    // printf("remainder:%u block_idx: %u, tile_len: %u, copy_len: %u\n", remainder, _block_idx, _tile_len, _copy_len);
 
     // Set global tensor
     aGm.SetGlobalBuffer((__gm__ T *) a);
@@ -82,9 +80,6 @@ __aicore__ inline void KernelSwiGLU<T>::Init(GM_ADDR c, GM_ADDR a, GM_ADDR b,
     pipe.InitBuffer(aQue, BUFFER_NUM, _copy_len * sizeof(T));
     pipe.InitBuffer(bQue, BUFFER_NUM, _copy_len * sizeof(T));
     pipe.InitBuffer(cQue, BUFFER_NUM, _copy_len * sizeof(T));
-    // if (_tile_len * sizeof(T) % 32 != 0) {
-    //     pipe.InitBuffer(outBuf, _tile_len * sizeof(T));
-    // }
 }
 
 template<typename T>
@@ -100,11 +95,6 @@ __aicore__ inline void KernelSwiGLU<T>::CopyIn(int32_t i) {
     // DataCopy cut down if _tile_len * sizeof(T) / 32 != 0
     DataCopy(aUb, aGm[idxa], _copy_len);
     DataCopy(bUb, bGm[idxb], _copy_len);
-
-    // if (i == 0 && _block_idx == 0) {
-    //     DumpTensor(aUb, 1, tile_len);
-    //     DumpTensor(bUb, 2, tile_len);
-    // }
 
     // Enque input tensor to VECIN queue
     aQue.EnQue(aUb);
