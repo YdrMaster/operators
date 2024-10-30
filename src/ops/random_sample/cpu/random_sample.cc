@@ -127,6 +127,30 @@ void random_sample_cpu_f16(RandomSampleCpuDescriptor_t desc,
         }
     }
 }
+void random_sample_cpu_f16(RandomSampleCpuDescriptor_t desc,
+                           void *workspace,
+                           void *result,
+                           void const *probs) {
+    int voc = desc->voc;
+    auto index_ = reinterpret_cast<uint64_t *>(result);
+    auto source = reinterpret_cast<const uint16_t *>(probs);
+
+    char *origin = reinterpret_cast<char *>(workspace);
+    uint16_t *logits_ = (uint16_t *) origin;
+
+    std::copy(source, source + voc, logits_);
+
+    float M = f16_to_f32(logits_[0]);
+    int index = 0;
+    for (int j = 1; j < voc; j++) {
+        if (M < f16_to_f32(logits_[j])) {
+            M = f16_to_f32(logits_[j]);
+            index = j;
+        }
+    }
+
+    index_[0] = index;
+}
 
 infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  void *workspace,
@@ -139,14 +163,21 @@ infiniopStatus_t cpuRandomSample(RandomSampleCpuDescriptor_t desc,
                                  float temperature,
                                  void *stream) {
     if (dtype_eq(desc->dtype, F16)) {
-        random_sample_cpu_f16(desc,
-                              workspace,
-                              result,
-                              probs,
-                              random_val,
-                              topp,
-                              topk,
-                              temperature);
+        if (topp > 0 && topk > 1) {
+            random_sample_cpu_f16(desc,
+                                  workspace,
+                                  result,
+                                  probs,
+                                  random_val,
+                                  topp,
+                                  topk,
+                                  temperature);
+        } else {
+            random_sample_cpu_f16(desc,
+                                  workspace,
+                                  result,
+                                  probs);
+        }
         return STATUS_SUCCESS;
     }
 
