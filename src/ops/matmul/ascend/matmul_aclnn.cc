@@ -4,6 +4,7 @@ MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device _device) {
     device = _device;
     handle = nullptr;
     executor = nullptr;
+    info = nullptr;
     cDesc = new aclnnTensorDescriptor();
     aDesc = new aclnnTensorDescriptor();
     bDesc = new aclnnTensorDescriptor();
@@ -22,29 +23,32 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
                                              float beta,
                                              int8_t mt) {
 
-    if (c_desc->ndim != 2 || a_desc->ndim != 2 || b_desc->ndim != 2) {
-        return STATUS_BAD_TENSOR_SHAPE;
-    }
-
     *desc_ptr = new MatmulAclnnDescriptor(handle->device);
     (*desc_ptr)->handle = handle;
     (*desc_ptr)->mt = mt;
     (*desc_ptr)->alpha = alpha;
     (*desc_ptr)->beta = beta;
 
+    infiniopStatus_t *status = new infiniopStatus_t{STATUS_EXECUTION_FAILED};
+    auto info_ptr = new MatmulInfo(c_desc, a_desc, b_desc, status);
+    if (*status != STATUS_SUCCESS) {
+        return *status;
+    }
+    (*desc_ptr)->info = info_ptr;
+
     auto &cDesc = (*desc_ptr)->cDesc;
     auto &aDesc = (*desc_ptr)->aDesc;
     auto &bDesc = (*desc_ptr)->bDesc;
 
-    auto status = cDesc->fromInfiniOpTensorDescriptor(c_desc);
-    status = aDesc->fromInfiniOpTensorDescriptor(a_desc);
-    status = bDesc->fromInfiniOpTensorDescriptor(b_desc);
+    CHECK_STATUS(cDesc->fromInfiniOpTensorDescriptor(c_desc), STATUS_SUCCESS);
+    CHECK_STATUS(aDesc->fromInfiniOpTensorDescriptor(a_desc), STATUS_SUCCESS);
+    CHECK_STATUS(bDesc->fromInfiniOpTensorDescriptor(b_desc), STATUS_SUCCESS);
 
-    status = cDesc->createTensor();
-    status = aDesc->createTensor();
-    status = bDesc->createTensor();
+    CHECK_STATUS(cDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(aDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(bDesc->createTensor(), STATUS_SUCCESS);
 
-    return status;
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
@@ -57,21 +61,39 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
     aclTensor *ta = aDesc->t;
     aclTensor *tb = bDesc->t;
 
-    // Get transA and transB according strides
-    int64_t transA = aDesc->strides[aDesc->ndim - 1] == 1 ? 0 : 1;
-    int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
+    auto b = desc->info->batch;
 
-    uint64_t workspaceSize;
+    auto &workspaceSize = desc->workspaceSize;
     auto &executor = desc->executor;
-    auto ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
-                                         desc->mt, &workspaceSize, &executor);
-    aclSetAclOpExecutorRepeatable(executor);
-    CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
 
-    *size = workspaceSize;
-    desc->workspaceSize = workspaceSize;
+    aclnnStatus ret;
+    *size = 0;
 
+    if (b > 1) {
+        // https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnMatmul.md
+        ret = aclnnMatmulGetWorkspaceSize(ta,
+                                          tb,
+                                          tc,
+                                          desc->mt,
+                                          &workspaceSize,
+                                          &executor);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnMatmulGetWorkspaceSize failed. ERROR: %d\n", ret));
+        aclSetAclOpExecutorRepeatable(executor);
+    } else {
+        // Get transA and transB according strides
+        int64_t transA = aDesc->strides[aDesc->ndim - 1] == 1 ? 0 : 1;
+        int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
+        // aclnnGemm support C = alpha * A @ B + beta * C
+        // see https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnGemm.md
+        ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
+                                        desc->mt, &workspaceSize, &executor);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
+        aclSetAclOpExecutorRepeatable(executor);
+    }
+
+    *size += workspaceSize;
     return STATUS_SUCCESS;
 }
 
@@ -90,24 +112,35 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
     aclTensor *ta = aDesc->t;
     aclTensor *tb = bDesc->t;
 
+    auto batch = desc->info->batch;
+
     auto &handle = desc->handle;
     auto &executor = desc->executor;
+    auto &workspaceSize = desc->workspaceSize;
 
     // Set runing on handle device
     aclrtSetDevice(handle->device_id);
 
-    AclSetTensorAddr(executor, 0, ta, (void *) a);
-    AclSetTensorAddr(executor, 1, tb, (void *) b);
-    AclSetTensorAddr(executor, 2, tc, (void *) c);
-    AclSetTensorAddr(executor, 3, tc, (void *) c);
-
-    auto ret = aclnnGemm(workspace,
-                         desc->workspaceSize,
-                         executor,
-                         stream);
-    CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnBatchMatMul failed. ERROR: %d\n", ret));
-
+    aclnnStatus ret;
+    if (batch > 1) {
+        AclSetTensorAddr(executor, 0, ta, (void *) a);
+        AclSetTensorAddr(executor, 1, tb, (void *) b);
+        AclSetTensorAddr(executor, 2, tc, (void *) c);
+        ret = aclnnMatmul(workspace, workspaceSize, executor, stream);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnMatmul failed. ERROR: %d\n", ret));
+    } else {
+        AclSetTensorAddr(executor, 0, ta, (void *) a);
+        AclSetTensorAddr(executor, 1, tb, (void *) b);
+        AclSetTensorAddr(executor, 2, tc, (void *) c);
+        AclSetTensorAddr(executor, 3, tc, (void *) c);
+        ret = aclnnGemm(workspace,
+                        workspaceSize,
+                        executor,
+                        stream);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnGemm failed. ERROR: %d\n", ret));
+    }
 
     return STATUS_SUCCESS;
 }
@@ -117,7 +150,9 @@ infiniopStatus_t aclnnDestroyMatmulDescriptor(MatmulAclnnDescriptor_t desc) {
     delete desc->cDesc;
     delete desc->bDesc;
     delete desc->aDesc;
+    delete desc->info;
     aclDestroyAclOpExecutor(desc->executor);
+    delete desc;
 
     return STATUS_SUCCESS;
 }
