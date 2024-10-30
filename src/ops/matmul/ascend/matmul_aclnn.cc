@@ -78,7 +78,8 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
                                           &workspaceSize,
                                           &executor);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnMatmulGetWorkspaceSize failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnMatmulGetWorkspaceSize failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
         aclSetAclOpExecutorRepeatable(executor);
     } else {
         // Get transA and transB according strides
@@ -89,7 +90,8 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
         ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
                                         desc->mt, &workspaceSize, &executor);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
         aclSetAclOpExecutorRepeatable(executor);
     }
 
@@ -128,7 +130,8 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
         AclSetTensorAddr(executor, 2, tc, (void *) c);
         ret = aclnnMatmul(workspace, workspaceSize, executor, stream);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnMatmul failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnMatmul failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
     } else {
         AclSetTensorAddr(executor, 0, ta, (void *) a);
         AclSetTensorAddr(executor, 1, tb, (void *) b);
@@ -139,7 +142,8 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
                         executor,
                         stream);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnGemm failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnGemm failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
     }
 
     return STATUS_SUCCESS;
