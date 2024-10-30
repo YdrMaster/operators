@@ -53,6 +53,7 @@ jobs:
         for script in operatorspy/tests/*.py; do
           if [ "$(basename $script)" != "__init__.py" ] && [ "$(basename $script)" != "test_utils.py" ]; then
             echo "Running $script"
+            START_TIME=$(date +%s%N)
             if ! python3 $script --cpu; then
               echo "$script failed"
               FAILED_TESTS+=($script)
@@ -60,6 +61,9 @@ jobs:
               echo "$script passed"
               PASSED_TESTS+=($script)
             fi
+            END_TIME=$(date +%s%N)
+            DURATION=$(( (END_TIME - START_TIME) / 1000 ))
+            echo "Execution time for $script: ${DURATION} s"
           fi
         done
 
