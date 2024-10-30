@@ -20,13 +20,13 @@ infiniopStatus_t aclnnCreateRearrangeDescriptor(AscendHandle_t handle,
     auto &dstDesc = (*desc_ptr)->dstDesc;
     auto &srcDesc = (*desc_ptr)->srcDesc;
 
-    auto status = dstDesc->fromInfiniOpTensorDescriptor(dst);
-    status = srcDesc->fromInfiniOpTensorDescriptor(src);
+    CHECK_STATUS(dstDesc->fromInfiniOpTensorDescriptor(dst), STATUS_SUCCESS);
+    CHECK_STATUS(srcDesc->fromInfiniOpTensorDescriptor(src), STATUS_SUCCESS);
 
-    status = dstDesc->createTensor();
-    status = srcDesc->createTensor();
+    CHECK_STATUS(dstDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(srcDesc->createTensor(), STATUS_SUCCESS);
 
-    return status;
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
@@ -53,12 +53,7 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
               LOG_PRINT("aclnnInplaceCopyGetWorkspaceSize failed. ERROR: %d\n", ret));
 
     desc->workspaceSize = workspaceSize;
-    void *workspaceAddr = nullptr;
-    if (workspaceSize > 0) {
-        auto ret = aclrtMalloc(&workspaceAddr, workspaceSize, ACL_MEM_MALLOC_HUGE_FIRST);
-        CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclrtMalloc failed, ERROR: %d\n", ret));
-    }
+    void *workspaceAddr = mallocWorkspace(workspaceSize);
     // Set runing on handle device
     aclrtSetDevice(handle->device_id);
 
