@@ -29,9 +29,9 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
     auto &wDesc = (*desc_ptr)->wDesc;
     auto &castDesc = (*desc_ptr)->castDesc;
 
-    auto status = yDesc->fromInfiniOpTensorDescriptor(y);
-    status = xDesc->fromInfiniOpTensorDescriptor(x);
-    status = wDesc->fromInfiniOpTensorDescriptor(w);
+    CHECK_STATUS(yDesc->fromInfiniOpTensorDescriptor(y), STATUS_SUCCESS);
+    CHECK_STATUS(xDesc->fromInfiniOpTensorDescriptor(x), STATUS_SUCCESS);
+    CHECK_STATUS(wDesc->fromInfiniOpTensorDescriptor(w), STATUS_SUCCESS);
 
     // Set rstdDesc
     // See: https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha002/apiref/appdevgapi/context/aclnnRmsNorm.md
@@ -72,17 +72,17 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
 
     if (wDesc->dataType != xDesc->dataType) {
         castDesc = new aclnnTensorDescriptor();
-        status = castDesc->fromInfiniOpTensorDescriptor(w);
+        CHECK_STATUS(castDesc->fromInfiniOpTensorDescriptor(w), STATUS_SUCCESS);
         castDesc->dataType = xDesc->dataType;
-        status = castDesc->createTensor();
+        CHECK_STATUS(castDesc->createTensor(), STATUS_SUCCESS);
     }
 
-    status = yDesc->createTensor();
-    status = xDesc->createTensor();
-    status = wDesc->createTensor();
-    status = rstdDesc->createTensor();
+    CHECK_STATUS(yDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(xDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(wDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(rstdDesc->createTensor(), STATUS_SUCCESS);
 
-    return status;
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
@@ -112,7 +112,8 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
                                             &executor);
     aclSetAclOpExecutorRepeatable(executor);
     CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret));
+              LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
 
     *size = workspaceSize +
             numElements(rstdDesc->shape, rstdDesc->ndim) * aclDataTypeSize(rstdDesc->dataType);
@@ -162,14 +163,16 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
         uint64_t workspaceSize = 0;
         auto ret = aclnnCastGetWorkspaceSize(tw, castDesc->dataType, tcast, &workspaceSize, &castExecutor);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnCastGetWorkspaceSize failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnCastGetWorkspaceSize failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
         aclSetAclOpExecutorRepeatable(castExecutor);
 
         AclSetTensorAddr(castExecutor, 0, tw, w);
         AclSetTensorAddr(castExecutor, 1, tcast, castPtr);
         ret = aclnnCast(nullptr, workspaceSize, castExecutor, stream);
         CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnCast failed. ERROR: %d\n", ret));
+                  LOG_PRINT("aclnnCast failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
         aclDestroyAclOpExecutor(castExecutor);
     }
 
@@ -187,7 +190,8 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
                             executor,
                             stream);
     CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret));
+              LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
 
 
     return STATUS_SUCCESS;
@@ -202,6 +206,7 @@ infiniopStatus_t aclnnDestroyRMSNormDescriptor(RMSNormAclnnDescriptor_t desc) {
     if (desc->castDesc) {
         delete desc->castDesc;
     }
+    delete desc;
 
     return STATUS_SUCCESS;
 }
