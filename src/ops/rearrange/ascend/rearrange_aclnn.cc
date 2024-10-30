@@ -50,7 +50,8 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
                                                 &executor);
     aclSetAclOpExecutorRepeatable(executor);
     CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnInplaceCopyGetWorkspaceSize failed. ERROR: %d\n", ret));
+              LOG_PRINT("aclnnInplaceCopyGetWorkspaceSize failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
 
     desc->workspaceSize = workspaceSize;
     void *workspaceAddr = mallocWorkspace(workspaceSize);
@@ -64,7 +65,8 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
                            executor,
                            stream);
     CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnInplaceCopy failed. ERROR: %d\n", ret));
+              LOG_PRINT("aclnnInplaceCopy failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
 
     return STATUS_SUCCESS;
 }
