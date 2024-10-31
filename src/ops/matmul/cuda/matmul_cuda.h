@@ -1,8 +1,8 @@
 #ifndef __CUDA_MATMUL_H__
 #define __CUDA_MATMUL_H__
 
-#include "../blas.h"
 #include "../../../devices/cuda/cuda_handle.h"
+#include "../blas.h"
 #include "operators.h"
 #include <memory>
 

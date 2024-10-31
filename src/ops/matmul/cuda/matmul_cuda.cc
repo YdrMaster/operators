@@ -11,7 +11,7 @@ infiniopStatus_t cudaCreateMatmulDescriptor(CudaHandle_t handle,
                                             float beta) {
     DT dtype = c_desc->dt;
 
-    if (!dtype_eq(dtype, F16)) {
+    if (dtype != F16 && dtype != F32) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
@@ -30,21 +30,6 @@ infiniopStatus_t cudaCreateMatmulDescriptor(CudaHandle_t handle,
         beta,
         handle->cublas_handles_t};
     return STATUS_SUCCESS;
-}
-
-infiniopStatus_t cudaMatmul(MatmulCudaDescriptor_t desc,
-                            void *workspace,
-                            uint64_t workspace_size,
-                            void *c,
-                            void const *a,
-                            void const *b,
-                            void *stream) {
-    if (dtype_eq(desc->dtype, F16)) {
-        matmul_cuda_f16(desc, c, desc->beta, a, b, desc->alpha, stream);
-        return STATUS_SUCCESS;
-    }
-
-    return STATUS_BAD_TENSOR_DTYPE;
 }
 
 infiniopStatus_t cudaGetMatmulWorkspaceSize(MatmulCudaDescriptor_t desc, uint64_t *size) {

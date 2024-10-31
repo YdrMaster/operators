@@ -34,6 +34,4 @@ infiniopStatus_t cpuMatmul(MatmulCpuDescriptor_t desc,
 
 infiniopStatus_t cpuDestroyMatmulDescriptor(MatmulCpuDescriptor_t desc);
 
-void matmul_cpu_f16(MatmulCpuDescriptor_t desc, void *c, float beta, void const *a, void const *b, float alpha);
-
 #endif// __CPU_MATMUL_H__

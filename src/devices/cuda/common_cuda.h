@@ -54,4 +54,14 @@ typedef struct DataLayoutMap {
 
 constexpr DTMap dataTypeMap;
 
+// get the corresponding index in the destination given the flat index of the source
+inline __device__ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
+    uint64_t res = 0;
+    for (uint64_t i = 0; i < ndim; ++i) {
+        res += flat_index / src_strides[i] * dst_strides[i];
+        flat_index %= src_strides[i];
+    }
+    return res;
+}
+
 #endif// __COMMON_CUDA_H__

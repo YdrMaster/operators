@@ -101,6 +101,22 @@ inline bool isValidBroadcastShape(infiniopTensorDescriptor_t a, infiniopTensorDe
     return std::equal(broadcast_shape, broadcast_shape + broadcast_ndim, c->shape);
 }
 
+// check if the shape of tensor src can be validly broadcasted to that of the tensor dst
+inline bool isValidBroadcastShape(infiniopTensorDescriptor_t dst, infiniopTensorDescriptor_t src) {
+    if (dst->ndim < src->ndim) {
+        return false;
+    }
+    uint64_t padded_shape[dst->ndim];
+    std::fill(padded_shape, padded_shape + dst->ndim, 1);
+    std::copy(src->shape, src->shape + src->ndim, padded_shape + dst->ndim - src->ndim);
+    for (size_t i = 0; i < dst->ndim; ++i) {
+        if (padded_shape[i] != dst->shape[i] && padded_shape[i] != 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // check if the shape of tensor c is valid after broadcasting tensors a and b
 inline bool isValidBroadcastShape(infiniopTensorDescriptor_t a, infiniopTensorDescriptor_t b, infiniopTensorDescriptor_t c) {
     uint64_t broadcast_ndim = std::max(a->ndim, b->ndim);
