@@ -14,6 +14,7 @@ struct ExpandCudaDescriptor {
     uint64_t ndim;
     uint64_t y_data_size;
     uint64_t max_grid_size;
+    uint64_t const *y_shape;
     int64_t const *x_strides;
     int64_t const *y_strides;
 };

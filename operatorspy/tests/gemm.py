@@ -69,10 +69,10 @@ def test(
         f"a_stride:{a_stride} b_stride:{b_stride} c_stride:{c_stride} y_stride:{y_stride} dtype:{dtype}"
     )
 
-    a = torch.ones(a_shape, dtype=dtype).to(torch_device)
-    b = torch.ones(b_shape, dtype=dtype).to(torch_device)
-    c = torch.ones(c_shape, dtype=dtype).to(torch_device)
-    y = torch.zeros(y_shape, dtype=dtype).to(torch_device)
+    a = torch.rand(a_shape, dtype=dtype).to(torch_device)
+    b = torch.rand(b_shape, dtype=dtype).to(torch_device)
+    c = torch.rand(c_shape, dtype=dtype).to(torch_device)
+    y = torch.rand(y_shape, dtype=dtype).to(torch_device)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
@@ -124,7 +124,7 @@ def test(
     )
     workspace_ptr = ctypes.cast(workspace.data_ptr(), ctypes.POINTER(ctypes.c_uint8))
 
-    for i in range(NUM_PRERUN if PROFILE else 2):
+    for i in range(NUM_PRERUN if PROFILE else 1):
         check_error(
             lib.infiniopGEMM(
                 descriptor,
@@ -273,20 +273,20 @@ if __name__ == "__main__":
             None,
             None,
         ),
-        # (
-        #     1.0,
-        #     1.0,
-        #     True,
-        #     False,
-        #     (2048, 4),
-        #     (2048, 2048),
-        #     (4, 2048),
-        #     (4, 2048),
-        #     (4096, 1),
-        #     (4096, 1),
-        #     (4096, 1),
-        #     (4096, 1),
-        # ),
+        (
+            1.0,
+            1.0,
+            True,
+            False,
+            (2048, 4),
+            (2048, 2048),
+            (2048),
+            (4, 2048),
+            (4096, 1),
+            (4096, 1),
+            (2,),
+            (4096, 1),
+        ),
     ]
     args = get_args()
     lib = open_lib()

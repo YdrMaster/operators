@@ -8,13 +8,15 @@ __global__ void expand(
     const Tdata *x,
     const int64_t *y_strides,
     const int64_t *x_strides,
+    const uint64_t *y_shape,
     uint64_t y_data_size,
     uint64_t ndim,
     uint64_t offset) {
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + offset;
 
     if (idx < y_data_size) {
-        y[idx] = x[getDstIndex(idx, ndim, y_strides, x_strides)];
+        uint64_t y_idx = getNextIndex(idx, ndim, y_shape, y_strides);
+        y[y_idx] = x[getDstIndex(y_idx, ndim, y_strides, x_strides)];
     }
 }
 
@@ -34,7 +36,7 @@ infiniopStatus_t expand_nv_gpu(ExpandCudaDescriptor_t desc, void *y, void const 
 #pragma unroll
     for (uint64_t i = 0; i < desc->y_data_size; i += step) {
         expand<Tdata><<<gridDims, blockDims, 0, cuda_stream>>>(
-            y_, x_, desc->y_strides, desc->x_strides, i + desc->y_data_size, desc->ndim, i);
+            y_, x_, desc->y_strides, desc->x_strides, desc->y_shape, i + desc->y_data_size, desc->ndim, i);
     }
     return STATUS_SUCCESS;
 }

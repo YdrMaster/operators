@@ -136,7 +136,6 @@ if __name__ == "__main__":
     test_cases = [
         # y_shape, x_shape, y_stride, x_stride
         ((), (), None, None),
-        # ((4, 2048), (2048,), (4096, 1), (1,)),
         ((3, 3), (1,), None, None),
         ((5, 4, 3), (4, 3,), None, (6, 1)),
         ((99, 111), (111,), None, None),

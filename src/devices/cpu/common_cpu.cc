@@ -74,3 +74,12 @@ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_stri
     }
     return res;
 }
+
+uint64_t getNextIndex(uint64_t flat_index, uint64_t ndim, uint64_t const *shape, int64_t const *strides) {
+    uint64_t res = 0;
+    for (long i = ndim - 1; i >= 0; --i) {
+        res += (flat_index % shape[i]) * strides[i];
+        flat_index /= shape[i];
+    }
+    return res;
+}
