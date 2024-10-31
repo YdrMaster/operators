@@ -287,6 +287,20 @@ if __name__ == "__main__":
             (2,),
             (4096, 1),
         ),
+        (
+            1.0,
+            1.0,
+            False,
+            False,
+            (3, 1, 2048),
+            (3, 2048, 2048),
+            (1,),
+            (3, 1, 2048),
+            None,
+            None,
+            None,
+            None,
+        ),
     ]
     args = get_args()
     lib = open_lib()
