@@ -2,14 +2,40 @@
 #include "../../utils.h"
 #include "add.cuh"
 
-struct half4 {
-    __half x, y, z, w;
+/**
+ * @brief A templated vector struct that supports element-wise addition on arrays.
+ *
+ * @tparam T - The access data type for elements in the vector.
+ * @tparam TComp - The computation data type used for arithmetic operations. 
+ * @tparam N - The number of elements of type T in the vector for a single access.
+ */
+template<typename T, typename TComp, size_t N>
+struct vecN {
+    T data[N];
 
-    __device__ half4 operator+(const half4 &other) const {
-        return half4{__hadd(x, other.x), __hadd(y, other.y), __hadd(z, other.z), __hadd(w, other.w)};
+    __device__ __forceinline__ vecN operator+(const vecN<T, TComp, N> &other) const {
+        vecN<T, TComp, N> result;
+
+        for (int i = 0; i < N; ++i) {
+            if constexpr (std::is_same<T, TComp>::value) {
+                result.data[i] = data[i] + other.data[i];
+            } else {
+                constexpr static size_t pack_size = sizeof(T) / sizeof(TComp);
+                auto data_ = reinterpret_cast<vecN<TComp, TComp, pack_size> *>(result.data);
+                data_[i] = std::move(reinterpret_cast<vecN<TComp, TComp, pack_size> const *>(data)[i] +
+                                     reinterpret_cast<vecN<TComp, TComp, pack_size> const *>(other.data)[i]);
+            }
+        }
+
+        return result;
+    }
+
+    __device__ __forceinline__ const T &operator[](size_t i) const {
+        return data[i];
     }
 };
 
+// get the corresponding index in the destination given the flat index of the source
 __device__ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
     uint64_t res = 0;
     for (uint64_t i = 0; i < ndim; ++i) {
@@ -40,6 +66,7 @@ __global__ void add(
             auto a_ = reinterpret_cast<const BTdata *>(a);
             auto b_ = reinterpret_cast<const BTdata *>(b);
             auto c_ = reinterpret_cast<BTdata *>(c);
+#pragma unroll
             for (size_t i = 0; i < pack_size; ++i) {
                 auto a_idx = getDstIndex(idx + i, ndim, c_strides, a_strides);
                 auto b_idx = getDstIndex(idx + i, ndim, c_strides, b_strides);
@@ -52,43 +79,48 @@ __global__ void add(
 }
 
 template<typename Tdata, typename BTdata>
-void add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const *b, uint64_t data_size, uint64_t pack_size, uint64_t offset, void *stream) {
+void _add_nv_gpu(AddCudaDescriptor_t desc, Tdata *c, Tdata const *a, Tdata const *b, uint64_t data_size, uint64_t pack_size, uint64_t offset, void *stream) {
     if (data_size == 0) {
         return;
     }
-    dim3 blockDims = dim3(std::min(static_cast<uint64_t>(MAX_THREADS_PER_BLOCK), data_size));
+    dim3 blockDims = dim3(std::min(static_cast<uint64_t>(256), data_size));
     dim3 gridDims = dim3(std::min(ROUND_UP_DIV(data_size, blockDims.x), desc->max_grid_size));
     uint64_t step = gridDims.x * blockDims.x;
 
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
+#pragma unroll
     for (uint64_t i = 0; i < data_size; i += step) {
         add<Tdata, BTdata><<<gridDims, blockDims, 0, cuda_stream>>>(
             c, a, b, desc->a_strides, desc->b_strides, desc->c_strides, offset + data_size, desc->ndim, offset + i, desc->broadcasted, pack_size);
     }
 }
 
-void add_nv_gpu_f16(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream) {
-    auto data_size = desc->c_data_size / 4;
-    auto a_half4 = reinterpret_cast<const half4 *>(a);
-    auto b_half4 = reinterpret_cast<const half4 *>(b);
-    auto c_half4 = reinterpret_cast<half4 *>(c);
-    add_nv_gpu<half4, half>(desc, c_half4, a_half4, b_half4, data_size, 4, 0, stream);
+template<typename Tdata, typename TIdata>
+infiniopStatus_t add_nv_gpu(AddCudaDescriptor_t desc, void *c, void const *a, void const *b, void *stream, uint64_t pack_size) {
+    const auto data_size = desc->c_data_size / pack_size;
+    const auto a_vec = reinterpret_cast<const Tdata *>(a);
+    const auto b_vec = reinterpret_cast<const Tdata *>(b);
+    const auto c_vec = reinterpret_cast<Tdata *>(c);
+    _add_nv_gpu<Tdata, TIdata>(desc, c_vec, a_vec, b_vec, data_size, pack_size, 0, stream);
 
-    auto remainder = desc->c_data_size % 4;
-    auto a_half = reinterpret_cast<const half *>(a);
-    auto b_half = reinterpret_cast<const half *>(b);
-    auto c_half = reinterpret_cast<half *>(c);
-    add_nv_gpu<half, half>(desc, c_half, a_half, b_half, remainder, 1, data_size * 4, stream);
+    const auto remainder = desc->c_data_size % pack_size;
+    const auto a_ = reinterpret_cast<const TIdata *>(a);
+    const auto b_ = reinterpret_cast<const TIdata *>(b);
+    const auto c_ = reinterpret_cast<TIdata *>(c);
+    _add_nv_gpu<TIdata, TIdata>(desc, c_, a_, b_, remainder, 1, data_size * pack_size, stream);
+    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t cudaAdd(AddCudaDescriptor_t desc,
                          void *c, void const *a, void const *b,
                          void *stream) {
-    if (!dtype_eq(desc->dtype, F16)) {
-        return STATUS_BAD_TENSOR_DTYPE;
-    }
     checkCudaError(cudaSetDevice(desc->device_id));
-    add_nv_gpu_f16(desc, c, a, b, stream);
-    return STATUS_SUCCESS;
+    if (desc->dtype == F16) {
+        return add_nv_gpu<vecN<float2, half2, 2>, half>(desc, c, a, b, stream, 8);
+    }
+    if (desc->dtype == F32) {
+        return add_nv_gpu<vecN<float2, float, 2>, float>(desc, c, a, b, stream, 4);
+    }
+    return STATUS_BAD_TENSOR_DTYPE;
 }

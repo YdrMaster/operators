@@ -99,6 +99,10 @@ void random_sample_workspace(size_t &size_radix_sort, size_t &size_scan,
         nullptr, voc,
         stream);
 }
+__global__ void random_sample_kernel(uint64_t *result,
+                                     uint64_t *key_out) {
+    result[0] = key_out[0];
+}
 void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace, void *result,
                               void const *probs,
                               float random_val,
@@ -129,23 +133,28 @@ void random_sample_nv_gpu_f16(RandomSampleCudaDescriptor_t desc, void *workspace
         key_in, key_out,
         voc, (cudaStream_t) stream);//该函数会把排序结果和对应索引保存在val_out和key_out上
     //排序结束，然后开始做softmax变换
+    if (topp > 0 && topk > 1) {
+        int BLOCK_DIM = 1024;
+        int num_blocks = (voc + BLOCK_DIM - 1) / BLOCK_DIM;
+        softmax<half, 1024><<<num_blocks, BLOCK_DIM, 0, (cudaStream_t) stream>>>(val_out, topk,
+                                                                                 temperature, voc);
 
-    int BLOCK_DIM = 1024;
-    int num_blocks = (voc + BLOCK_DIM - 1) / BLOCK_DIM;
-    softmax<half, 1024><<<num_blocks, BLOCK_DIM, 0, (cudaStream_t) stream>>>(val_out, topk,
-                                                                             temperature, voc);
 
+        inclusive_sum<half>(
+            workspace_extra, size_scan,
+            val_out, voc,
+            (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
+        random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((uint64_t *) result,
+                                                                       val_out,
+                                                                       random_val,
+                                                                       topp,
+                                                                       topk,
+                                                                       key_out);
 
-    inclusive_sum<half>(
-        workspace_extra, size_scan,
-        val_out, voc,
-        (cudaStream_t) stream);//该函数会实现scan功能不断累加结果
-    random_sample_kernel<half><<<1, 1, 0, (cudaStream_t) stream>>>((uint64_t *) result,
-                                                                   val_out,
-                                                                   random_val,
-                                                                   topp,
-                                                                   topk,
-                                                                   key_out);
+    } else {
+        random_sample_kernel<<<1, 1, 0, (cudaStream_t) stream>>>((uint64_t *) result,
+                                                                 key_out);
+    }
     cudaFree(workspace_extra);
 }
 
