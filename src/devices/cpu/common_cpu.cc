@@ -66,7 +66,7 @@ uint16_t f32_to_f16(float val) {
     }
 }
 
-uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
+uint64_t getDstOffset(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
     uint64_t res = 0;
     for (uint64_t i = 0; i < ndim; ++i) {
         res += flat_index / src_strides[i] * dst_strides[i];
@@ -75,7 +75,7 @@ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_stri
     return res;
 }
 
-uint64_t getNextIndex(uint64_t flat_index, uint64_t ndim, uint64_t const *shape, int64_t const *strides) {
+uint64_t getOffset(uint64_t flat_index, uint64_t ndim, uint64_t const *shape, int64_t const *strides) {
     uint64_t res = 0;
     for (long i = ndim - 1; i >= 0; --i) {
         res += (flat_index % shape[i]) * strides[i];

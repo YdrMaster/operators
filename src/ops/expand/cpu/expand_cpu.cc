@@ -1,7 +1,6 @@
 #include "expand_cpu.h"
 #include "../../../devices/cpu/common_cpu.h"
 #include "../../utils.h"
-#include <omp.h>
 
 infiniopStatus_t cpuCreateExpandDescriptor(infiniopHandle_t,
                                            ExpandCpuDescriptor_t *desc_ptr,
@@ -49,7 +48,7 @@ infiniopStatus_t expand_cpu(ExpandCpuDescriptor_t desc, void *y, void const *x) 
 
 #pragma omp parallel for
     for (uint64_t i = 0; i < desc->y_data_size; ++i) {
-        y_[i] = x_[getDstIndex(i, desc->ndim, desc->y_strides, desc->x_strides)];
+        y_[i] = x_[getDstOffset(i, desc->ndim, desc->y_strides, desc->x_strides)];
     }
     return STATUS_SUCCESS;
 }

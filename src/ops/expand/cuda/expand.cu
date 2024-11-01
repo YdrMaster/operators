@@ -15,8 +15,8 @@ __global__ void expand(
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + offset;
 
     if (idx < y_data_size) {
-        uint64_t y_idx = getNextIndex(idx, ndim, y_shape, y_strides);
-        y[y_idx] = x[getDstIndex(y_idx, ndim, y_strides, x_strides)];
+        uint64_t y_idx = getOffset(idx, ndim, y_shape, y_strides);
+        y[y_idx] = x[getDstOffset(y_idx, ndim, y_strides, x_strides)];
     }
 }
 

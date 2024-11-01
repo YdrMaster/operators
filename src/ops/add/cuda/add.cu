@@ -58,8 +58,8 @@ __global__ void add(
             auto c_ = reinterpret_cast<BTdata *>(c);
 #pragma unroll
             for (size_t i = 0; i < pack_size; ++i) {
-                auto a_idx = getDstIndex(idx + i, ndim, c_strides, a_strides);
-                auto b_idx = getDstIndex(idx + i, ndim, c_strides, b_strides);
+                auto a_idx = getDstOffset(idx + i, ndim, c_strides, a_strides);
+                auto b_idx = getDstOffset(idx + i, ndim, c_strides, b_strides);
                 c_[idx + i] = a_[a_idx] + b_[b_idx];
             }
             return;

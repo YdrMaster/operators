@@ -54,8 +54,8 @@ typedef struct DataLayoutMap {
 
 constexpr DTMap dataTypeMap;
 
-// get the corresponding index in the destination given the flat index of the source
-inline __device__ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
+// get the corresponding offset in the destination given the flat index of the source (for element mapping in shape broadcast)
+inline __device__ uint64_t getDstOffset(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
     uint64_t res = 0;
     for (uint64_t i = 0; i < ndim; ++i) {
         res += flat_index / src_strides[i] * dst_strides[i];
@@ -64,8 +64,8 @@ inline __device__ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64
     return res;
 }
 
-// get the offset of the next element in a tensor given its flat index
-inline __device__ uint64_t getNextIndex(uint64_t flat_index, uint64_t ndim, uint64_t const *shape, int64_t const *strides) {
+// get the memory offset of the given element in a tensor given its flat index
+inline __device__ uint64_t getOffset(uint64_t flat_index, uint64_t ndim, uint64_t const *shape, int64_t const *strides) {
     uint64_t res = 0;
     for (long i = ndim - 1; i >= 0; --i) {
         res += (flat_index % shape[i]) * strides[i];
