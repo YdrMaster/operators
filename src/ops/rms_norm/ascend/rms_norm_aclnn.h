@@ -7,14 +7,15 @@
 #include "operators.h"
 #include <acl/acl_base.h>
 #include <aclnn/acl_meta.h>
-#include <aclnnop/aclnn_rms_norm.h>
 #include <aclnnop/aclnn_cast.h>
+#include <aclnnop/aclnn_rms_norm.h>
 #include <algorithm>
 
 struct RMSNormAclnnDescriptor {
     Device device;
     int device_id;
     aclOpExecutor *executor;
+    aclOpExecutor *castExecutor;
     aclnnTensorDescriptor_t yDesc, xDesc, wDesc, rstdDesc, castDesc;
     uint64_t workspaceSize;
     double epsilon;
@@ -38,8 +39,8 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
                               void *workspace,
                               uint64_t workspace_size,
                               void *y,
-                              void *x,
-                              void *w,
+                              void const *x,
+                              void const *w,
                               void *stream);
 
 infiniopStatus_t aclnnDestroyRMSNormDescriptor(RMSNormAclnnDescriptor_t desc);

@@ -4,6 +4,7 @@ RMSNormAclnnDescriptor::RMSNormAclnnDescriptor(Device _device) {
     device = _device;
     device_id = 0;
     executor = nullptr;
+    castExecutor = nullptr;
     workspaceSize = 0;
     yDesc = new aclnnTensorDescriptor();
     xDesc = new aclnnTensorDescriptor();
@@ -82,30 +83,19 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
     CHECK_STATUS(wDesc->createTensor(), STATUS_SUCCESS);
     CHECK_STATUS(rstdDesc->createTensor(), STATUS_SUCCESS);
 
-    return STATUS_SUCCESS;
-}
-
-infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
-                                              uint64_t *size) {
-    auto &yDesc = desc->yDesc;
-    auto &xDesc = desc->xDesc;
-    auto &wDesc = desc->wDesc;
-    auto &rstdDesc = desc->rstdDesc;
-    auto &castDesc = desc->castDesc;
-
     // Get Tensor
     aclTensor *ty = yDesc->t;
     aclTensor *tx = xDesc->t;
     aclTensor *tw = wDesc->t;
     aclTensor *trstd = rstdDesc->t;
 
-    uint64_t workspaceSize;
-    auto &executor = desc->executor;
-
+    // Get workspaceSize and set executor
+    auto &workspaceSize = (*desc_ptr)->workspaceSize;
+    auto &executor = (*desc_ptr)->executor;
     auto ret = aclnnRmsNormGetWorkspaceSize(tx,
                                             castDesc == nullptr ? tw
                                                                 : castDesc->t,
-                                            desc->epsilon,
+                                            (*desc_ptr)->epsilon,
                                             ty,
                                             trstd,
                                             &workspaceSize,
@@ -115,14 +105,36 @@ infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
               LOG_PRINT("aclnnRmsNormGetWorkspaceSize failed. ERROR: %d\n", ret);
               return STATUS_EXECUTION_FAILED);
 
-    *size = workspaceSize +
+    // Get Cast workspaceSize and set castExecutor
+    if (castDesc != nullptr) {
+        auto &castExecutor = (*desc_ptr)->castExecutor;
+        uint64_t castWorkspaceSize = 0;
+        aclTensor *tcast = castDesc->t;
+        ret = aclnnCastGetWorkspaceSize(tw,
+                                        castDesc->dataType,
+                                        tcast,
+                                        &castWorkspaceSize,
+                                        &castExecutor);
+        aclSetAclOpExecutorRepeatable(castExecutor);
+        CHECK_RET(ret == ACL_SUCCESS,
+                  LOG_PRINT("aclnnCastGetWorkspaceSize failed. ERROR: %d\n", ret);
+                  return STATUS_EXECUTION_FAILED);
+    }
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t aclnnGetRMSNormWorkspaceSize(RMSNormAclnnDescriptor_t desc,
+                                              uint64_t *size) {
+    auto &rstdDesc = desc->rstdDesc;
+    auto &castDesc = desc->castDesc;
+
+    *size = desc->workspaceSize +
             numElements(rstdDesc->shape, rstdDesc->ndim) * aclDataTypeSize(rstdDesc->dataType);
 
     if (castDesc != nullptr) {
         *size += numElements(castDesc->shape, castDesc->ndim) * aclDataTypeSize(castDesc->dataType);
     }
-
-    desc->workspaceSize = workspaceSize;
 
     return STATUS_SUCCESS;
 }
@@ -131,8 +143,8 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
                               void *workspace,
                               uint64_t workspace_size,
                               void *y,
-                              void *x,
-                              void *w,
+                              void const *x,
+                              void const *w,
                               void *stream) {
     auto &yDesc = desc->yDesc;
     auto &xDesc = desc->xDesc;
@@ -146,11 +158,14 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
     aclTensor *tw = wDesc->t;
     aclTensor *trstd = rstdDesc->t;
 
-    auto rstd = (void *) ((uint8_t *) workspace + desc->workspaceSize);
     auto &executor = desc->executor;
+    auto &castExecutor = desc->castExecutor;
+    auto &workspaceSize = desc->workspaceSize;
+    auto rstd = (void *) ((uint8_t *) workspace + workspaceSize);
 
     // Set device
     aclrtSetDevice(desc->device_id);
+    aclnnStatus ret;
 
     void *castPtr = nullptr;
 
@@ -158,40 +173,30 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
         aclTensor *tcast = castDesc->t;
         castPtr = (void *) ((float *) rstd + numElements(rstdDesc->shape, rstdDesc->ndim));
 
-        aclOpExecutor *castExecutor = nullptr;
-        uint64_t workspaceSize = 0;
-        auto ret = aclnnCastGetWorkspaceSize(tw, castDesc->dataType, tcast, &workspaceSize, &castExecutor);
-        CHECK_RET(ret == ACL_SUCCESS,
-                  LOG_PRINT("aclnnCastGetWorkspaceSize failed. ERROR: %d\n", ret);
-                  return STATUS_EXECUTION_FAILED);
-        aclSetAclOpExecutorRepeatable(castExecutor);
-
-        AclSetTensorAddr(castExecutor, 0, tw, w);
+        AclSetTensorAddr(castExecutor, 0, tw, (void *) w);
         AclSetTensorAddr(castExecutor, 1, tcast, castPtr);
         ret = aclnnCast(nullptr, workspaceSize, castExecutor, stream);
         CHECK_RET(ret == ACL_SUCCESS,
                   LOG_PRINT("aclnnCast failed. ERROR: %d\n", ret);
                   return STATUS_EXECUTION_FAILED);
-        aclDestroyAclOpExecutor(castExecutor);
     }
 
-    AclSetTensorAddr(executor, 0, tx, x);
+    AclSetTensorAddr(executor, 0, tx, (void *) x);
     if (castDesc != nullptr) {
         AclSetTensorAddr(executor, 1, castDesc->t, castPtr);
     } else {
-        AclSetTensorAddr(executor, 1, tw, w);
+        AclSetTensorAddr(executor, 1, tw, (void *) w);
     }
     AclSetTensorAddr(executor, 2, ty, y);
     AclSetTensorAddr(executor, 3, trstd, rstd);
 
-    auto ret = aclnnRmsNorm(workspace,
-                            desc->workspaceSize,
-                            executor,
-                            stream);
+    ret = aclnnRmsNorm(workspace,
+                       desc->workspaceSize,
+                       executor,
+                       stream);
     CHECK_RET(ret == ACL_SUCCESS,
               LOG_PRINT("aclnnRmsNorm failed. ERROR: %d\n", ret);
               return STATUS_EXECUTION_FAILED);
-
 
     return STATUS_SUCCESS;
 }
@@ -202,8 +207,9 @@ infiniopStatus_t aclnnDestroyRMSNormDescriptor(RMSNormAclnnDescriptor_t desc) {
     delete desc->xDesc;
     delete desc->rstdDesc;
     aclDestroyAclOpExecutor(desc->executor);
-    if (desc->castDesc) {
+    if (desc->castDesc != nullptr) {
         delete desc->castDesc;
+        aclDestroyAclOpExecutor(desc->castExecutor);
     }
     delete desc;
 
