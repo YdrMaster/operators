@@ -158,6 +158,10 @@ if has_config("ascend-npu") then
         add_links("libswiglu.so")
         add_rpathdirs("src/ops/swiglu/ascend/build/lib")
 
+        add_linkdirs("src/ops/rotary_embedding/ascend/build/lib")
+        add_links("librope.so")
+        add_rpathdirs("src/ops/rotary_embedding/ascend/build/lib")
+
     target_end()
 end
 
