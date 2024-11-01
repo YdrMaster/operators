@@ -18,6 +18,7 @@ struct RMSNormAclnnDescriptor {
     aclOpExecutor *castExecutor;
     aclnnTensorDescriptor_t yDesc, xDesc, wDesc, rstdDesc, castDesc;
     uint64_t workspaceSize;
+    uint64_t castWorkspaceSize;
     double epsilon;
 
     RMSNormAclnnDescriptor(Device device);
