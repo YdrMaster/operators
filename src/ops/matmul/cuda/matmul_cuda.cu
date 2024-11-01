@@ -57,7 +57,6 @@ infiniopStatus_t matmul_cuda(MatmulCudaDescriptor_t desc, void *c, float beta, v
                                                 info.batch,
                                                 compute_type,
                                                 CUBLAS_GEMM_DEFAULT_TENSOR_OP); });
-    cudaDeviceSynchronize();
     return STATUS_SUCCESS;
 }
 
