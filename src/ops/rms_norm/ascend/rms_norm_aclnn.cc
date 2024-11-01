@@ -2,7 +2,7 @@
 
 RMSNormAclnnDescriptor::RMSNormAclnnDescriptor(Device _device) {
     device = _device;
-    handle = nullptr;
+    device_id = 0;
     executor = nullptr;
     workspaceSize = 0;
     yDesc = new aclnnTensorDescriptor();
@@ -21,7 +21,7 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
                                               infiniopTensorDescriptor_t w,
                                               float eps) {
     *desc_ptr = new RMSNormAclnnDescriptor(handle->device);
-    (*desc_ptr)->handle = reinterpret_cast<AscendHandle_t>(handle);
+    (*desc_ptr)->device_id = handle->device_id;
     (*desc_ptr)->epsilon = static_cast<double>(eps);
 
     auto &yDesc = (*desc_ptr)->yDesc;
@@ -147,11 +147,10 @@ infiniopStatus_t aclnnRMSNorm(RMSNormAclnnDescriptor_t desc,
     aclTensor *trstd = rstdDesc->t;
 
     auto rstd = (void *) ((uint8_t *) workspace + desc->workspaceSize);
-    auto &handle = desc->handle;
     auto &executor = desc->executor;
 
     // Set device
-    aclrtSetDevice(handle->device_id);
+    aclrtSetDevice(desc->device_id);
 
     void *castPtr = nullptr;
 

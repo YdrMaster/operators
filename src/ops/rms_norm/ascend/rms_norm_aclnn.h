@@ -13,7 +13,7 @@
 
 struct RMSNormAclnnDescriptor {
     Device device;
-    AscendHandle_t handle;
+    int device_id;
     aclOpExecutor *executor;
     aclnnTensorDescriptor_t yDesc, xDesc, wDesc, rstdDesc, castDesc;
     uint64_t workspaceSize;
