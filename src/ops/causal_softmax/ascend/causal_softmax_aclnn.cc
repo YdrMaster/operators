@@ -3,12 +3,13 @@
 
 CausalSoftmaxAclnnDescriptor::CausalSoftmaxAclnnDescriptor(Device _device) {
     device = _device;
-    handle = nullptr;
+    device_id = 0;
     aDesc = new aclnnTensorDescriptor();
     maskDesc = new aclnnTensorDescriptor();
     outDesc = new aclnnTensorDescriptor();
     executor = nullptr;
     workspaceSize = 0;
+    maskAddr = nullptr;
 }
 
 infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
@@ -24,7 +25,7 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
 
     // Construct CausalSoftmaxAclnnDescriptor
     *desc_ptr = new CausalSoftmaxAclnnDescriptor(handle->device);
-    (*desc_ptr)->handle = reinterpret_cast<AscendHandle_t>(handle);
+    (*desc_ptr)->device_id = handle->device_id;
 
     // Set value from infiniopTensorDescriptor
     auto &aDesc = (*desc_ptr)->aDesc;
@@ -57,8 +58,8 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     _y->ndim = aclnn_shape->size();
     _y->strides = aclnn_strides->data();
 
-    auto status = aDesc->fromInfiniOpTensorDescriptor(_y);
-    status = outDesc->fromInfiniOpTensorDescriptor(_y);
+    CHECK_STATUS(aDesc->fromInfiniOpTensorDescriptor(_y), STATUS_SUCCESS);
+    CHECK_STATUS(outDesc->fromInfiniOpTensorDescriptor(_y), STATUS_SUCCESS);
 
     // Set mask Desc
     auto &maskDesc = (*desc_ptr)->maskDesc;
@@ -73,7 +74,6 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     }
     auto mask_strides = new std::vector<int64_t>{total_seq_len * seq_len, total_seq_len, 1};
 
-
     maskDesc->ndim = mask_shape->size();
     maskDesc->shape = mask_shape->data();
     maskDesc->strides = mask_strides->data();
@@ -84,26 +84,17 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     maskDesc->storageNdim = mask_shape->size();
 
     // Create aclTensor
-    status = aDesc->createTensor();
-    status = maskDesc->createTensor();
-    status = outDesc->createTensor();
-
-    return status;
-}
-
-infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, uint64_t *size) {
-    auto &maskDesc = desc->maskDesc;
-    auto &aDesc = desc->aDesc;
-    auto &outDesc = desc->outDesc;
+    CHECK_STATUS(aDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(maskDesc->createTensor(), STATUS_SUCCESS);
+    CHECK_STATUS(outDesc->createTensor(), STATUS_SUCCESS);
 
     // Get Tensor
     aclTensor *ta = aDesc->t;
     aclTensor *tmask = maskDesc->t;
     aclTensor *tout = outDesc->t;
 
-    uint64_t workspaceSize;
-    auto &executor = desc->executor;
-
+    auto &workspaceSize = (*desc_ptr)->workspaceSize;
+    auto &executor = (*desc_ptr)->executor;
     auto ret = aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize(ta,
                                                                 nullptr,
                                                                 tmask,
@@ -113,34 +104,8 @@ infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor
                                                                 &executor);
     aclSetAclOpExecutorRepeatable(executor);
     CHECK_RET(ret == ACL_SUCCESS,
-              LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret));
-
-    *size = workspaceSize +
-            numElements(maskDesc->shape, maskDesc->ndim) * aclDataTypeSize(maskDesc->dataType);
-
-    desc->workspaceSize = workspaceSize;
-
-    return STATUS_SUCCESS;
-}
-
-infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
-                                    void *workspace,
-                                    uint64_t workspace_size,
-                                    void *data,
-                                    void *stream) {
-    auto &aDesc = desc->aDesc;
-    auto &maskDesc = desc->maskDesc;
-    auto &outDesc = desc->outDesc;
-    auto &handle = desc->handle;
-    auto &executor = desc->executor;
-
-    // Set runing on handle device
-    aclrtSetDevice(handle->device_id);
-
-    // Get aclTensor pt
-    aclTensor *ta = aDesc->t;
-    aclTensor *tmask = maskDesc->t;
-    aclTensor *tout = outDesc->t;
+              LOG_PRINT("aclnnMaskedSoftmaxWithRelPosBiasGetWorkspaceSize failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
 
     // Fill upgrade matrix
     uint16_t mask_matrix[maskDesc->shape[0]][maskDesc->shape[1]][maskDesc->shape[2]];
@@ -161,19 +126,59 @@ infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
         }
     }
 
-    aclrtMemcpy(workspace,
-                workspace_size,
-                mask_matrix,
-                numElements(maskDesc->shape, maskDesc->ndim) * ele_size,
-                ACL_MEMCPY_HOST_TO_DEVICE);
+    // malloc mask space
+    auto &maskAddr = (*desc_ptr)->maskAddr;
+    auto mask_size = numElements(maskDesc->shape, maskDesc->ndim) * ele_size;
+    maskAddr = mallocWorkspace(mask_size);
+
+    // copy mask matrix to device mem
+    ret = aclrtMemcpy(maskAddr,
+                      mask_size,
+                      mask_matrix,
+                      mask_size,
+                      ACL_MEMCPY_HOST_TO_DEVICE);
+    CHECK_RET(ret == ACL_SUCCESS,
+              LOG_PRINT("aclrtMemcpy failed. ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t aclnnGetCausalSoftmaxWorkspaceSize(CausalSoftmaxAclnnDescriptor_t desc, uint64_t *size) {
+
+    *size = desc->workspaceSize;
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t aclnnCausalSoftmax(CausalSoftmaxAclnnDescriptor_t desc,
+                                    void *workspace,
+                                    uint64_t workspace_size,
+                                    void *data,
+                                    void *stream) {
+    auto &aDesc = desc->aDesc;
+    auto &maskDesc = desc->maskDesc;
+    auto &outDesc = desc->outDesc;
+
+
+    // Get aclTensor pt
+    aclTensor *ta = aDesc->t;
+    aclTensor *tmask = maskDesc->t;
+    aclTensor *tout = outDesc->t;
+
+    auto &executor = desc->executor;
+    auto &workspaceSize = desc->workspaceSize;
+    auto &maskAddr = desc->maskAddr;
+
+    // Set runing on handle device
+    aclrtSetDevice(desc->device_id);
 
     AclSetTensorAddr(executor, 0, ta, data);
-    AclSetTensorAddr(executor, 2, tmask, workspace);
+    AclSetTensorAddr(executor, 2, tmask, maskAddr);
     AclSetTensorAddr(executor, 3, tout, data);
 
-    workspace = (void *) ((uint16_t *) workspace + numElements(maskDesc->shape, maskDesc->ndim));
     auto ret = aclnnMaskedSoftmaxWithRelPosBias(workspace,
-                                                desc->workspaceSize,
+                                                workspaceSize,
                                                 executor,
                                                 stream);
     CHECK_RET(ret == ACL_SUCCESS,
@@ -187,6 +192,7 @@ infiniopStatus_t aclnnDestroyCausalSoftmaxDescriptor(CausalSoftmaxAclnnDescripto
     delete desc->maskDesc;
     delete desc->outDesc;
     aclDestroyAclOpExecutor(desc->executor);
+    freeWorkspace(desc->maskAddr);
     delete desc;
     return STATUS_SUCCESS;
 }
