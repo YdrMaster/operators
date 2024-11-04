@@ -71,14 +71,14 @@ def test(
 
     a = torch.rand(a_shape, dtype=dtype).to(torch_device)
     b = torch.rand(b_shape, dtype=dtype).to(torch_device)
-    c = torch.rand(c_shape, dtype=dtype).to(torch_device)
+    c = torch.rand(c_shape, dtype=dtype).to(torch_device) if c_shape else None
     y = torch.rand(y_shape, dtype=dtype).to(torch_device)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
-    if c_stride is not None:
+    if c_stride is not None and c is not None:
         c = rearrange_tensor(c, c_stride)
     if y_stride is not None:
         y = rearrange_tensor(y, y_stride)
@@ -95,7 +95,7 @@ def test(
 
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
-    c_tensor = to_tensor(c, lib)
+    c_tensor = to_tensor(c, lib) if c is not None else None
     y_tensor = to_tensor(y, lib)
     descriptor = infiniopGEMMDescriptor_t()
     check_error(
@@ -105,7 +105,7 @@ def test(
             y_tensor.descriptor,
             a_tensor.descriptor,
             b_tensor.descriptor,
-            c_tensor.descriptor,
+            c_tensor.descriptor if c_tensor else None,
             alpha,
             beta,
             transA,
@@ -133,7 +133,7 @@ def test(
                 y_tensor.data,
                 a_tensor.data,
                 b_tensor.data,
-                c_tensor.data,
+                c_tensor.data if c_tensor else None,
                 None,
             )
         )
@@ -147,13 +147,12 @@ def test(
                 y_tensor.data,
                 a_tensor.data,
                 b_tensor.data,
-                c_tensor.data,
+                c_tensor.data if c_tensor else None,
                 None,
             )
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")
 
-    # print(" - y:\n", y, y.shape, "\n - ans:\n", ans, ans.shape)
     assert torch.allclose(y, ans, atol=0, rtol=1e-2)
     check_error(lib.infiniopDestroyGEMMDescriptor(descriptor))
 
@@ -300,6 +299,20 @@ if __name__ == "__main__":
             None,
             None,
             None,
+        ),
+        (
+            1.0,
+            1.0,
+            True,
+            False,
+            (2048, 4),
+            (2048, 2048),
+            None,
+            (4, 2048),
+            (4096, 1),
+            (4096, 1),
+            (2,),
+            (4096, 1),
         ),
     ]
     args = get_args()

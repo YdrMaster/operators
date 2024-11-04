@@ -18,10 +18,12 @@ infiniopStatus_t cpuCreateExpandDescriptor(infiniopHandle_t,
 
     // get the adjusted strides for x in terms of y
     int64_t *x_strides = new int64_t[ndim];
+    int64_t *y_strides = new int64_t[ndim];
 #pragma omp parallel for
     for (size_t i = 0; i < ndim; ++i) {
         x_strides[i] = (i < ndim - x->ndim || y->shape[i] != x->shape[i + x->ndim - ndim]) ? 0 : x->strides[i + x->ndim - ndim];
     }
+    memcpy(y_strides, y->strides, ndim * sizeof(int64_t));
 
     *desc_ptr = new ExpandCpuDescriptor{
         DevCpu,
@@ -29,7 +31,7 @@ infiniopStatus_t cpuCreateExpandDescriptor(infiniopHandle_t,
         ndim,
         y_data_size,
         x_strides,
-        y->strides,
+        y_strides,
     };
 
     return STATUS_SUCCESS;
@@ -37,6 +39,7 @@ infiniopStatus_t cpuCreateExpandDescriptor(infiniopHandle_t,
 
 infiniopStatus_t cpuDestroyExpandDescriptor(ExpandCpuDescriptor_t desc) {
     delete[] desc->x_strides;
+    delete[] desc->y_strides;
     delete desc;
     return STATUS_SUCCESS;
 }

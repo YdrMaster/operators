@@ -26,7 +26,7 @@ infiniopStatus_t matmul_cuda(MatmulCudaDescriptor_t desc, void *c, float beta, v
         alpha_ = alpha;
         beta_ = beta;
         a_type = b_type = c_type = CUDA_R_32F;
-        compute_type = CUBLAS_COMPUTE_32F_FAST_16F;
+        compute_type = CUBLAS_COMPUTE_32F_FAST_TF32;
     }
 
     auto op_a = info.a_matrix.row_stride == 1 ? CUBLAS_OP_N : CUBLAS_OP_T;

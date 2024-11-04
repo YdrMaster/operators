@@ -28,8 +28,15 @@ __C __export infiniopStatus_t infiniopCreateGEMMDescriptor(infiniopHandle_t hand
     b_desc = transB ? permute(b_desc, {1, 0}) : b_desc;
 
     // expand desc
-    infiniopExpandDescriptor_t expand_desc = new ExpandDescriptor{handle->device};
-    CHECK_STATUS(infiniopCreateExpandDescriptor(handle, &expand_desc, y_desc, c_desc), STATUS_SUCCESS);
+    infiniopExpandDescriptor_t expand_desc = nullptr;
+
+    // c is optional, set beta to 0 when c is not provided
+    if (!c_desc || c_desc->ndim == 0 || c_desc->shape == nullptr || c_desc->shape[0] == 0) {
+        beta = 0;
+    } else {
+        expand_desc = new ExpandDescriptor{handle->device};
+        CHECK_STATUS(infiniopCreateExpandDescriptor(handle, &expand_desc, y_desc, c_desc), STATUS_SUCCESS);
+    }
 
     // matmul desc
     infiniopMatmulDescriptor_t matmul_desc = new MatmulDescriptor{handle->device};
@@ -65,9 +72,11 @@ __C __export infiniopStatus_t infiniopGEMM(infiniopGEMMDescriptor_t desc,
         return STATUS_MEMORY_NOT_ALLOCATED;
     }
 
-    CHECK_STATUS(infiniopExpand(_desc->expand_desc,
-                                y, c, stream),
-                 STATUS_SUCCESS);
+    if (_desc->expand_desc != nullptr) {
+        CHECK_STATUS(infiniopExpand(_desc->expand_desc,
+                                    y, c, stream),
+                     STATUS_SUCCESS);
+    }
 
     CHECK_STATUS(infiniopMatmul(_desc->matmul_desc,
                                 workspace,
@@ -79,7 +88,9 @@ __C __export infiniopStatus_t infiniopGEMM(infiniopGEMMDescriptor_t desc,
 }
 
 __C __export infiniopStatus_t infiniopDestroyGEMMDescriptor(infiniopGEMMDescriptor_t desc) {
+    if (((_GEMMDescriptor_t) desc)->expand_desc) {
+        CHECK_STATUS(infiniopDestroyExpandDescriptor(((_GEMMDescriptor_t) desc)->expand_desc), STATUS_SUCCESS);
+    }
     CHECK_STATUS(infiniopDestroyMatmulDescriptor(((_GEMMDescriptor_t) desc)->matmul_desc), STATUS_SUCCESS);
-    CHECK_STATUS(infiniopDestroyExpandDescriptor(((_GEMMDescriptor_t) desc)->expand_desc), STATUS_SUCCESS);
     return STATUS_SUCCESS;
 }

@@ -26,13 +26,11 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
     cudaGetDeviceProperties(&prop, handle->device_id);
 
     int64_t *x_strides_d, *y_strides_d;
-    uint64_t *y_shape_d;
-    checkCudaErrorWithCode(cudaMalloc(&x_strides_d, ndim * sizeof(int64_t)), STATUS_MEMORY_NOT_ALLOCATED);
-    checkCudaErrorWithCode(cudaMalloc(&y_strides_d, ndim * sizeof(int64_t)), STATUS_MEMORY_NOT_ALLOCATED);
-    checkCudaErrorWithCode(cudaMalloc(&y_shape_d, ndim * sizeof(uint64_t)), STATUS_MEMORY_NOT_ALLOCATED);
-    checkCudaErrorWithCode(cudaMemcpy(x_strides_d, x_strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
-    checkCudaErrorWithCode(cudaMemcpy(y_strides_d, y->strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
-    checkCudaErrorWithCode(cudaMemcpy(y_shape_d, y->shape, ndim * sizeof(uint64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
+    char *strides_and_shape_d;
+    checkCudaErrorWithCode(cudaMalloc(&strides_and_shape_d, ndim * (2 * sizeof(int64_t) + sizeof(uint64_t))), STATUS_MEMORY_NOT_ALLOCATED);
+    checkCudaErrorWithCode(cudaMemcpy(strides_and_shape_d, x_strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaMemcpy(strides_and_shape_d + ndim * sizeof(int64_t), y->strides, ndim * sizeof(int64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaMemcpy(strides_and_shape_d + 2 * ndim * sizeof(int64_t), y->shape, ndim * sizeof(uint64_t), cudaMemcpyHostToDevice), STATUS_EXECUTION_FAILED);
 
     *desc_ptr = new ExpandCudaDescriptor{
         DevNvGpu,
@@ -41,9 +39,7 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
         ndim,
         y_data_size,
         static_cast<uint64_t>(prop.maxGridSize[0]),
-        y_shape_d,
-        x_strides_d,
-        y_strides_d,
+        strides_and_shape_d,
     };
 
     delete[] x_strides;
@@ -52,9 +48,7 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
 }
 
 infiniopStatus_t cudaDestroyExpandDescriptor(ExpandCudaDescriptor_t desc) {
-    cudaFree((void *) desc->x_strides);
-    cudaFree((void *) desc->y_strides);
-    cudaFree((void *) desc->y_shape);
+    cudaFree((void *) desc->strides_and_shape_d);
     delete desc;
     return STATUS_SUCCESS;
 }

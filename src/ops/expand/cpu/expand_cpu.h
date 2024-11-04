@@ -2,6 +2,7 @@
 #define __CPU_EXPAND_H__
 
 #include "operators.h"
+#include <cstring>
 #include <numeric>
 
 struct ExpandCpuDescriptor {

@@ -31,12 +31,15 @@ infiniopStatus_t expand_nv_gpu(ExpandCudaDescriptor_t desc, void *y, void const 
 
     const auto x_ = reinterpret_cast<Tdata const *>(x);
     const auto y_ = reinterpret_cast<Tdata *>(y);
+    const auto x_strides = reinterpret_cast<int64_t const *>(desc->strides_and_shape_d);
+    const auto y_strides = reinterpret_cast<int64_t const *>(desc->strides_and_shape_d + desc->ndim * sizeof(int64_t));
+    const auto y_shape = reinterpret_cast<uint64_t const *>(desc->strides_and_shape_d + 2 * desc->ndim * sizeof(int64_t));
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
 #pragma unroll
     for (uint64_t i = 0; i < desc->y_data_size; i += step) {
         expand<Tdata><<<gridDims, blockDims, 0, cuda_stream>>>(
-            y_, x_, desc->y_strides, desc->x_strides, desc->y_shape, i + desc->y_data_size, desc->ndim, i);
+            y_, x_, y_strides, x_strides, y_shape, i + desc->y_data_size, desc->ndim, i);
     }
     return STATUS_SUCCESS;
 }
