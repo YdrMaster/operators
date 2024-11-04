@@ -18,6 +18,7 @@ struct ConvCudaDescriptor {
     cudnnConvolutionFwdAlgo_t algo;
     const float alpha;
     const float beta;
+    uint64_t workspace_size;
 };
 
 typedef struct ConvCudaDescriptor *ConvCudaDescriptor_t;

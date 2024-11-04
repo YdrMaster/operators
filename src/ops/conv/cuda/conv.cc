@@ -50,6 +50,17 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     cudnnDataType_t conv_op_dt = [&] {
         switch (tensor_dt) {
             case CUDNN_DATA_HALF:
+                if (ndim >= 5) {
+                    return CUDNN_DATA_FLOAT;
+                }
+                int capability_major;
+                int capability_minor;
+                cudaDeviceGetAttribute(&capability_major, cudaDevAttrComputeCapabilityMajor, handle->device_id);
+                cudaDeviceGetAttribute(&capability_minor, cudaDevAttrComputeCapabilityMinor, handle->device_id);
+                if (capability_major > 5 || (capability_major == 5 && capability_minor >= 3)) {
+                    return CUDNN_DATA_HALF;
+                }
+                return CUDNN_DATA_FLOAT;
             case CUDNN_DATA_BFLOAT16:
             case CUDNN_DATA_FLOAT:
                 return CUDNN_DATA_FLOAT;
@@ -85,13 +96,30 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
     checkCudnnError(cudnnCreateTensorDescriptor(&y_desc));
     checkCudnnError(cudnnSetTensorNdDescriptorEx(y_desc, CUDNN_TENSOR_NCHW, static_cast<cudnnDataType_t>(tensor_dt), new_ndim, y_shape));
 
-    // get the best algorithm
-    const int requestedAlgoCount = 1;
-    int algoCounts;
+
+    // tuning: get the best algorithm
+    int requestedAlgoCount = 1;
+    checkCudnnError(use_cudnn(handle->cudnn_handles_t, handle->device_id, nullptr,
+                              [&](cudnnHandle_t handle) { return cudnnGetConvolutionForwardAlgorithmMaxCount(handle, &requestedAlgoCount); }));
+    int algoCounts = 0;
+    int chosenAlgoIndex = 0;
+    bool chosen = false;
+    size_t workspace_size = 0;
     cudnnConvolutionFwdAlgoPerf_t perf_results[requestedAlgoCount];
-    checkCudnnError(use_cudnn(handle->cudnn_handles_t, handle->device_id,
+    checkCudnnError(use_cudnn(handle->cudnn_handles_t, handle->device_id, nullptr,
                               [&](cudnnHandle_t handle) { return cudnnFindConvolutionForwardAlgorithm(handle, x_desc, w_desc, op_desc, y_desc, requestedAlgoCount, &algoCounts, perf_results); }));
     if (algoCounts < 1) {
+        return STATUS_EXECUTION_FAILED;
+    }
+    for (int i = 0; i < algoCounts; ++i) {
+        if (use_cudnn(handle->cudnn_handles_t, handle->device_id, nullptr,
+                      [&](cudnnHandle_t handle) { return cudnnGetConvolutionForwardWorkspaceSize(handle, x_desc, w_desc, op_desc, y_desc, perf_results[i].algo, &workspace_size); }) == CUDNN_STATUS_SUCCESS) {
+            chosenAlgoIndex = i;
+            chosen = true;
+            break;
+        }
+    }
+    if (!chosen) {
         return STATUS_EXECUTION_FAILED;
     }
 
@@ -107,9 +135,10 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
         w_desc,
         y_desc,
         op_desc,
-        perf_results[0].algo,
+        perf_results[chosenAlgoIndex].algo,
         alpha,
-        beta};
+        beta,
+        workspace_size};
 
     delete[] pad;
     delete[] stride;
@@ -122,8 +151,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
 }
 
 infiniopStatus_t cudaGetConvWorkspaceSize(ConvCudaDescriptor_t desc, uint64_t *size) {
-    checkCudnnError(use_cudnn(desc->cudnn_handles_t, desc->device_id,
-                              [&](cudnnHandle_t handle) { return cudnnGetConvolutionForwardWorkspaceSize(handle, desc->x_desc, desc->w_desc, desc->op_desc, desc->y_desc, desc->algo, size); }));
+    *size = desc->workspace_size;
     return STATUS_SUCCESS;
 }
 
