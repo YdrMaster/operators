@@ -6,7 +6,7 @@
 
 struct RoPEAscendDescriptor {
     Device device;
-    AscendHandle_t handle;
+    int device_id;
     aclDataType dt;
     uint64_t seq_len;
     uint64_t nhead;

@@ -58,7 +58,7 @@ infiniopStatus_t ascendCreateRoPEDescriptor(AscendHandle_t handle,
 
     *desc_ptr = new RoPEAscendDescriptor{
         handle->device,
-        handle,
+        handle->device_id,
         dt,
         seq_len,
         nh,
@@ -91,7 +91,7 @@ infiniopStatus_t ascendRoPE(RoPEAscendDescriptor_t desc,
     auto sth = static_cast<int>(desc->stride_head);
 
     // Set device
-    aclrtSetDevice(desc->handle->device_id);
+    aclrtSetDevice(desc->device_id);
 
     rope_kernel_do(t, (void *) pos_ids, (void *) sin_table, (void *) cos_table,
                    nt, nh, dh, stt, sth, desc->dt, stream);

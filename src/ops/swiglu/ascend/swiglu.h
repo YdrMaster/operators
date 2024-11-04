@@ -12,7 +12,7 @@
 
 struct SwiGLUAscendDescriptor {
     Device device;
-    AscendHandle_t handle;
+    int device_id;
     aclDataType dtype;
     int32_t seq_len;
     int32_t di;
@@ -23,7 +23,7 @@ struct SwiGLUAscendDescriptor {
 
 typedef struct SwiGLUAscendDescriptor *SwiGLUAscendDescriptor_t;
 
-infiniopStatus_t ascendCreateSwiGLUDescriptor(infiniopHandle_t handle,
+infiniopStatus_t ascendCreateSwiGLUDescriptor(AscendHandle_t handle,
                                               SwiGLUAscendDescriptor_t *desc_ptr,
                                               infiniopTensorDescriptor_t c_desc,
                                               infiniopTensorDescriptor_t a_desc,

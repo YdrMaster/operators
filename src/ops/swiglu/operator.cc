@@ -41,7 +41,11 @@ __C infiniopStatus_t infiniopCreateSwiGLUDescriptor(infiniopHandle_t handle,
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu:
-            return ascendCreateSwiGLUDescriptor(handle, (SwiGLUAscendDescriptor_t *) desc_ptr, c_desc, a_desc, b_desc);
+            return ascendCreateSwiGLUDescriptor((AscendHandle_t) handle,
+                                                (SwiGLUAscendDescriptor_t *) desc_ptr,
+                                                c_desc,
+                                                a_desc,
+                                                b_desc);
 #endif
     }
     return STATUS_BAD_DEVICE;

@@ -5,7 +5,7 @@ extern "C" void swiglu_kernel_do(void *c, void *a, void *b,
                                  int32_t sta, int32_t stb, int32_t stc,
                                  int dtype, void *stream);
 
-infiniopStatus_t ascendCreateSwiGLUDescriptor(infiniopHandle_t handle,
+infiniopStatus_t ascendCreateSwiGLUDescriptor(AscendHandle_t handle,
                                               SwiGLUAscendDescriptor_t *desc_ptr,
                                               infiniopTensorDescriptor_t c_desc,
                                               infiniopTensorDescriptor_t a_desc,
@@ -39,7 +39,7 @@ infiniopStatus_t ascendCreateSwiGLUDescriptor(infiniopHandle_t handle,
 
     *desc_ptr = new SwiGLUAscendDescriptor{
         handle->device,
-        reinterpret_cast<AscendHandle_t>(handle),
+        handle->device_id,
         dt,
         seq_len,
         di,
@@ -64,7 +64,7 @@ infiniopStatus_t ascendSwiGLU(SwiGLUAscendDescriptor_t desc,
     auto dt = desc->dtype;
     
     // Set device
-    aclrtSetDevice(desc->handle->device_id);
+    aclrtSetDevice(desc->device_id);
 
     swiglu_kernel_do(c, (void *) a, (void *) b, 1.0, seq_len, di, sta, stb, stc, dt, stream);
     return STATUS_SUCCESS;

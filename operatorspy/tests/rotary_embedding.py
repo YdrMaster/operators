@@ -187,6 +187,7 @@ def test_ascend(lib, test_cases) :
 if __name__ == "__main__":
     test_cases = [
         ((1, 32, 128), None, torch.float16),
+        ((1, 32, 64), None, torch.float16),
         # 昇腾暂不满足这个用例，最后一维度 <=32 会有问题，可能与其核心
         # 接口 GatherMask 的内部实现相关，目前 48 64 128 都可以支持
         ((4, 1, 32), None, torch.float16),
