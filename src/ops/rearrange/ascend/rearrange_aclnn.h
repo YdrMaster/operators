@@ -10,10 +10,11 @@
 
 struct RearrangeAclnnDescriptor {
     Device device;
-    AscendHandle_t handle;
+    int device_id;
     aclOpExecutor *executor;
     aclnnTensorDescriptor_t dstDesc, srcDesc;
     uint64_t workspaceSize;
+    void *workspaceAddr;
 
     RearrangeAclnnDescriptor(Device device);
 };
