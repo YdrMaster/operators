@@ -2,7 +2,7 @@
 
 MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device _device) {
     device = _device;
-    handle = nullptr;
+    device_id = 0; 
     executor = nullptr;
     info = nullptr;
     cDesc = new aclnnTensorDescriptor();
@@ -24,7 +24,7 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
                                              int8_t mt) {
 
     *desc_ptr = new MatmulAclnnDescriptor(handle->device);
-    (*desc_ptr)->handle = handle;
+    (*desc_ptr)->device_id = handle->device_id;
     (*desc_ptr)->mt = mt;
     (*desc_ptr)->alpha = alpha;
     (*desc_ptr)->beta = beta;
@@ -48,33 +48,22 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
     CHECK_STATUS(aDesc->createTensor(), STATUS_SUCCESS);
     CHECK_STATUS(bDesc->createTensor(), STATUS_SUCCESS);
 
-    return STATUS_SUCCESS;
-}
-
-infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
-                                             uint64_t *size) {
-    auto &cDesc = desc->cDesc;
-    auto &aDesc = desc->aDesc;
-    auto &bDesc = desc->bDesc;
+    auto b = (*desc_ptr)->info->batch;
+    auto &workspaceSize = (*desc_ptr)->workspaceSize;
+    auto &executor = (*desc_ptr)->executor;
 
     aclTensor *tc = cDesc->t;
     aclTensor *ta = aDesc->t;
     aclTensor *tb = bDesc->t;
 
-    auto b = desc->info->batch;
-
-    auto &workspaceSize = desc->workspaceSize;
-    auto &executor = desc->executor;
-
     aclnnStatus ret;
-    *size = 0;
-
+    
     if (b > 1) {
         // https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnMatmul.md
         ret = aclnnMatmulGetWorkspaceSize(ta,
                                           tb,
                                           tc,
-                                          desc->mt,
+                                          (*desc_ptr)->mt,
                                           &workspaceSize,
                                           &executor);
         CHECK_RET(ret == ACL_SUCCESS,
@@ -87,15 +76,20 @@ infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
         int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
         // aclnnGemm support C = alpha * A @ B + beta * C
         // see https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnGemm.md
-        ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, desc->alpha, desc->beta, transA, transB, tc,
-                                        desc->mt, &workspaceSize, &executor);
+        ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, (*desc_ptr)->alpha, (*desc_ptr)->beta, transA, transB, tc,
+                                        (*desc_ptr)->mt, &workspaceSize, &executor);
         CHECK_RET(ret == ACL_SUCCESS,
                   LOG_PRINT("aclnnGemmGetWorkspaceSize failed. ERROR: %d\n", ret);
                   return STATUS_EXECUTION_FAILED);
         aclSetAclOpExecutorRepeatable(executor);
     }
 
-    *size += workspaceSize;
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t aclnnGetMatmulWorkspaceSize(MatmulAclnnDescriptor_t desc,
+                                             uint64_t *size) {
+    *size = desc->workspaceSize;
     return STATUS_SUCCESS;
 }
 
@@ -116,12 +110,11 @@ infiniopStatus_t aclnnMatmul(MatmulAclnnDescriptor_t desc,
 
     auto batch = desc->info->batch;
 
-    auto &handle = desc->handle;
     auto &executor = desc->executor;
     auto &workspaceSize = desc->workspaceSize;
 
     // Set runing on handle device
-    aclrtSetDevice(handle->device_id);
+    aclrtSetDevice(desc->device_id);
 
     aclnnStatus ret;
     if (batch > 1) {
