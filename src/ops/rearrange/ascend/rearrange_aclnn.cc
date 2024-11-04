@@ -62,9 +62,9 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
     AclSetTensorAddr(executor, 0, td, dst);
     AclSetTensorAddr(executor, 1, ts, (void *) src);
     auto ret = aclnnInplaceCopy(desc->workspaceAddr,
-                           desc->workspaceSize,
-                           executor,
-                           stream);
+                                desc->workspaceSize,
+                                executor,
+                                stream);
     CHECK_RET(ret == ACL_SUCCESS,
               LOG_PRINT("aclnnInplaceCopy failed. ERROR: %d\n", ret);
               return STATUS_EXECUTION_FAILED);
@@ -76,6 +76,7 @@ infiniopStatus_t aclnnDestroyRearrangeDescriptor(RearrangeAclnnDescriptor_t desc
     delete desc->srcDesc;
     delete desc->dstDesc;
     aclDestroyAclOpExecutor(desc->executor);
+    freeWorkspace(desc->workspaceAddr);
     delete desc;
 
     return STATUS_SUCCESS;
