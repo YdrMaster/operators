@@ -159,6 +159,11 @@ infiniopStatus_t cudaGetPoolingWorkspaceSize(PoolingCudaDescriptor_t desc, uint6
     return STATUS_SUCCESS;
 }
 
+infiniopStatus_t cudaGetPoolingWorkspaceSize(PoolingCudaDescriptor_t desc, uint64_t *size) {
+    *size = 0;
+    return STATUS_SUCCESS;
+}
+
 infiniopStatus_t cudaDestroyPoolingDescriptor(PoolingCudaDescriptor_t desc) {
     checkCudnnError(cudnnDestroyTensorDescriptor(desc->x_desc));
     checkCudnnError(cudnnDestroyTensorDescriptor(desc->y_desc));
