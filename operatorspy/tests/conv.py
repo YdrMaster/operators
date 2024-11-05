@@ -28,7 +28,7 @@ from typing import List, Tuple
 #       e.g., cudaDeviceSynchronize() for CUDA
 PROFILE = False
 NUM_PRERUN = 10
-NUM_ITERATIONS = 100
+NUM_ITERATIONS = 1000
 
 
 class ConvDescriptor(Structure):
@@ -168,8 +168,10 @@ def test(
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")
     
-    # print(" - y: \n", y, "\n - ans:\n", ans)
-    assert torch.allclose(y, ans, atol=0, rtol=1e-2)
+    if (tensor_dtype == torch.float16):
+        assert torch.allclose(y, ans, atol=0, rtol=1e-2)
+    else:
+        assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyConvDescriptor(descriptor))
 
 
