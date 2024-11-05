@@ -22,9 +22,6 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
         x_strides[i] = (i < ndim - x->ndim || y->shape[i] != x->shape[i + x->ndim - ndim]) ? 0 : x->strides[i + x->ndim - ndim];
     }
 
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, handle->device_id);
-
     int64_t *x_strides_d, *y_strides_d;
     char *strides_and_shape_d;
     checkCudaErrorWithCode(cudaMalloc(&strides_and_shape_d, ndim * (2 * sizeof(int64_t) + sizeof(uint64_t))), STATUS_MEMORY_NOT_ALLOCATED);
@@ -38,7 +35,7 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
         handle->device_id,
         ndim,
         y_data_size,
-        static_cast<uint64_t>(prop.maxGridSize[0]),
+        static_cast<uint64_t>(handle->prop.maxGridSize[0]),
         strides_and_shape_d,
     };
 
