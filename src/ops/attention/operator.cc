@@ -99,11 +99,11 @@ __C __export infiniopStatus_t infiniopCreateAttentionDescriptor(infiniopHandle_t
     // Rearrange q into contiguous
     infiniopRearrangeDescriptor_t rearrange_desc_q = nullptr;
     uint64_t rearranged_q_size = 0;
-    if (!is_contiguous(q_desc, 0, 1)) {
+    if (!is_contiguous(q_desc)) {
         infiniopTensorDescriptor_t rearranged_q_desc = new TensorDescriptor;
         CHECK_STATUS(infiniopCreateTensorDescriptor(&rearranged_q_desc, 3, q_desc->shape, nullptr, q_desc->dt), STATUS_SUCCESS);
         rearranged_q_size = get_byte_size(rearranged_q_desc);
-        infiniopRearrangeDescriptor_t rearrange_desc_q = new RearrangeDescriptor;
+        rearrange_desc_q = new RearrangeDescriptor;
         CHECK_STATUS(infiniopCreateRearrangeDescriptor(handle, &rearrange_desc_q, rearranged_q_desc, q_desc), STATUS_SUCCESS);
     }
 
