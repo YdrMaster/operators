@@ -2,6 +2,7 @@ from ctypes import POINTER, Structure, c_int32, c_void_p, c_uint64
 import ctypes
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from operatorspy import (
@@ -18,6 +19,13 @@ from operatorspy import (
 from operatorspy.tests.test_utils import get_args
 import torch, time
 
+# constant for control whether profile the pytorch and lib functions
+# NOTE: need to manually add synchronization function to the lib function,
+#       e.g., cudaDeviceSynchronize() for CUDA
+PROFILE = False
+NUM_PRERUN = 10
+NUM_ITERATIONS = 1000
+
 
 class GlobalAvgPoolDescriptor(Structure):
     _fields_ = [("device", c_int32)]
@@ -32,11 +40,9 @@ def inferShape(x):
 
 def globalAvgPool(x):
     y = torch.mean(x, dim=tuple(range(2, x.dim())), keepdim=True)
-    # torch.cuda.synchronize()
+    if PROFILE:
+        torch.cuda.synchronize()
     return y.view(*inferShape(x))
-    # y = torch.sum(x, dim=tuple(range(2, x.dim())), keepdim=True)
-    # torch.cuda.synchronize()
-    # return y
 
 
 def test(
@@ -50,11 +56,18 @@ def test(
         f"Testing GlobalAvgPool on {torch_device} with tensor_shape_shape:{x_shape} dtype:{tensor_dtype}"
     )
 
-    x = torch.ones(x_shape, dtype=tensor_dtype).to(torch_device)
+    x = torch.rand(x_shape, dtype=tensor_dtype).to(torch_device)
     y = torch.zeros(inferShape(x), dtype=tensor_dtype).to(torch_device)
 
-    ans = globalAvgPool(x)
-
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        ans = globalAvgPool(x)
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            _ = globalAvgPool(x)
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"pytorch time: {elapsed :6f}")
+    
     x_tensor = to_tensor(x, lib)
     y_tensor = to_tensor(y, lib)
     descriptor = infiniopGlobalAvgPoolDescriptor_t()
@@ -78,9 +91,20 @@ def test(
     )
     workspace_ptr = ctypes.cast(workspace.data_ptr(), ctypes.POINTER(ctypes.c_uint8))
 
-    lib.infiniopGlobalAvgPool(
-        descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
-    )
+
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        lib.infiniopGlobalAvgPool(
+            descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+        )
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            lib.infiniopGlobalAvgPool(
+                descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+            )
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"    lib time: {elapsed :6f}")
+    
     # print(" - x: \n", x, "\n - y:\n", y, "\n - ans:\n", ans)
     # print(" - y:\n", y, "\n - ans:\n", ans)
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
@@ -118,7 +142,7 @@ def test_bang(lib, test_cases):
 
 if __name__ == "__main__":
     test_cases = [
-        # x_shape, inplace
+        # x_shape
         ((1, 3, 3)),
         ((1, 1, 1, 3, 3)),
         ((1, 3, 1, 1, 3)),

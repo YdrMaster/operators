@@ -37,12 +37,12 @@ infiniopStatus_t cudaCreateGlobalAvgPoolDescriptor(CudaHandle_t handle,
         // get the data types of the tensors and the conv operator
         CREATE_CHECK_ERROR(auto tensor_dt = dataTypeMap[x->dt], tensor_dt, -1, STATUS_BAD_PARAM);
 
-        // create and set tensor descriptors for x
+        // create and set tensor descriptor for x
         cudnnTensorDescriptor_t x_desc;
         checkCudnnError(cudnnCreateTensorDescriptor(&x_desc));
         checkCudnnError(cudnnSetTensor4dDescriptor(x_desc, CUDNN_TENSOR_NCHW, static_cast<cudnnDataType_t>(tensor_dt), n, c, h, w));
 
-        // create and set tensor descriptors for y
+        // create and set tensor descriptor for y
         cudnnTensorDescriptor_t y_desc;
         checkCudnnError(cudnnCreateTensorDescriptor(&y_desc));
         checkCudnnError(cudnnSetTensor4dDescriptor(y_desc, CUDNN_TENSOR_NCHW, static_cast<cudnnDataType_t>(tensor_dt), n, c, 1, 1));
@@ -86,10 +86,8 @@ infiniopStatus_t cudaCreateGlobalAvgPoolDescriptor(CudaHandle_t handle,
         uint64_t x_per_NC_data_size = std::accumulate(x->shape + 2, x->shape + ndim, 1ULL, std::multiplies<uint64_t>());
         uint64_t data_size = y_data_size * x_per_NC_data_size;
 
-        cudaDeviceProp prop;
-        cudaGetDeviceProperties(&prop, handle->device_id);
-        unsigned max_block_size = std::min(256, prop.maxThreadsPerBlock);
-        uint64_t max_grid_size = static_cast<uint64_t>(prop.maxGridSize[0]);
+        unsigned max_block_size = std::min(256, handle->prop.maxThreadsPerBlock);
+        uint64_t max_grid_size = static_cast<uint64_t>(handle->prop.maxGridSize[0]);
         uint64_t items_per_thread = data_size / (max_block_size * max_grid_size);
 
         *desc_ptr = new GlobalAvgPoolCudaDescriptor{
@@ -107,6 +105,8 @@ infiniopStatus_t cudaCreateGlobalAvgPoolDescriptor(CudaHandle_t handle,
             nullptr,
             nullptr,
             nullptr,
+            0,
+            0,
         };
     }
 

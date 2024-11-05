@@ -9,6 +9,9 @@
 #include "../../devices/cuda/cuda_handle.h"
 #include "cuda/global_avg_pool.cuh"
 #endif
+#ifdef ENABLE_CAMBRICON_MLU
+// TODO: Cambricon
+#endif
 
 __C infiniopStatus_t infiniopCreateGlobalAvgPoolDescriptor(
     infiniopHandle_t handle,
@@ -46,11 +49,7 @@ __C infiniopStatus_t infiniopGetGlobalAvgPoolWorkspaceSize(infiniopGlobalAvgPool
 
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
-        case DevCambriconMlu: {
-            return bangGetGlobalAvgPoolWorkspaceSize((GlobalAvgPoolBangDescriptor_t) desc, size);
-            // return cnnlGetGlobalAvgPoolWorkspaceSize((GlobalAvgPoolCnnlDescriptor_t) desc, size);
-        }
-
+        // TODO: Cambricon support
 #endif
     }
     return STATUS_BAD_DEVICE;

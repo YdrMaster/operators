@@ -23,10 +23,6 @@ namespace infini {
             return *this;
         }
 
-        // __device__ float2 operator=(const int &other) const {
-        //     return float2{static_cast<float>(other), static_cast<float>(other)};
-        // }
-
         __device__ float2_t operator+(const float2_t &other) const {
             return float2_t{x + other.x, y + other.y};
         }
@@ -126,39 +122,6 @@ uint64_t getBlockDim(uint64_t size) {
     return 1;
 }
 
-/**
- * @brief A templated vector struct that supports element-wise addition on arrays.
- *
- * @tparam T - The access data type for elements in the vector.
- * @tparam TComp - The computation data type used for arithmetic operations.
- * @tparam N - The number of elements of type T in the vector for a single access.
- */
-template<typename T, typename TComp, size_t N>
-struct vecN {
-    T data[N];
-
-    __device__ __forceinline__ vecN operator+(const vecN<T, TComp, N> &other) const {
-        vecN<T, TComp, N> result;
-
-        for (int i = 0; i < N; ++i) {
-            if constexpr (std::is_same<T, TComp>::value) {
-                result.data[i] = data[i] + other.data[i];
-            } else {
-                constexpr static size_t pack_size = sizeof(T) / sizeof(TComp);
-                auto data_ = reinterpret_cast<vecN<TComp, TComp, pack_size> *>(result.data);
-                data_[i] = std::move(reinterpret_cast<vecN<TComp, TComp, pack_size> const *>(data)[i] +
-                                     reinterpret_cast<vecN<TComp, TComp, pack_size> const *>(other.data)[i]);
-            }
-        }
-
-        return result;
-    }
-
-    __device__ __forceinline__ const T &operator[](size_t i) const {
-        return data[i];
-    }
-};
-
 /** ---------------------------------------- */
 /** ---------------   Sum  ----------------- */
 /** ---------------------------------------- */
@@ -217,14 +180,10 @@ void _sum_nv_gpu(Ydata *y, Xdata const *x, uint64_t data_size, uint64_t x_per_NC
     if (data_size == 0) {
         return;
     }
-    dim3 blockDims = dim3(256);//dim3(std::min(static_cast<uint64_t>(256), x_per_NC_data_size));
+    dim3 blockDims = dim3(256);
     dim3 gridDims = dim3(std::min(data_size / blockDims.x, max_grid_size));
-    // uint64_t step = gridDims.x * blockDims.x;
     uint64_t blocks_per_y = x_per_NC_data_size / blockDims.x;
     unsigned int remainder = x_per_NC_data_size % blockDims.x;
-
-    // printf("grid: %d, block: %d\n", gridDims.x, blockDims.x);
-    // printf("x_per_NC_data_size: %ld, blocks_per_y: %ld, remainder: %d\n", x_per_NC_data_size, blocks_per_y, remainder);
 
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
@@ -295,11 +254,8 @@ __global__ void average(
     uint64_t offset,
     unsigned pack_size) {
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + offset;
-    // printf("idx: %ld, t2l: %ld, %ld, %f\n", idx, T2L(y[idx]), T2L(y[idx]) / data_size, L2T(T2L(y[idx]) / data_size));
-    // printf("idx: %ld, size: %f, res: %f\n", idx, static_cast<float>(x_per_NC_data_size), __half2float(__float2half(__half2float(y[idx]) / static_cast<float>(x_per_NC_data_size))));
 
     if (idx < data_size) {
-        // y[idx] = L2T(divide(x[idx], static_cast<Ldata>(x_per_NC_data_size)));
         if constexpr (std::is_same<Xdata, half>::value && std::is_same<Ydata, half>::value) {
             y[idx] = __float2half(__half2float(x[idx]) / x_per_NC_data_size);
         } else if constexpr (std::is_same<Ydata, half>::value) {
@@ -380,7 +336,6 @@ void launch_global_avg_pool_padding(GlobalAvgPoolCudaDescriptor_t desc, Tdata *y
     dim3 blockDims = dim3(std::min(static_cast<uint64_t>(desc->max_block_size), desc->x_per_NC_data_size));
     dim3 gridDims = dim3(std::min(ROUND_UP_DIV(desc->data_size, blockDims.x), desc->max_grid_size));
     uint64_t step = gridDims.x * blockDims.x;
-    // printf("grid: %d, block: %d\n", gridDims.x, blockDims.x);
 
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>(stream);
 
@@ -406,6 +361,7 @@ void global_avg_pool_folding_workspace(GlobalAvgPoolCudaDescriptor_t desc, void 
     average_nv_gpu<Ldata, LIdata, Tdata, TIdata>(y, workspace, desc->y_data_size, desc->x_per_NC_data_size, pack_size, desc->max_grid_size, stream);
 }
 
+// launch folding functions based on workspace size
 template<typename Tdata, typename TIdata, typename Ldata, typename LIdata>
 void launch_global_avg_pool_folding(GlobalAvgPoolCudaDescriptor_t desc, void *y, void const *x, void *workspace, uint64_t workspace_size, void *stream, unsigned pack_size) {
     if (workspace_size == 0) {
@@ -415,6 +371,7 @@ void launch_global_avg_pool_folding(GlobalAvgPoolCudaDescriptor_t desc, void *y,
     }
 }
 
+// global average pool for high dimensional data (ndim > 4)
 template<typename Tdata, typename TIdata, typename Ldata, typename LIdata>
 void global_avg_pool_nv_gpu_hd(GlobalAvgPoolCudaDescriptor_t desc, void *workspace, uint64_t workspace_size, void *y, void const *x, void *stream, unsigned pack_size) {
     if (desc->data_size == 0) {
@@ -433,7 +390,7 @@ template<typename Tdata, typename TIdata, typename Ldata, typename LIdata>
 infiniopStatus_t global_avg_pool_nv_gpu(GlobalAvgPoolCudaDescriptor_t desc, void *workspace, uint64_t workspace_size, void *y, void const *x, void *stream, unsigned pack_size) {
     // use cuDNN lib
     if (desc->ndim <= 4) {
-        checkCudnnError(use_cudnn(desc->cudnn_handles_t, desc->device_id,
+        checkCudnnError(use_cudnn(desc->cudnn_handles_t, desc->device_id, (cudaStream_t) stream,
                                   [&](cudnnHandle_t handle) { return cudnnPoolingForward(handle, desc->pool_desc,
                                                                                          &desc->alpha, desc->x_desc, x, &desc->beta,
                                                                                          desc->y_desc, y); }));

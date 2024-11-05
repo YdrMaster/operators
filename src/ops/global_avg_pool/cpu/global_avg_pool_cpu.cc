@@ -56,6 +56,7 @@ infiniopStatus_t global_avg_pool_cpu(GlobalAvgPoolCpuDescriptor_t desc, void *y,
     auto y_ = reinterpret_cast<Tdata *>(y);
     const auto x_size = desc->x_per_NC_data_size;
 
+#pragma omp parallel for
     for (uint64_t i = 0; i < desc->y_data_size; ++i) {
         if constexpr (std::is_same<Tdata, uint16_t>::value) {
             float sum = std::accumulate(x_ + i * x_size, x_ + (i + 1) * x_size, 0.0f,
@@ -64,7 +65,7 @@ infiniopStatus_t global_avg_pool_cpu(GlobalAvgPoolCpuDescriptor_t desc, void *y,
                                         });
             y_[i] = f32_to_f16(sum / x_size);
         } else {
-            y_[i] = std::accumulate(x_ + i * x_size, x_ + (i + 1) * x_size, 0) / x_size;
+            y_[i] = std::accumulate(x_ + i * x_size, x_ + (i + 1) * x_size, Tdata(0)) / x_size;
         }
     }
     return STATUS_SUCCESS;
