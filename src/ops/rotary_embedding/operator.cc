@@ -11,7 +11,6 @@
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/rotary_embedding_bang.h"
-#include "bang/rotary_embedding_cnnl.h"
 #endif
 
 struct RoPEDescriptor {
