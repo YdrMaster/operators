@@ -155,14 +155,14 @@ void applyConv(ConvCpuDescriptor_t desc, Ydata *y, Xdata const *x,
     const auto y_num_channel_elements =
         getTotalSize(desc->y_shape + 2, desc->ndim - 2);
 
-#pragma omp parallel for
+#pragma omp parallel for collapse(2)
     // batch
     for (size_t i = 0; i < x_shape[0]; ++i) {
-#pragma omp parallel for
+
         // output channel
         for (size_t j = 0; j < desc->w_shape[0]; ++j) {
             uint64_t y_index = i * desc->y_shape[1] + j;
-#pragma omp parallel for
+
             // input channel
             for (size_t k = 0; k < x_shape[1]; ++k) {
                 uint64_t x_index = i * x_shape[1] + k;
