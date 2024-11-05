@@ -26,7 +26,7 @@ infiniopStatus_t ascendCreateRoPEDescriptor(AscendHandle_t handle,
     auto stride_head = t->strides[1];
 
 
-    if (dim % 2 != 0) {
+    if (dim % 2 != 0 || dim <= 32) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
 
