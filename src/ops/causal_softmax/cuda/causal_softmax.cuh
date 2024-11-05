@@ -33,6 +33,4 @@ infiniopStatus_t cudaCausalSoftmax(CausalSoftmaxCudaDescriptor_t desc,
 
 infiniopStatus_t cudaDestroyCausalSoftmaxDescriptor(CausalSoftmaxCudaDescriptor_t desc);
 
-void causal_softmax_nv_gpu_f16(CausalSoftmaxCudaDescriptor *, Tensor, void *stream);
-
 #endif
