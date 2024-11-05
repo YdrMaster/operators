@@ -27,16 +27,13 @@ infiniopStatus_t cudaCreateReluDescriptor(CudaHandle_t handle,
 
     uint64_t data_size = std::accumulate(y->shape, y->shape + y->ndim, 1ULL, std::multiplies<uint64_t>());
 
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, handle->device_id);
-
     *desc_ptr = new ReluCudaDescriptor{
         DevNvGpu,
         y->dt,
         handle->device_id,
         ndim,
         data_size,
-        static_cast<uint64_t>(prop.maxGridSize[0]),
+        static_cast<uint64_t>(handle->prop.maxGridSize[0]),
     };
 
     return STATUS_SUCCESS;

@@ -15,6 +15,7 @@ struct vecN {
     T data[N];
     constexpr static size_t pack_size = sizeof(T) / sizeof(TComp);
 
+    // Constructor that initializes the data array with type TComp
     __device__ __forceinline__ constexpr vecN(const TComp &val) {
         const auto data_ = reinterpret_cast<TComp *>(data);
         const auto size = N * pack_size;
@@ -24,6 +25,7 @@ struct vecN {
         }
     }
 
+    // Assignment operator with relu assignment logic
     __device__ __forceinline__ vecN<T, TComp, N> &operator=(const vecN<T, TComp, N> &other) {
         if constexpr (std::is_same<T, TComp>::value) {
 #pragma unroll
@@ -41,6 +43,7 @@ struct vecN {
         return *this;
     }
 
+    // Always returns false since the actual relu logic is in the assignment process
     __device__ __forceinline__ bool operator<(const vecN<T, TComp, N> &other) const {
         return false;
     }
