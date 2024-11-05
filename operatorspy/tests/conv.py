@@ -2,6 +2,7 @@ from ctypes import POINTER, Structure, c_int32, c_uint64, c_void_p
 import ctypes
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from operatorspy import (
@@ -21,6 +22,13 @@ import math
 import ctypes
 from torch.nn import functional as F
 from typing import List, Tuple
+
+# constant for control whether profile the pytorch and lib functions
+# NOTE: need to manually add synchronization function to the lib function,
+#       e.g., cudaDeviceSynchronize() for CUDA
+PROFILE = False
+NUM_PRERUN = 10
+NUM_ITERATIONS = 100
 
 
 class ConvDescriptor(Structure):
@@ -100,7 +108,15 @@ def test(
         inferShape(x.shape, w.shape, pads, strides, dilations), dtype=tensor_dtype
     ).to(torch_device)
 
-    ans = conv(x, w, strides, pads, dilations)
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        ans = conv(x, w, strides, pads, dilations)
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            _ = conv(x, w, strides, pads, dilations)
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"pytorch time: {elapsed :6f}")
+    
 
     x_tensor = to_tensor(x, lib)
     w_tensor = to_tensor(w, lib)
@@ -126,15 +142,34 @@ def test(
     )
     workspace = torch.zeros(int(workspaceSize.value), dtype=torch.uint8).to(torch_device)
     workspace_ptr = ctypes.cast(workspace.data_ptr(), ctypes.POINTER(ctypes.c_uint8))
-    lib.infiniopConv(
-        descriptor,
-        workspace_ptr,
-        workspaceSize,
-        y_tensor.data,
-        x_tensor.data,
-        w_tensor.data,
-        None,
-    )
+
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        lib.infiniopConv(
+            descriptor,
+            workspace_ptr,
+            workspaceSize,
+            y_tensor.data,
+            x_tensor.data,
+            w_tensor.data,
+            None,
+        )
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            lib.infiniopConv(
+                descriptor,
+                workspace_ptr,
+                workspaceSize,
+                y_tensor.data,
+                x_tensor.data,
+                w_tensor.data,
+                None,
+            )
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"    lib time: {elapsed :6f}")
+    
+    # print(" - y: \n", y, "\n - ans:\n", ans)
+    assert torch.allclose(y, ans, atol=0, rtol=1e-2)
     check_error(lib.infiniopDestroyConvDescriptor(descriptor))
 
 

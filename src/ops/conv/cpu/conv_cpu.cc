@@ -1,22 +1,6 @@
 #include "conv_cpu.h"
-#include "../../../devices/cpu/common_cpu.h"
 #include "../../utils.h"
 
-// get the total number of elements in arr
-inline uint64_t getTotalSize(const uint64_t *arr, uint64_t ndim) {
-    return std::accumulate(arr, arr + ndim, 1ULL, std::multiplies<uint64_t>());
-}
-
-// check if padding is needed
-inline bool requirePadding(uint64_t const *pads, uint64_t ndim) {
-    return std::any_of(pads, pads + ndim - 2,
-                       [](uint64_t pad) { return pad > 0; });
-}
-
-/**
- * get the total array size (element count) after applying padding for a 
- * ndim-ary tensor with the given shape
- */
 uint64_t getPaddedSize(uint64_t ndim, uint64_t *shape, uint64_t const *pads) {
     uint64_t total_size = 1;
     for (size_t i = 0; i < ndim; ++i) {
@@ -99,14 +83,6 @@ infiniopStatus_t cpuDestroyConvDescriptor(ConvCpuDescriptor_t desc) {
     return STATUS_SUCCESS;
 }
 
-// copy the data in src tensor into that of the dest tensor but also convert
-// from f32 to f16
-inline void copyF32DataToF16(uint16_t *dest, float const *src, uint64_t size) {
-    for (size_t i = 0; i < size; ++i) {
-        dest[i] = f32_to_f16(src[i]);
-    }
-}
-
 // initialize the padded input with the data from the original input
 template<typename Tdata>
 void fillPaddedInput(ConvCpuDescriptor_t desc, uint64_t const *padded_x_shape,
@@ -179,13 +155,14 @@ void applyConv(ConvCpuDescriptor_t desc, Ydata *y, Xdata const *x,
     const auto y_num_channel_elements =
         getTotalSize(desc->y_shape + 2, desc->ndim - 2);
 
+#pragma omp parallel for
     // batch
     for (size_t i = 0; i < x_shape[0]; ++i) {
-
+#pragma omp parallel for
         // output channel
         for (size_t j = 0; j < desc->w_shape[0]; ++j) {
             uint64_t y_index = i * desc->y_shape[1] + j;
-
+#pragma omp parallel for
             // input channel
             for (size_t k = 0; k < x_shape[1]; ++k) {
                 uint64_t x_index = i * x_shape[1] + k;
