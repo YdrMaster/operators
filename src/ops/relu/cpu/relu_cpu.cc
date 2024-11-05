@@ -46,6 +46,7 @@ infiniopStatus_t relu_cpu(ReluCpuDescriptor_t desc, void *y, void const *x) {
     auto x_ = reinterpret_cast<Tdata const *>(x);
     auto y_ = reinterpret_cast<Tdata *>(y);
 
+#pragma omp parallel for
     for (uint64_t i = 0; i < desc->data_size; ++i) {
         if constexpr (std::is_same<Tdata, uint16_t>::value) {
             float x_f32 = f16_to_f32(x_[i]);

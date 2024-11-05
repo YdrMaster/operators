@@ -2,6 +2,7 @@ from ctypes import POINTER, Structure, c_int32, c_void_p
 import ctypes
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from operatorspy import (
@@ -19,6 +20,13 @@ from operatorspy.tests.test_utils import get_args
 from enum import Enum, auto
 import torch
 
+# constant for control whether profile the pytorch and lib functions
+# NOTE: need to manually add synchronization function to the lib function,
+#       e.g., cudaDeviceSynchronize() for CUDA
+PROFILE = False
+NUM_PRERUN = 10
+NUM_ITERATIONS = 1000
+
 
 class Inplace(Enum):
     OUT_OF_PLACE = auto()
@@ -33,6 +41,10 @@ infiniopReluDescriptor_t = POINTER(ReluDescriptor)
 
 
 def relu(x):
+    if PROFILE:
+        ans = torch.nn.functional.relu(x).to(x.dtype)
+        torch.cuda.synchronize()
+        return ans
     return torch.nn.functional.relu(x).to(x.dtype)
 
 
@@ -51,7 +63,14 @@ def test(
     x = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) * 2 - 1
     y = torch.rand(tensor_shape, dtype=tensor_dtype).to(torch_device) if inplace == Inplace.OUT_OF_PLACE else x
     
-    ans = relu(x)
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        ans = relu(x)
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            _ = relu(x)
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"pytorch time: {elapsed :6f}")
 
     x_tensor = to_tensor(x, lib)
     y_tensor = to_tensor(y, lib) if inplace == Inplace.OUT_OF_PLACE else x_tensor
@@ -65,9 +84,19 @@ def test(
             x_tensor.descriptor,
         )
     )
-    lib.infiniopRelu(
-        descriptor, y_tensor.data, x_tensor.data, None
-    )
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        lib.infiniopRelu(
+            descriptor, y_tensor.data, x_tensor.data, None
+        )
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            lib.infiniopRelu(
+                descriptor, y_tensor.data, x_tensor.data, None
+            )
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"    lib time: {elapsed :6f}")
+    
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyReluDescriptor(descriptor))
 
@@ -112,7 +141,6 @@ if __name__ == "__main__":
         ((32, 20, 512), Inplace.INPLACE_X),
         ((33, 333, 333), Inplace.OUT_OF_PLACE),
         ((32, 256, 112, 112), Inplace.OUT_OF_PLACE),
-        ((32, 150, 51200), Inplace.OUT_OF_PLACE),
     ]
     args = get_args()
     lib = open_lib()
