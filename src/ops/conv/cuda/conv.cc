@@ -53,11 +53,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
                 if (ndim >= 5) {
                     return CUDNN_DATA_FLOAT;
                 }
-                int capability_major;
-                int capability_minor;
-                cudaDeviceGetAttribute(&capability_major, cudaDevAttrComputeCapabilityMajor, handle->device_id);
-                cudaDeviceGetAttribute(&capability_minor, cudaDevAttrComputeCapabilityMinor, handle->device_id);
-                if (capability_major > 5 || (capability_major == 5 && capability_minor >= 3)) {
+                if (handle->compute_capability_major > 5 || (handle->compute_capability_major == 5 && handle->compute_capability_minor >= 3)) {
                     return CUDNN_DATA_HALF;
                 }
                 return CUDNN_DATA_FLOAT;

@@ -15,6 +15,9 @@ struct CudaContext {
     int device_id;
     std::shared_ptr<Pool<cublasHandle_t>> cublas_handles_t;
     std::shared_ptr<Pool<cudnnHandle_t>> cudnn_handles_t;
+    cudaDeviceProp prop;
+    int compute_capability_major;
+    int compute_capability_minor;
 };
 typedef struct CudaContext *CudaHandle_t;
 

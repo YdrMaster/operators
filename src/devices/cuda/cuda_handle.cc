@@ -23,7 +23,25 @@ infiniopStatus_t createCudaHandle(CudaHandle_t *handle_ptr, int device_id) {
     checkCudnnError(cudnnCreate(&cudnn_handle));
     cudnn_pool->push(std::move(cudnn_handle));
 
-    *handle_ptr = new CudaContext{DevNvGpu, device_id, std::move(pool), std::move(cudnn_pool)};
+    // set CUDA device property
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, device_id);
+
+    // set device compute capability numbers
+    int capability_major;
+    int capability_minor;
+    cudaDeviceGetAttribute(&capability_major, cudaDevAttrComputeCapabilityMajor, device_id);
+    cudaDeviceGetAttribute(&capability_minor, cudaDevAttrComputeCapabilityMinor, device_id);
+
+    *handle_ptr = new CudaContext{
+        DevNvGpu,
+        device_id,
+        std::move(pool),
+        std::move(cudnn_pool),
+        std::move(prop),
+        capability_major,
+        capability_minor,
+    };
 
     return STATUS_SUCCESS;
 }
