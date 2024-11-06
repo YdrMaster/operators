@@ -7,6 +7,7 @@
 #include "ops/mlp/mlp.h"
 #include "ops/random_sample/random_sample.h"
 #include "ops/rearrange/rearrange.h"
+#include "ops/relu/relu.h"
 #include "ops/rms_norm/rms_norm.h"
 #include "ops/rotary_embedding/rotary_embedding.h"
 #include "ops/swiglu/swiglu.h"
