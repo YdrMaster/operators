@@ -24,11 +24,4 @@ __C __export infiniopStatus_t infiniopSwiGLU(infiniopSwiGLUDescriptor_t desc,
 
 __C __export infiniopStatus_t infiniopDestroySwiGLUDescriptor(infiniopSwiGLUDescriptor_t desc);
 
-// // @deprecated
-// __C __export void *createSwigluDescriptor(Device, void *config);
-// // @deprecated
-// __C __export void destroySwigluDescriptor(SwigluDescriptor *descriptor);
-// // @deprecated
-// __C __export void swiglu(SwigluDescriptor *descriptor, Tensor gate, Tensor up, void *stream);
-
 #endif
