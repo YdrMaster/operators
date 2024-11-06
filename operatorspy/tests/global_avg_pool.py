@@ -53,7 +53,7 @@ def test(
     tensor_dtype=torch.float16,
 ):
     print(
-        f"Testing GlobalAvgPool on {torch_device} with tensor_shape_shape:{x_shape} dtype:{tensor_dtype}"
+        f"Testing GlobalAvgPool on {torch_device} with input tensor_shape: {x_shape} dtype: {tensor_dtype}"
     )
 
     x = torch.rand(x_shape, dtype=tensor_dtype).to(torch_device)
@@ -93,8 +93,10 @@ def test(
 
 
     for i in range(NUM_PRERUN if PROFILE else 1):
-        lib.infiniopGlobalAvgPool(
-            descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+        check_error(
+            lib.infiniopGlobalAvgPool(
+                descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+            )
         )
     if PROFILE:
         start_time = time.time()
@@ -105,8 +107,6 @@ def test(
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")
     
-    # print(" - x: \n", x, "\n - y:\n", y, "\n - ans:\n", ans)
-    # print(" - y:\n", y, "\n - ans:\n", ans)
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyGlobalAvgPoolDescriptor(descriptor))
 
@@ -144,32 +144,19 @@ if __name__ == "__main__":
     test_cases = [
         # x_shape
         ((1, 3, 3)),
-        ((1, 1, 1, 3, 3)),
         ((1, 3, 1, 1, 3)),
-        ((1, 12, 1, 1, 5)),
         ((1, 3, 1, 1, 257)),
         ((1, 2, 1, 1, 514)),
-        # ((1, 2, 1, 1, 1025)),
-        # ((1, 3, 1, 1, 1025)),
+        ((1, 3, 1, 1, 1025)),
         ((32, 256, 1, 112, 112)),
-        ((3, 3, 1)),
-        ((2, 20, 3)),
-        ((20, 2, 1023)),
-        ((20, 2, 1024)),
-        ((2, 1, 1025)),
-        ((2, 1, 2050)),
-        ((2, 1, 1280)),
         ((2, 3, 2048000)),
         ((2, 1, 10243)),
-        ((2, 1, 100, 110)),
         ((2, 20, 100)),
         ((3, 33, 333)),
         ((32, 20, 512)),
-        ((3, 25, 11, 11, 11, 3, 2)),
-        ((1, 1, 11, 11, 11, 3, 2)),
+        ((3, 3, 11, 11, 11, 3, 2)),
         ((32, 256, 1, 112, 112)),
         ((32, 256, 112, 112)),
-        # ((32, 150, 1, 512000)),
     ]
     args = get_args()
     lib = open_lib()

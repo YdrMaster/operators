@@ -389,7 +389,7 @@ void global_avg_pool_nv_gpu_hd(GlobalAvgPoolCudaDescriptor_t desc, void *workspa
 template<typename Tdata, typename TIdata, typename Ldata, typename LIdata>
 infiniopStatus_t global_avg_pool_nv_gpu(GlobalAvgPoolCudaDescriptor_t desc, void *workspace, uint64_t workspace_size, void *y, void const *x, void *stream, unsigned pack_size) {
     // use cuDNN lib
-    if (desc->ndim <= 4) {
+    if (desc->ndim <= 5) {
         checkCudnnError(use_cudnn(desc->cudnn_handles_t, desc->device_id, (cudaStream_t) stream,
                                   [&](cudnnHandle_t handle) { return cudnnPoolingForward(handle, desc->pool_desc,
                                                                                          &desc->alpha, desc->x_desc, x, &desc->beta,
