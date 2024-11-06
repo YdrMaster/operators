@@ -152,17 +152,19 @@ infiniopStatus_t cudaCreatePoolingDescriptor(CudaHandle_t handle,
         };
         return STATUS_SUCCESS;
     }
+    return STATUS_SUCCESS;
+}
 
-    infiniopStatus_t cudaGetPoolingWorkspaceSize(PoolingCudaDescriptor_t desc, uint64_t * size) {
-        *size = 0;
-        return STATUS_SUCCESS;
-    }
+infiniopStatus_t cudaGetPoolingWorkspaceSize(PoolingCudaDescriptor_t desc, uint64_t *size) {
+    *size = 0;
+    return STATUS_SUCCESS;
+}
 
-    infiniopStatus_t cudaDestroyPoolingDescriptor(PoolingCudaDescriptor_t desc) {
-        checkCudnnError(cudnnDestroyTensorDescriptor(desc->x_desc));
-        checkCudnnError(cudnnDestroyTensorDescriptor(desc->y_desc));
-        checkCudnnError(cudnnDestroyPoolingDescriptor(desc->pool_desc));
-        desc->cudnn_handles_t = nullptr;
-        delete desc;
-        return STATUS_SUCCESS;
-    }
+infiniopStatus_t cudaDestroyPoolingDescriptor(PoolingCudaDescriptor_t desc) {
+    checkCudnnError(cudnnDestroyTensorDescriptor(desc->x_desc));
+    checkCudnnError(cudnnDestroyTensorDescriptor(desc->y_desc));
+    checkCudnnError(cudnnDestroyPoolingDescriptor(desc->pool_desc));
+    desc->cudnn_handles_t = nullptr;
+    delete desc;
+    return STATUS_SUCCESS;
+}
