@@ -2,13 +2,15 @@
 #define __CPU_REARRANGE_H__
 
 #include "operators.h"
+#include <vector>
 struct RearrangeCpuDescriptor {
     Device device;
     DataLayout dt;
     uint64_t r;
     uint64_t ndim;
-    uint64_t *shape_dst, *shape_src;
-    int64_t *strides_dst, *strides_src;
+    std::vector<uint64_t> shape;
+    std::vector<int64_t> strides_dst;
+    std::vector<int64_t> strides_src;
 };
 
 typedef struct RearrangeCpuDescriptor *RearrangeCpuDescriptor_t;
