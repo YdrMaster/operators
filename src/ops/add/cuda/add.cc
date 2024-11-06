@@ -73,9 +73,9 @@ infiniopStatus_t cudaCreateAddDescriptor(CudaHandle_t handle,
 }
 
 infiniopStatus_t cudaDestroyAddDescriptor(AddCudaDescriptor_t desc) {
-    cudaFree((void *) desc->a_strides);
-    cudaFree((void *) desc->b_strides);
-    cudaFree((void *) desc->c_strides);
+    checkCudaErrorWithCode(cudaFree((void *) desc->a_strides), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaFree((void *) desc->b_strides), STATUS_EXECUTION_FAILED);
+    checkCudaErrorWithCode(cudaFree((void *) desc->c_strides), STATUS_EXECUTION_FAILED);
     delete desc;
     return STATUS_SUCCESS;
 }

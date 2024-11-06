@@ -1,6 +1,6 @@
 ﻿#include "matmul_cnnl.h"
+#include "../../../devices/bang/bang_handle.h"
 #include "../../../devices/bang/common_bang.h"
-#include "../../../devices/bang/handle_pool.h"
 #include "../../utils.h"
 #include "cnrt.h"
 infiniopStatus_t bangCreateMatmulDescriptor(BangHandle_t handle,

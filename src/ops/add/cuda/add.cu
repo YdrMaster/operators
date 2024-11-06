@@ -35,16 +35,6 @@ struct vecN {
     }
 };
 
-// get the corresponding index in the destination given the flat index of the source
-__device__ uint64_t getDstIndex(uint64_t flat_index, uint64_t ndim, int64_t const *src_strides, int64_t const *dst_strides) {
-    uint64_t res = 0;
-    for (uint64_t i = 0; i < ndim; ++i) {
-        res += flat_index / src_strides[i] * dst_strides[i];
-        flat_index %= src_strides[i];
-    }
-    return res;
-}
-
 template<typename Tdata, typename BTdata>
 __global__ void add(
     Tdata *c,
@@ -68,8 +58,8 @@ __global__ void add(
             auto c_ = reinterpret_cast<BTdata *>(c);
 #pragma unroll
             for (size_t i = 0; i < pack_size; ++i) {
-                auto a_idx = getDstIndex(idx + i, ndim, c_strides, a_strides);
-                auto b_idx = getDstIndex(idx + i, ndim, c_strides, b_strides);
+                auto a_idx = getDstOffset(idx + i, ndim, c_strides, a_strides);
+                auto b_idx = getDstOffset(idx + i, ndim, c_strides, b_strides);
                 c_[idx + i] = a_[a_idx] + b_[b_idx];
             }
             return;
