@@ -13,7 +13,7 @@
 
 struct MatmulAclnnDescriptor {
     Device device;
-    AscendHandle_t handle;
+    int device_id;
     aclOpExecutor* executor;
     MatmulInfo* info;
     aclnnTensorDescriptor_t cDesc, aDesc, bDesc;

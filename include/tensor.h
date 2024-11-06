@@ -17,12 +17,4 @@ struct TensorDescriptor {
 
 typedef struct TensorDescriptor *infiniopTensorDescriptor_t;
 
-// @depricated
-struct TensorTuple {
-    infiniopTensorDescriptor_t const layout;
-    void *data;
-};
-// @depricated
-typedef struct TensorTuple Tensor;
-
 #endif// __TENSOR_H__
