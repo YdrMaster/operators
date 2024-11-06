@@ -2,6 +2,7 @@
 #include "ops/add/add.h"
 #include "ops/attention/attention.h"
 #include "ops/causal_softmax/causal_softmax.h"
+#include "ops/global_avg_pool/global_avg_pool.h"
 #include "ops/expand/expand.h"
 #include "ops/gemm/gemm.h"
 #include "ops/conv/conv.h"
