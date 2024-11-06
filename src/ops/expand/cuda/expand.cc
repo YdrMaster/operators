@@ -45,7 +45,7 @@ infiniopStatus_t cudaCreateExpandDescriptor(CudaHandle_t handle,
 }
 
 infiniopStatus_t cudaDestroyExpandDescriptor(ExpandCudaDescriptor_t desc) {
-    cudaFree((void *) desc->strides_and_shape_d);
+    checkCudaErrorWithCode(cudaFree((void *) desc->strides_and_shape_d), STATUS_EXECUTION_FAILED);
     delete desc;
     return STATUS_SUCCESS;
 }
