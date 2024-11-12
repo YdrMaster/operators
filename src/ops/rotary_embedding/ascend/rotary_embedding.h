@@ -39,7 +39,7 @@ infiniopStatus_t ascendRoPE(RoPEAscendDescriptor_t desc,
 
 infiniopStatus_t ascendDestroyRoPEDescriptor(RoPEAscendDescriptor_t desc);
 
-extern "C" void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
+extern "C" infiniopStatus_t rope_kernel_do(void *t, void *pos, void *sin, void *cos,
                                int32_t nt, int32_t nh, int32_t dh, int32_t stt,
                                int32_t sth, int dtype, void *stream);
 

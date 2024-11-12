@@ -1,5 +1,5 @@
 #include "kernel_operator.h"
-
+#include "../../../../include/status.h"
 using namespace AscendC;
 
 constexpr int32_t BUFFER_NUM = 1;
@@ -140,7 +140,7 @@ __aicore__ inline void KernelSwiGLU<T>::Process() {
     }
 }
 
-extern "C" __global__ __aicore__ void swiglu_kernel_f16(GM_ADDR c, GM_ADDR a, GM_ADDR b,
+__global__ __aicore__ void swiglu_kernel_f16(GM_ADDR c, GM_ADDR a, GM_ADDR b,
                                                         float beta, int32_t nt, int32_t dh,
                                                         int32_t sta, int32_t stb, int32_t stc,
                                                         uint32_t remainder, uint32_t base) {
@@ -149,7 +149,7 @@ extern "C" __global__ __aicore__ void swiglu_kernel_f16(GM_ADDR c, GM_ADDR a, GM
     op.Process();
 }
 
-extern "C" __global__ __aicore__ void swiglu_kernel_f32(GM_ADDR c, GM_ADDR a, GM_ADDR b,
+__global__ __aicore__ void swiglu_kernel_f32(GM_ADDR c, GM_ADDR a, GM_ADDR b,
                                                         float beta, int32_t nt, int32_t dh,
                                                         int32_t sta, int32_t stb, int32_t stc,
                                                         uint32_t remainder, uint32_t base) {
@@ -158,7 +158,7 @@ extern "C" __global__ __aicore__ void swiglu_kernel_f32(GM_ADDR c, GM_ADDR a, GM
     op.Process();
 }
 
-extern "C" void swiglu_kernel_do(void *c, void *a, void *b,
+extern "C" infiniopStatus_t swiglu_kernel_do(void *c, void *a, void *b,
                                  float beta, int32_t nt, int32_t dh,
                                  int32_t sta, int32_t stb, int32_t stc,
                                  int dtype, void *stream) {
@@ -171,11 +171,11 @@ extern "C" void swiglu_kernel_do(void *c, void *a, void *b,
         case 0:
             swiglu_kernel_f32<<<BLOCK_NUM, nullptr, stream>>>(
                 c, a, b, beta, nt, dh, sta, stb, stc, remainder, base);
-            break;
+            return STATUS_SUCCESS;
         case 1:
             swiglu_kernel_f16<<<BLOCK_NUM, nullptr, stream>>>(
                 c, a, b, beta, nt, dh, sta, stb, stc, remainder, base);
-            break;
+            return STATUS_SUCCESS;
     }
-    return;
+    return STATUS_BAD_TENSOR_DTYPE;
 }

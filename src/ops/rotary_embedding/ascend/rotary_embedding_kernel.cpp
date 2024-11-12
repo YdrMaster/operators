@@ -1,4 +1,5 @@
 #include "kernel_operator.h"
+#include "../../../../include/status.h"
 
 using namespace AscendC;
 
@@ -211,7 +212,7 @@ __global__ __aicore__ void rope_kernel_fp16(GM_ADDR t, GM_ADDR pos,
     op.Process();
 }
 
-extern "C"  void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
+extern "C"  infiniopStatus_t rope_kernel_do(void *t, void *pos, void *sin, void *cos,
                                int32_t nt, int32_t nh, int32_t dh,
                                int32_t stt, int32_t sth,
                                int dtype, void *stream) {
@@ -221,8 +222,9 @@ extern "C"  void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
             break;
         case 1:// ACL_FLOAT16
             rope_kernel_fp16<<<nh, nullptr, stream>>>(t, pos, sin, cos, nt, nh, dh, stt, sth);
-            break;
+            return STATUS_SUCCESS;
         default:
             break;
     }
+    return STATUS_BAD_TENSOR_DTYPE;
 }

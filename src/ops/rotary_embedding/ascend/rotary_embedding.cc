@@ -89,10 +89,8 @@ infiniopStatus_t ascendRoPE(RoPEAscendDescriptor_t desc,
     // Set device
     aclrtSetDevice(desc->device_id);
 
-    rope_kernel_do(t, (void *) pos_ids, (void *) sin_table, (void *) cos_table,
+    return rope_kernel_do(t, (void *) pos_ids, (void *) sin_table, (void *) cos_table,
                    nt, nh, dh, stt, sth, desc->dt, stream);
-
-    return STATUS_SUCCESS;
 }
 
 infiniopStatus_t ascendDestroyRoPEDescriptor(RoPEAscendDescriptor_t desc) {
