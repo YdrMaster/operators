@@ -10,7 +10,6 @@
 #endif
 #ifdef ENABLE_CAMBRICON_MLU
 #include "bang/swiglu_bang.h"
-#include "bang/swiglu_cnnl.h"
 #endif
 #ifdef ENABLE_ASCEND_NPU
 #include "ascend/swiglu.h"

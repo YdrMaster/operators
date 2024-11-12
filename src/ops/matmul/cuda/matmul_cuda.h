@@ -1,8 +1,8 @@
 #ifndef __CUDA_MATMUL_H__
 #define __CUDA_MATMUL_H__
 
-#include "../blas.h"
 #include "../../../devices/cuda/cuda_handle.h"
+#include "../blas.h"
 #include "operators.h"
 #include <memory>
 
@@ -37,7 +37,5 @@ infiniopStatus_t cudaMatmul(MatmulCudaDescriptor_t desc,
                             void *stream);
 
 infiniopStatus_t cudaDestroyMatmulDescriptor(MatmulCudaDescriptor_t desc);
-
-void matmul_cuda_f16(MatmulCudaDescriptor_t desc, void *c, float beta, void const *a, void const *b, float alpha, void *stream);
 
 #endif// __CUDA_MATMUL_H__

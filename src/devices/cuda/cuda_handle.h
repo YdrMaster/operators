@@ -15,6 +15,9 @@ struct CudaContext {
     int device_id;
     std::shared_ptr<Pool<cublasHandle_t>> cublas_handles_t;
     std::shared_ptr<Pool<cudnnHandle_t>> cudnn_handles_t;
+    cudaDeviceProp prop;
+    int compute_capability_major;
+    int compute_capability_minor;
 };
 typedef struct CudaContext *CudaHandle_t;
 
@@ -35,12 +38,13 @@ void use_cublas(std::shared_ptr<Pool<cublasHandle_t>> cublas_handles_t, int devi
 }
 
 template<typename T>
-cudnnStatus_t use_cudnn(std::shared_ptr<Pool<cudnnHandle_t>> cudnn_handles_t, int device_id, T const &f) {
+cudnnStatus_t use_cudnn(std::shared_ptr<Pool<cudnnHandle_t>> cudnn_handles_t, int device_id, cudaStream_t stream, T const &f) {
     auto handle = cudnn_handles_t->pop();
     if (!handle) {
         cudaSetDevice(device_id);
         cudnnCreate(&(*handle));
     }
+    cudnnSetStream(*handle, stream);
     cudnnStatus_t status = f(*handle);
     cudnn_handles_t->push(std::move(*handle));
     return status;

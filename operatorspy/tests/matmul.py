@@ -2,6 +2,7 @@ from ctypes import POINTER, Structure, c_int32, c_uint64, c_void_p, c_float
 import ctypes
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from operatorspy import (
@@ -21,6 +22,13 @@ from operatorspy import (
 from operatorspy.tests.test_utils import get_args
 import torch
 
+# constant for control whether profile the pytorch and lib functions
+# NOTE: need to manually add synchronization function to the lib function,
+#       e.g., cudaDeviceSynchronize() for CUDA
+PROFILE = False
+NUM_PRERUN = 10
+NUM_ITERATIONS = 1000
+
 
 class MatmulDescriptor(Structure):
     _fields_ = [("device", c_int32)]
@@ -30,10 +38,13 @@ infiniopMatmulDescriptor_t = POINTER(MatmulDescriptor)
 
 def matmul(c, beta, a, b, alpha):
     input_dtype = c.dtype
-    return (
+    ans = (
         alpha * torch.matmul(a.to(torch.float32), b.to(torch.float32)).to(input_dtype)
         + beta * c
     )
+    if PROFILE:
+        torch.cuda.synchronize()
+    return ans
 
 
 def test(
@@ -66,7 +77,15 @@ def test(
     if c_stride is not None:
         c = rearrange_tensor(c, c_stride)
 
-    ans = matmul(c, beta, a, b, alpha)
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        ans = matmul(c, beta, a, b, alpha)
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+            _ = matmul(c, beta, a, b, alpha)
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"pytorch time: {elapsed :6f}")
+    
     
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)
@@ -90,7 +109,8 @@ def test(
     )
     workspace = create_workspace(workspace_size.value, a.device)
 
-    check_error(
+    for i in range(NUM_PRERUN if PROFILE else 1):
+        check_error(
         lib.infiniopMatmul(
             descriptor,
             workspace.data_ptr() if workspace is not None else None,
@@ -101,6 +121,20 @@ def test(
             None,
         )
     )
+    if PROFILE:
+        start_time = time.time()
+        for i in range(NUM_ITERATIONS):
+                lib.infiniopMatmul(
+                    descriptor,
+                    workspace.data_ptr() if workspace is not None else None,
+                    workspace_size.value,
+                    c_tensor.data,
+                    a_tensor.data,
+                    b_tensor.data,
+                    None,
+            )
+        elapsed = (time.time() - start_time) / NUM_ITERATIONS
+        print(f"    lib time: {elapsed :6f}")
 
     assert torch.allclose(c, ans, atol=0, rtol=1e-2)
 
@@ -244,28 +278,11 @@ if __name__ == "__main__":
     test_cases = [
         # alpha, beta, a_shape, b_shape, c_shape, a_stride, b_stride, c_stride, dtype
         (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float16),
-        (
-            1.0,
-            0.0,
-            (1, 2048),
-            (2048, 2048),
-            (1, 2048),
-            (4096, 1),
-            (4096, 1),
-            (4096, 1),
-            torch.float16,
-        ),
-        (
-            1.0,
-            0.0,
-            (2, 1, 2048),
-            (2, 2048, 2048),
-            (2, 1, 2048),
-            None,
-            None,
-            None,
-            torch.float16,
-        ),
+        (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), None, None, None, torch.float32),
+        (1.0, 0.0, (2, 4, 2048), (2, 2048, 2048), (2, 4, 2048), None, None, None, torch.float16),
+        (1.0, 0.0, (2, 4, 2048), (2, 2048, 2048), (2, 4, 2048), None, None, None, torch.float32),
+        (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), (4096, 1), (4096, 1), (4096, 1), torch.float16),
+        (1.0, 0.0, (1, 2048), (2048, 2048), (1, 2048), (4096, 1), (4096, 1), (4096, 1), torch.float32),
     ]
     args = get_args()
     lib = open_lib()
@@ -313,4 +330,4 @@ if __name__ == "__main__":
         test_ascend(lib, test_cases)
     if not (args.cpu or args.cuda or args.bang or args.ascend):
         test_cpu(lib, test_cases)
-    print("Test passed!")
+    print("\033[92mTest passed!\033[0m")
