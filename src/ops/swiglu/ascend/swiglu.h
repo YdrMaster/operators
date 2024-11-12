@@ -37,4 +37,9 @@ infiniopStatus_t ascendSwiGLU(SwiGLUAscendDescriptor_t desc,
 
 infiniopStatus_t ascendDestroySwiGLUDescriptor(SwiGLUAscendDescriptor_t desc);
 
+extern "C" void swiglu_kernel_do(void *c, void *a, void *b,
+                                 float beta, int32_t nt, int32_t dh,
+                                 int32_t sta, int32_t stb, int32_t stc,
+                                 int dtype, void *stream);
+
 #endif

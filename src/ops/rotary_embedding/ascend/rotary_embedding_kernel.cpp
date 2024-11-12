@@ -201,7 +201,7 @@ template<typename T> __aicore__ inline void RoPE<T>::Process() {
 }
 
 // Kernel func
-extern "C" __global__ __aicore__ void rope_kernel_fp16(GM_ADDR t, GM_ADDR pos,
+__global__ __aicore__ void rope_kernel_fp16(GM_ADDR t, GM_ADDR pos,
                                                        GM_ADDR sin, GM_ADDR cos,
                                                        int32_t nt, int32_t nh,
                                                        int32_t dh, int32_t stt,
@@ -211,7 +211,7 @@ extern "C" __global__ __aicore__ void rope_kernel_fp16(GM_ADDR t, GM_ADDR pos,
     op.Process();
 }
 
-extern "C" void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
+extern "C"  void rope_kernel_do(void *t, void *pos, void *sin, void *cos,
                                int32_t nt, int32_t nh, int32_t dh,
                                int32_t stt, int32_t sth,
                                int dtype, void *stream) {
