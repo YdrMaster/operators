@@ -39,7 +39,7 @@ jobs:
     - name: Find and Set INFINI_ROOT
       id: set_infini_root
       run: |
-        export INFINI_ROOT=$(dirname $(find ./build -name "*.so"))
+        export INFINI_ROOT=$GITHUB_WORKSPACE
         echo "INFINI_ROOT=$INFINI_ROOT" >> $GITHUB_ENV
 
     - name: Run Python Tests
