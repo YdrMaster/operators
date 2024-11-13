@@ -1,5 +1,6 @@
 #include "tensor_aclnn.h"
 #include "../../ops/utils.h"
+#include <algorithm>
 
 /// @brief Set aclnnTensorDescriptor from infiniopTensorDescriptor
 /// @param y infiniopTensorDescriptor
@@ -34,15 +35,20 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     this->dataType = dt;
     this->format = format;
 
+    infiniopTensorDescriptor_t yOri;
+    inferOriginInfiniOpTensorDescriptor(y, yOri);
+
     // Infer continuous storageShape
     auto storageShape = new std::vector<int64_t>(ndim);
     for (uint64_t i = 0; i < ndim - 1; ++i) {
-        (*storageShape)[i] = ((*shape)[i] * (*strides)[i]) /
-                             ((*shape)[i + 1] * (*strides)[i + 1]);
+        (*storageShape)[i] = ((yOri->shape)[i] * (yOri->strides)[i]) /
+                             ((yOri->shape)[i + 1] * (yOri->strides)[i + 1]);
     }
-    (*storageShape)[ndim - 1] = (*shape)[ndim - 1];
+    (*storageShape)[ndim - 1] = (yOri->shape)[ndim - 1];
     this->storageShape = (*storageShape).data();
     this->storageNdim = ndim;
+
+    delete yOri;
 
     return STATUS_SUCCESS;
 }
@@ -70,15 +76,47 @@ infiniopStatus_t aclnnTensorDescriptor::createTensor() {
 }
 
 infiniopStatus_t aclnnTensorDescriptor::destroyTensor() {
-    auto status = aclDestroyTensor(this->t);
-    if (status != 0) {
-        return STATUS_EXECUTION_FAILED;
-    }
+    auto ret = aclDestroyTensor(this->t);
+    CHECK_RET(ret == ACL_SUCCESS,
+              LOG_PRINT("aclDesctroyTensor failed, ERROR: %d\n", ret);
+              return STATUS_EXECUTION_FAILED);
     t = nullptr;
     shape = nullptr;
     strides = nullptr;
     storageShape = nullptr;
 
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t
+aclnnTensorDescriptor::inferOriginInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y,
+                                                           infiniopTensorDescriptor_t &ori) {
+    auto shape = y->shape;
+    auto strides = y->strides;
+    auto ndim = y->ndim;
+
+    std::vector<uint64_t> indices(ndim);
+    for (uint64_t i = 0; i < ndim; ++i) {
+        indices[i] = i;
+    }
+
+    std::sort(indices.begin(), indices.end(), [&](uint64_t a, uint64_t b) {
+        return strides[a] > strides[b];
+    });
+
+    auto oriShape = new std::vector<uint64_t>(ndim);
+    auto oriStrides = new std::vector<int64_t>(ndim);
+    for (uint64_t i = 0; i < ndim; ++i) {
+        (*oriShape)[i] = shape[indices[i]];
+        (*oriStrides)[i] = strides[indices[i]];
+    }
+
+    ori = new TensorDescriptor{
+        y->dt,
+        y->ndim,
+        (*oriShape).data(),
+        (*oriStrides).data(),
+    };
     return STATUS_SUCCESS;
 }
 

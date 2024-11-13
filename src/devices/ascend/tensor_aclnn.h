@@ -27,6 +27,9 @@ struct aclnnTensorDescriptor {
     infiniopStatus_t fromInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y_desc);
     infiniopStatus_t createTensor();
     infiniopStatus_t destroyTensor();
+    infiniopStatus_t
+    inferOriginInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y,
+                                        infiniopTensorDescriptor_t &ori);
     ~aclnnTensorDescriptor();
 
     char *toString();
