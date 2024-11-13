@@ -9,6 +9,12 @@ option("cpu")
     add_defines("ENABLE_CPU")
 option_end()
 
+option("omp")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable or disable OpenMP support for cpu kernel")
+option_end()
+
 option("nv-gpu")
     set_default(false)
     set_showmenu(true)
@@ -39,6 +45,7 @@ if has_config("cpu") then
 
     add_defines("ENABLE_CPU")
     target("cpu")
+        on_install(function (target) end)
         set_kind("static")
 
         if not is_plat("windows") then
@@ -47,8 +54,10 @@ if has_config("cpu") then
 
         set_languages("cxx17")
         add_files("src/devices/cpu/*.cc", "src/ops/*/cpu/*.cc")
-        add_cxflags("-fopenmp")
-        add_ldflags("-fopenmp")
+        if has_config("omp") then
+            add_cxflags("-fopenmp")
+            add_ldflags("-fopenmp")
+        end
     target_end()
 
 end
@@ -58,6 +67,7 @@ if has_config("nv-gpu") then
     add_defines("ENABLE_NV_GPU")
     target("nv-gpu")
         set_kind("static")
+        on_install(function (target) end)
         set_policy("build.cuda.devlink", true)
 
         set_toolchains("cuda")
@@ -120,6 +130,7 @@ rule_end()
 
     target("cambricon-mlu")
         set_kind("static")
+        on_install(function (target) end)
         set_languages("cxx17")
         add_files("src/devices/bang/*.cc", "src/ops/*/bang/*.cc")
         add_files("src/ops/*/bang/*.mlu", {rule = "mlu"})
@@ -174,6 +185,7 @@ if has_config("ascend-npu") then
         -- Other configs
         set_kind("static")
         set_languages("cxx17")
+        on_install(function (target) end)
         -- Add files
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
@@ -185,7 +197,7 @@ if has_config("ascend-npu") then
     target_end()
 end
 
-target("operators")
+target("infiniop")
     set_kind("shared")
 
     if has_config("cpu") then
@@ -215,7 +227,7 @@ target("operators")
         )
 
         os.exec("mkdir -p $(projectdir)/lib/")
-        os.exec("cp " ..builddir.. "/liboperators.so $(projectdir)/lib/")
+        os.exec("cp " ..builddir.. "/libinfiniop.so $(projectdir)/lib/")
         os.exec("cp -r $(projectdir)/include $(projectdir)/lib/")
         -- Define color codes
         local GREEN = '\27[0;32m'
@@ -227,8 +239,27 @@ target("operators")
 
         -- Output messages with colors
         os.exec("echo -e '" .. GREEN .. "Compilation completed successfully." .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "To set the environment variable, please run the following command:" .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "echo \"export INFINI_ROOT=" .. current_dir .. "/lib\" >> ~/.bashrc" .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "Install the libraries with \"xmake install\" or set INFINI_ROOT=" .. current_dir .. NC .. "'")
+    end)
+    
+    on_install(function (target) 
+        local home_dir = os.getenv("HOME")
+        local infini_dir = home_dir .. "/.infini/"
+
+        if os.isdir(infini_dir) then
+            print("~/.infini/ detected, duplicated contents will be overwritten.")
+        else
+            os.mkdir(infini_dir)
+        end
+        os.exec("cp -r " .. "$(projectdir)/lib " .. infini_dir)
+
+        local GREEN = '\27[0;32m'
+        local YELLOW = '\27[1;33m'
+        local NC = '\27[0m'  -- No Color
+        os.exec("echo -e '" .. GREEN .. "Installation completed successfully at ~/.infini/." .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "To set the environment variables, please run the following command:" .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "echo \"export INFINI_ROOT=~/.infini/\" >> ~/.bashrc" .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "echo \"export LD_LIBRARY_PATH=:~/.infini/lib:$LD_LIBRARY_PATH\" >> ~/.bashrc" .. NC .. "'")
     end)
 
 target_end()
