@@ -2,7 +2,7 @@
 
 MatmulAclnnDescriptor::MatmulAclnnDescriptor(Device _device) {
     device = _device;
-    device_id = 0; 
+    device_id = 0;
     executor = nullptr;
     info = nullptr;
     cDesc = new aclnnTensorDescriptor();
@@ -22,6 +22,9 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
                                              infiniopTensorDescriptor_t b_desc,
                                              float beta,
                                              int8_t mt) {
+    if (c_desc->ndim == 3 && (alpha != 1.0 || beta != 0)) {
+        return STATUS_BAD_PARAM;
+    }
 
     *desc_ptr = new MatmulAclnnDescriptor(handle->device);
     (*desc_ptr)->device_id = handle->device_id;
@@ -57,7 +60,7 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
     aclTensor *tb = bDesc->t;
 
     aclnnStatus ret;
-    
+
     if (b > 1) {
         // https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnMatmul.md
         ret = aclnnMatmulGetWorkspaceSize(ta,
@@ -72,8 +75,10 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
         aclSetAclOpExecutorRepeatable(executor);
     } else {
         // Get transA and transB according strides
-        int64_t transA = aDesc->strides[aDesc->ndim - 1] == 1 ? 0 : 1;
-        int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
+        // int64_t transA = aDesc->strides[aDesc->ndim - 1] == 1 ? 0 : 1;
+        // int64_t transB = bDesc->strides[bDesc->ndim - 1] == 1 ? 0 : 1;
+        int64_t transA = 0;
+        int64_t transB = 0;
         // aclnnGemm support C = alpha * A @ B + beta * C
         // see https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/apiref/aolapi/context/aclnnGemm.md
         ret = aclnnGemmGetWorkspaceSize(ta, tb, tc, (*desc_ptr)->alpha, (*desc_ptr)->beta, transA, transB, tc,
