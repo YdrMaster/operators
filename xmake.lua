@@ -144,6 +144,31 @@ if has_config("ascend-npu") then
     add_links("libruntime.so")  
     add_linkdirs(ASCEND_HOME .. "/../../driver/lib64/driver")
     add_links("libascend_hal.so")
+    local builddir = string.format(
+            "%s/build/%s/%s/%s",
+            os.projectdir(),
+            get_config("plat"),
+            get_config("arch"),
+            get_config("mode")
+        )
+    rule("ascend-kernels")
+        before_link(function ()
+            local ascend_build_dir = path.join(os.projectdir(), "src/devices/ascend")
+            os.cd(ascend_build_dir)
+            os.exec("make")
+            os.exec("cp $(projectdir)/src/devices/ascend/build/lib/libascend_kernels.a "..builddir.."/")
+            os.cd(os.projectdir())
+            
+        end)
+        after_clean(function ()
+            local ascend_build_dir = path.join(os.projectdir(), "src/devices/ascend")
+            os.cd(ascend_build_dir)
+            os.exec("make clean")
+            os.cd(os.projectdir())
+            os.rm(builddir.. "/libascend_kernels.a")
+            
+        end)
+        rule_end()
 
     target("ascend-npu")
         -- Other configs
@@ -152,6 +177,10 @@ if has_config("ascend-npu") then
         -- Add files
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
+
+        -- Add operator 
+        add_rules("ascend-kernels")
+        add_links(builddir.."/libascend_kernels.a")
 
     target_end()
 end
@@ -175,18 +204,18 @@ target("operators")
     add_files("src/devices/handle.cc")
     add_files("src/ops/*/operator.cc")
     add_files("src/tensor/*.cc")
-target_end()
 
-task("install-operators")
-    set_menu {
-        usage = "xmake install-operators",
-        description = "Build and install the operators",
-        options = {}
-    }
-    on_run(function ()
-        os.exec("xmake --root")
+    after_build(function (target) 
+        local builddir = string.format(
+            "%s/build/%s/%s/%s",
+            os.projectdir(),
+            get_config("plat"),
+            get_config("arch"),
+            get_config("mode")
+        )
+
         os.exec("mkdir -p $(projectdir)/lib/")
-        os.exec("cp $(projectdir)/build/linux/x86_64/release/liboperators.so $(projectdir)/lib/")
+        os.exec("cp " ..builddir.. "/liboperators.so $(projectdir)/lib/")
         os.exec("cp -r $(projectdir)/include $(projectdir)/lib/")
         -- Define color codes
         local GREEN = '\27[0;32m'
@@ -200,5 +229,6 @@ task("install-operators")
         os.exec("echo -e '" .. GREEN .. "Compilation completed successfully." .. NC .. "'")
         os.exec("echo -e '" .. YELLOW .. "To set the environment variable, please run the following command:" .. NC .. "'")
         os.exec("echo -e '" .. YELLOW .. "echo \"export INFINI_ROOT=" .. current_dir .. "/lib\" >> ~/.bashrc" .. NC .. "'")
-
     end)
+
+target_end()

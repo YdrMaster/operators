@@ -51,7 +51,6 @@ def rotary_embedding(t, pos, theta, torch_device):
     t_out = torch.view_as_real(t_ * freqs_cis).flatten(2).to(t.dtype)
     return t_out
 
-
 def sin_cos_table(max_seq_len, dim, torch_device, theta):
     pos = torch.arange(
         0, max_seq_len, dtype=torch.float32, device=torch.device(torch_device)
@@ -75,8 +74,7 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
         t = rearrange_tensor(t, strides)
     pos = torch.arange(0, t.shape[0])
     theta = 1e4
-    
-    if(torch_device == 'mlu'):
+    if torch_device == 'mlu' or torch_device == 'npu':
         ans = rotary_embedding(t, pos, theta, "cpu").to(torch_device)
         pos = pos.to(torch.int64)
         pos = pos.to(torch_device)
@@ -86,7 +84,7 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
         pos = pos.to(torch_device)
         ans = rotary_embedding(t, pos, theta, torch_device)
         pos = pos.to(torch.uint64)
-    
+
     descriptor = infiniopRoPEDescriptor_t()
     # 2x table length for test
     sin_table, cos_table = sin_cos_table(t.shape[0] * 2, t.shape[2], t.device, theta)
@@ -96,6 +94,10 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
         pos_tensor.descriptor.contents.dt = U64
     sin_table_tensor = to_tensor(sin_table, lib)
     cos_table_tensor = to_tensor(cos_table, lib)
+    
+    if torch_device == "npu":
+        torch.npu.synchronize() 
+    
     check_error(
         lib.infiniopCreateRoPEDescriptor(
             handle,
@@ -154,8 +156,21 @@ def test_bang(lib, test_cases):
     destroy_handle(lib, handle)
 
 
+def test_ascend(lib, test_cases) :
+    import torch_npu
+
+    device = DeviceEnum.DEVICE_ASCEND
+    handle = create_handle(lib, device)
+    for shape, strides, dtype in test_cases:
+        test(lib, handle, "npu", shape, strides, dtype)
+    destroy_handle(lib, handle)
+
 if __name__ == "__main__":
     test_cases = [
+        ((1, 32, 128), None, torch.float16),
+        ((1, 32, 64), None, torch.float16),
+        # 昇腾暂不满足这个用例，最后一维度 <=32 会有问题，可能与其核心
+        # 接口 GatherMask 的内部实现相关，目前 48 64 128 都可以支持
         ((4, 1, 32), None, torch.float16),
         ((1, 32, 128), None, torch.float16),
         
@@ -198,3 +213,7 @@ if __name__ == "__main__":
         test_cuda(lib, test_cases)
     if args.bang:
         test_bang(lib, test_cases)
+    if args.ascend:
+        test_ascend(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang or args.ascend):
+        test_cpu(lib, test_cases)
