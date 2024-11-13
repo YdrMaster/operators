@@ -51,18 +51,6 @@ def rotary_embedding(t, pos, theta, torch_device):
     t_out = torch.view_as_real(t_ * freqs_cis).flatten(2).to(t.dtype)
     return t_out
 
-def rotary_embedding_ascend(t, pos, theta):
-    t = t.to("cpu")
-    pos = pos.to("cpu")
-    dh = t.shape[2]
-    freqs = (1.0 / (theta ** (torch.arange(0, dh, 2)[: (dh // 2)].float() / dh))).to("cpu")
-    freqs = torch.outer(pos, freqs)
-    freqs_cis = torch.polar(torch.ones_like(freqs), freqs)
-    t_ = torch.view_as_complex(t.reshape(*t.shape[:-1], -1, 2).float())
-    freqs_cis = reshape_for_broadcast(freqs_cis, t_)
-    t_out = torch.view_as_real(t_ * freqs_cis).flatten(2).to(t.dtype)
-    return t_out.to("npu")
-
 def sin_cos_table(max_seq_len, dim, torch_device, theta):
     pos = torch.arange(
         0, max_seq_len, dtype=torch.float32, device=torch.device(torch_device)
@@ -86,10 +74,7 @@ def test(lib, handle, torch_device, shape, strides=None, dtype=torch.float16):
         t = rearrange_tensor(t, strides)
     pos = torch.arange(0, t.shape[0])
     theta = 1e4
-    if torch_device == "npu":
-        ans = rotary_embedding_ascend(t, pos, theta)
-        pos = pos.to(torch.int64) # use int64 to support older versions of PyTorch   
-    elif torch_device == 'mlu':
+    if torch_device == 'mlu' or torch_device == 'npu':
         ans = rotary_embedding(t, pos, theta, "cpu").to(torch_device)
         pos = pos.to(torch.int64)
         pos = pos.to(torch_device)
