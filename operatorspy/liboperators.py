@@ -8,7 +8,7 @@ from .devices import *
 Device = c_int
 Optype = c_int
 
-LIB_OPERATORS_DIR = "INFINI_ROOT"
+LIB_OPERATORS_DIR = os.path.join(os.environ.get("INFINI_ROOT"), "lib")
 
 
 class TensorDescriptor(Structure):
@@ -39,7 +39,7 @@ infiniopHandle_t = POINTER(Handle)
 # Open operators library
 def open_lib():
     def find_library_in_ld_path(library_name):
-        ld_library_path = os.environ.get(LIB_OPERATORS_DIR, "")
+        ld_library_path = LIB_OPERATORS_DIR
         paths = ld_library_path.split(os.pathsep)
         for path in paths:
             full_path = os.path.join(path, library_name)
@@ -50,13 +50,13 @@ def open_lib():
     system_name = platform.system()
     # Load the library
     if system_name == "Windows":
-        library_path = find_library_in_ld_path("operators.dll")
+        library_path = find_library_in_ld_path("infiniop.dll")
     elif system_name == "Linux":
-        library_path = find_library_in_ld_path("liboperators.so")
+        library_path = find_library_in_ld_path("libinfiniop.so")
 
     assert (
         library_path is not None
-    ), f"Cannot find operators.dll or liboperators.so. Check if {LIB_OPERATORS_DIR} is set correctly."
+    ), f"Cannot find infiniop.dll or libinfiniop.so. Check if INFINI_ROOT is set correctly."
     lib = ctypes.CDLL(library_path)
     lib.infiniopCreateTensorDescriptor.argtypes = [
         POINTER(infiniopTensorDescriptor_t),
