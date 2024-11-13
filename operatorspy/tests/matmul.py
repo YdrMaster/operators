@@ -79,13 +79,16 @@ def test(
 
     for i in range(NUM_PRERUN if PROFILE else 1):
         ans = matmul(c, beta, a, b, alpha)
+    
+    if torch_device == "npu":
+        torch.npu.synchronize()
+    
     if PROFILE:
         start_time = time.time()
         for i in range(NUM_ITERATIONS):
             _ = matmul(c, beta, a, b, alpha)
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"pytorch time: {elapsed :6f}")
-    
     
     a_tensor = to_tensor(a, lib)
     b_tensor = to_tensor(b, lib)

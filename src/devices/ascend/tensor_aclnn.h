@@ -2,6 +2,7 @@
 #define __ACLNN_TENSOR__
 
 #include "./common_ascend.h"
+#include "tensor/tensor_descriptor.h"
 #include "operators.h"
 #include "tensor.h"
 #include <acl/acl.h>
@@ -29,7 +30,7 @@ struct aclnnTensorDescriptor {
     infiniopStatus_t destroyTensor();
     infiniopStatus_t
     inferOriginInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y,
-                                        infiniopTensorDescriptor_t &ori);
+                                        infiniopTensorDescriptor_t *ori_ptr);
     ~aclnnTensorDescriptor();
 
     char *toString();

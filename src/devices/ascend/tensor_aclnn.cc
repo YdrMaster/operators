@@ -36,7 +36,7 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     this->format = format;
 
     infiniopTensorDescriptor_t yOri;
-    inferOriginInfiniOpTensorDescriptor(y, yOri);
+    CHECK_STATUS(inferOriginInfiniOpTensorDescriptor(y, &yOri), STATUS_SUCCESS);
 
     // Infer continuous storageShape
     auto storageShape = new std::vector<int64_t>(ndim);
@@ -48,7 +48,7 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
     this->storageShape = (*storageShape).data();
     this->storageNdim = ndim;
 
-    delete yOri;
+    CHECK_STATUS(infiniopDestroyTensorDescriptor(yOri), STATUS_SUCCESS);
 
     return STATUS_SUCCESS;
 }
@@ -90,7 +90,7 @@ infiniopStatus_t aclnnTensorDescriptor::destroyTensor() {
 
 infiniopStatus_t
 aclnnTensorDescriptor::inferOriginInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y,
-                                                           infiniopTensorDescriptor_t &ori) {
+                                                           infiniopTensorDescriptor_t *ori_ptr) {
     auto shape = y->shape;
     auto strides = y->strides;
     auto ndim = y->ndim;
@@ -111,13 +111,14 @@ aclnnTensorDescriptor::inferOriginInfiniOpTensorDescriptor(infiniopTensorDescrip
         (*oriStrides)[i] = strides[indices[i]];
     }
 
-    ori = new TensorDescriptor{
-        y->dt,
-        y->ndim,
+    auto status = infiniopCreateTensorDescriptor(
+        ori_ptr,
+        ndim,
         (*oriShape).data(),
         (*oriStrides).data(),
-    };
-    return STATUS_SUCCESS;
+        y->dt);
+
+    return status;
 }
 
 aclnnTensorDescriptor::~aclnnTensorDescriptor() {
