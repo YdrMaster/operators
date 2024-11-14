@@ -68,7 +68,7 @@ def test(
 
     a = torch.rand(a_shape, dtype=dtype).to(torch_device)
     b = torch.rand(b_shape, dtype=dtype).to(torch_device)
-    c = torch.zeros(c_shape, dtype=dtype).to(torch_device)
+    c = torch.ones(c_shape, dtype=dtype).to(torch_device)
 
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
@@ -78,11 +78,8 @@ def test(
         c = rearrange_tensor(c, c_stride)
 
     for i in range(NUM_PRERUN if PROFILE else 1):
-        ans = matmul(c, beta, a, b, alpha)
-    
-    if torch_device == "npu":
-        torch.npu.synchronize()
-    
+        ans = matmul(c.clone(), beta, a, b, alpha)
+
     if PROFILE:
         start_time = time.time()
         for i in range(NUM_ITERATIONS):
