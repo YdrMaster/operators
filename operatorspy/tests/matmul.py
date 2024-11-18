@@ -122,6 +122,8 @@ def test(
     assert torch.allclose(c, ans, atol=0, rtol=1e-2)
     
     if PROFILE:
+        for i in range(NUM_PRERUN):
+            _ = matmul(c, beta, a, b, alpha)
         start_time = time.time()
         for i in range(NUM_ITERATIONS):
             _ = matmul(c, beta, a, b, alpha)
