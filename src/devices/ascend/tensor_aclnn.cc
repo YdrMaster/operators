@@ -2,55 +2,71 @@
 #include "../../ops/utils.h"
 #include <algorithm>
 
+infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides){
+    if (shape.size()!= strides.size()) {
+        return STATUS_BAD_PARAM;
+    }
+    this->ndim = shape.size();
+    this->shape = std::vector<int64_t>(shape);
+    this->strides = std::vector<int64_t>(strides);
+
+    if (dtype_eq(dtype, F16)) {
+        this->dataType = aclDataType::ACL_FLOAT16;
+    } else if (dtype_eq(dtype, F32)) {
+        this->dataType = aclDataType::ACL_FLOAT;
+    } else {
+        return STATUS_BAD_TENSOR_DTYPE;
+    }
+    // Set format
+    // TODO: Support other format
+    aclFormat format = aclFormat::ACL_FORMAT_ND;
+    this->format = format;
+
+    CHECK_STATUS(this->inferStorageShape(), STATUS_SUCCESS);
+
+    return STATUS_SUCCESS;
+}
+
+infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
+    this->storageNdim = this->ndim;
+    this->storageShape = std::vector<int64_t>(this->storageNdim);
+    auto shape = std::vector<int64_t>(this->shape);
+    auto strides = std::vector<int64_t>(this->strides);
+    std::vector<uint64_t> indices(ndim);
+    for (uint64_t i = 0; i < ndim; ++i) {
+        indices[i] = i;
+    }
+
+    std::sort(indices.begin(), indices.end(), [&](uint64_t a, uint64_t b) {
+        return strides[a] > strides[b];
+    });
+    for (uint64_t i = 0; i < ndim; ++i) {
+        shape[i] = this->shape[indices[i]];
+        strides[i] = this->strides[indices[i]];
+    }
+
+    for (uint64_t i = 0; i < ndim - 1; ++i) {
+        this->storageShape[i] = (shape[i] * strides[i]) /
+                             (shape[i + 1] * strides[i + 1]);
+    }
+    this->storageShape[ndim - 1] = shape[ndim - 1] * strides[ndim - 1];
+
+    return STATUS_SUCCESS;
+}
+
 /// @brief Set aclnnTensorDescriptor from infiniopTensorDescriptor
 /// @param y infiniopTensorDescriptor
 /// @return infiniopStatus_t
 infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y) {
     uint64_t ndim = y->ndim;
     // Cast shape type
-    auto shape = new std::vector<int64_t>(ndim);
-    auto strides = new std::vector<int64_t>(ndim);
+    auto shape = std::vector<int64_t>(ndim);
+    auto strides =std::vector<int64_t>(ndim);
     for (uint64_t i = 0; i < ndim; ++i) {
-        (*shape)[i] = static_cast<int64_t>(y->shape[i]);
-        (*strides)[i] = y->strides[i];
+        shape[i] = static_cast<int64_t>(y->shape[i]);
+        strides[i] = y->strides[i];
     }
-    aclDataType dt;
-    if (dtype_eq(y->dt, F16)) {
-        dt = aclDataType::ACL_FLOAT16;
-    } else if (dtype_eq(y->dt, F32)) {
-        dt = aclDataType::ACL_FLOAT;
-    } else {
-        return STATUS_BAD_TENSOR_DTYPE;
-    }
-
-    // Set format
-    // TODO: Support other format
-    aclFormat format = aclFormat::ACL_FORMAT_ND;
-
-    this->ndim = ndim;
-    this->shape = (*shape).data();
-    this->strides = (*strides).data();
-    // TODO: Support other offset
-    this->offset = 0;
-    this->dataType = dt;
-    this->format = format;
-
-    infiniopTensorDescriptor_t yOri;
-    CHECK_STATUS(inferOriginInfiniOpTensorDescriptor(y, &yOri), STATUS_SUCCESS);
-
-    // Infer continuous storageShape
-    auto storageShape = new std::vector<int64_t>(ndim);
-    for (uint64_t i = 0; i < ndim - 1; ++i) {
-        (*storageShape)[i] = ((yOri->shape)[i] * (yOri->strides)[i]) /
-                             ((yOri->shape)[i + 1] * (yOri->strides)[i + 1]);
-    }
-    (*storageShape)[ndim - 1] = (yOri->shape)[ndim - 1];
-    this->storageShape = (*storageShape).data();
-    this->storageNdim = ndim;
-
-    CHECK_STATUS(infiniopDestroyTensorDescriptor(yOri), STATUS_SUCCESS);
-
-    return STATUS_SUCCESS;
+    return setDescriptor(y->dt, shape, strides);
 }
 
 /// @brief Wrapper of aclCreateTensor. Create aclTensor.
@@ -63,13 +79,13 @@ infiniopStatus_t aclnnTensorDescriptor::createTensor() {
     if (this->t) {
         return STATUS_SUCCESS;
     }
-    this->t = aclCreateTensor(this->shape,
+    this->t = aclCreateTensor(this->shape.data(),
                               this->ndim,
                               this->dataType,
-                              this->strides,
+                              this->strides.data(),
                               this->offset,
                               this->format,
-                              this->storageShape,
+                              this->storageShape.data(),
                               this->storageNdim,
                               nullptr);
     return STATUS_SUCCESS;
@@ -81,53 +97,13 @@ infiniopStatus_t aclnnTensorDescriptor::destroyTensor() {
               LOG_PRINT("aclDesctroyTensor failed, ERROR: %d\n", ret);
               return STATUS_EXECUTION_FAILED);
     t = nullptr;
-    shape = nullptr;
-    strides = nullptr;
-    storageShape = nullptr;
 
     return STATUS_SUCCESS;
-}
-
-infiniopStatus_t
-aclnnTensorDescriptor::inferOriginInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y,
-                                                           infiniopTensorDescriptor_t *ori_ptr) {
-    auto shape = y->shape;
-    auto strides = y->strides;
-    auto ndim = y->ndim;
-
-    std::vector<uint64_t> indices(ndim);
-    for (uint64_t i = 0; i < ndim; ++i) {
-        indices[i] = i;
-    }
-
-    std::sort(indices.begin(), indices.end(), [&](uint64_t a, uint64_t b) {
-        return strides[a] > strides[b];
-    });
-
-    auto oriShape = new std::vector<uint64_t>(ndim);
-    auto oriStrides = new std::vector<int64_t>(ndim);
-    for (uint64_t i = 0; i < ndim; ++i) {
-        (*oriShape)[i] = shape[indices[i]];
-        (*oriStrides)[i] = strides[indices[i]];
-    }
-
-    auto status = infiniopCreateTensorDescriptor(
-        ori_ptr,
-        ndim,
-        (*oriShape).data(),
-        (*oriStrides).data(),
-        y->dt);
-
-    return status;
 }
 
 aclnnTensorDescriptor::~aclnnTensorDescriptor() {
     if (this->t) {
         destroyTensor();
-    } else {
-        delete shape;
-        delete strides;
-        delete storageShape;
     }
 }
 
