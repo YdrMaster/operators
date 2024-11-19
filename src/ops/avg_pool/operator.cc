@@ -49,5 +49,6 @@ __C __export infiniopStatus_t infiniopAvgPool(infiniopAvgPoolDescriptor_t desc, 
 
 __C __export infiniopStatus_t infiniopDestroyAvgPoolDescriptor(infiniopAvgPoolDescriptor_t desc) {
     CHECK_STATUS(infiniopDestroyPoolingDescriptor(((_AvgPoolDescriptor_t) desc)->pooling_desc), STATUS_SUCCESS);
+    delete desc;
     return STATUS_SUCCESS;
 }

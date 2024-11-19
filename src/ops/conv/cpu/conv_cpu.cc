@@ -208,7 +208,10 @@ infiniopStatus_t conv_cpu<uint16_t>(ConvCpuDescriptor_t desc, void *workspace, u
 
     // copy data from y_ to y
     auto y_16 = reinterpret_cast<uint16_t *>(y);
-    copyF32DataToF16(y_16, y_, desc->y_size);
+#pragma omp parallel for
+    for (size_t i = 0; i < desc->y_size; ++i) {
+        y_16[i] = f32_to_f16(y_[i]);
+    }
     return STATUS_SUCCESS;
 }
 

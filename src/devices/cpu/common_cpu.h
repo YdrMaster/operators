@@ -31,13 +31,4 @@ uint64_t getPaddedSize(uint64_t ndim, uint64_t *shape, uint64_t const *pads);
 // calculate the padded shape and store the result in padded_shape
 void getPaddedShape(uint64_t ndim, uint64_t const *shape, uint64_t const *pads, uint64_t *padded_shape);
 
-// copy the data in src tensor into that of the dest tensor but also convert
-// from f32 to f16
-inline void copyF32DataToF16(uint16_t *dest, float const *src, uint64_t size) {
-#pragma omp parallel for
-    for (size_t i = 0; i < size; ++i) {
-        dest[i] = f32_to_f16(src[i]);
-    }
-}
-
 #endif// __COMMON_CPU_H__

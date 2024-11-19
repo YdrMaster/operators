@@ -49,5 +49,6 @@ __C __export infiniopStatus_t infiniopMaxPool(infiniopMaxPoolDescriptor_t desc, 
 
 __C __export infiniopStatus_t infiniopDestroyMaxPoolDescriptor(infiniopMaxPoolDescriptor_t desc) {
     CHECK_STATUS(infiniopDestroyPoolingDescriptor(((_MaxPoolDescriptor_t) desc)->pooling_desc), STATUS_SUCCESS);
+    delete desc;
     return STATUS_SUCCESS;
 }
