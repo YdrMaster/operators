@@ -44,12 +44,17 @@ infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
         shape[i] = this->shape[indices[i]];
         strides[i] = this->strides[indices[i]];
     }
-
-    for (uint64_t i = 0; i < ndim - 1; ++i) {
-        this->storageShape[i] = (shape[i] * strides[i]) /
-                             (shape[i + 1] * strides[i + 1]);
-    }
     this->storageShape[ndim - 1] = shape[ndim - 1] * strides[ndim - 1];
+    int64_t carry = 1;
+    for (int64_t i = ndim - 1; i > 0; --i) {
+        if (this->storageShape[i] > strides[i-1]){
+            return STATUS_BAD_TENSOR_STRIDES;
+        }
+        this->storageShape[i] = strides[i-1] / carry;
+        carry *= this->storageShape[i];
+    }
+    this->storageShape[0] = shape[0];
+    
 
     return STATUS_SUCCESS;
 }
