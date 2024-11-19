@@ -29,7 +29,7 @@ infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vecto
 
 infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
     this->storageNdim = this->ndim;
-    this->storageShape = std::vector<int64_t>(this->storageNdim);
+    this->storageShape = std::vector<int64_t>(this->storageNdim, 1);
     auto shape = std::vector<int64_t>(this->shape);
     auto strides = std::vector<int64_t>(this->strides);
     std::vector<uint64_t> indices(ndim);
@@ -40,22 +40,34 @@ infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
     std::sort(indices.begin(), indices.end(), [&](uint64_t a, uint64_t b) {
         return strides[a] > strides[b];
     });
+    auto bound = 0; // upper bound of non-zero-strided dimension
     for (uint64_t i = 0; i < ndim; ++i) {
+        // sort shape and strides by strides
         shape[i] = this->shape[indices[i]];
         strides[i] = this->strides[indices[i]];
-    }
-    this->storageShape[ndim - 1] = shape[ndim - 1] * strides[ndim - 1];
-    int64_t carry = 1;
-    for (int64_t i = ndim - 1; i > 0; --i) {
-        if (this->storageShape[i] > strides[i-1]){
+        if (strides[i] >= 1){
+            bound++;
+        }else if (strides[i] < 0){
+            // negative stride not supported
             return STATUS_BAD_TENSOR_STRIDES;
         }
+    }
+    // Treat the last non-zero-strided dimension as continuous 
+    // All trilling zero-strided dimensions are treated as 1
+    shape[bound - 1] = shape[bound - 1] * strides[bound - 1];
+    strides[bound - 1] = 1;
+    int64_t carry = 1;
+    for (int64_t i = bound - 1; i > 0; --i) {
+        // Each non-cummulative stride should be no smaller than corresponding dim
+        // and storage shape is the bigger one
         this->storageShape[i] = strides[i-1] / carry;
-        carry *= this->storageShape[i];
+        if (shape[i] > this->storageShape[i]){
+                return STATUS_BAD_TENSOR_STRIDES;
+        }
+        carry *= this->storageShape[i];  
     }
     this->storageShape[0] = shape[0];
     
-
     return STATUS_SUCCESS;
 }
 
