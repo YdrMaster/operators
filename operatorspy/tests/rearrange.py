@@ -105,7 +105,12 @@ def test_ascend(lib, test_cases):
 
 if __name__ == "__main__":
     args = get_args()
-    test_cases = [(((2, 4, 32), None), ((2, 4, 32), (256, 64, 1)))]
+    test_cases = [
+        # ((src_shape, src_stride), (dst_shape, dst_stride))
+        (((2, 4, 32), None), ((2, 4, 32), (256, 64, 1))),
+        (((32, 6, 64), (64, 2560, 1)), ((32, 6, 64), None)),
+        (((4, 6, 64), (64, 2560, 1)), ((4, 6, 64), (131072, 64, 1))),
+        ]
     lib = open_lib()
     lib.infiniopCreateRearrangeDescriptor.restype = c_int32
     lib.infiniopCreateRearrangeDescriptor.argtypes = [
