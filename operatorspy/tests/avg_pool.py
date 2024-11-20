@@ -20,10 +20,6 @@ from operatorspy.tests.test_utils import get_args
 import torch
 from typing import Tuple
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
 # constant for control whether profile the pytorch and lib functions
 # NOTE: need to manually add synchronization function to the lib function,
 #       e.g., cudaDeviceSynchronize() for CUDA
@@ -31,11 +27,6 @@ PROFILE = False
 NUM_PRERUN = 10
 NUM_ITERATIONS = 1000
 
-<<<<<<< HEAD
-=======
->>>>>>> ebe7ed4 (Separate avg pool and max pool and completed CPU implementation)
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
 
 class AvgPoolDescriptor(Structure):
     _fields_ = [("device", c_int32)]
@@ -57,23 +48,12 @@ def pool(x, k, padding, stride, dilation = 1):
         return None
 
     if ndim == 3 and x.dtype == torch.float16:
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
         ans = pooling_layers[ndim](k, stride=stride, padding=padding)(x.to(torch.float32)).to(torch.float16)
     else:
         ans = pooling_layers[ndim](k, stride=stride, padding=padding)(x)
     if PROFILE:
         torch.cuda.synchronize()
     return ans
-<<<<<<< HEAD
-=======
-        return pooling_layers[ndim](k, stride=stride, padding=padding)(x.to(torch.float32)).to(torch.float16)
-    return pooling_layers[ndim](k, stride=stride, padding=padding)(x)
->>>>>>> ebe7ed4 (Separate avg pool and max pool and completed CPU implementation)
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
 
 
 def inferShape(x_shape, kernel_shape, padding, strides):
@@ -112,10 +92,6 @@ def test(
     x = torch.rand(x_shape, dtype=tensor_dtype).to(torch_device)
     y = torch.rand(inferShape(x_shape, k_shape, padding, strides), dtype=tensor_dtype).to(torch_device)
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
     for i in range(NUM_PRERUN if PROFILE else 1):
         ans = pool(x, k_shape, padding, strides)
     if PROFILE:
@@ -125,12 +101,6 @@ def test(
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"pytorch time: {elapsed :6f}")
     
-<<<<<<< HEAD
-=======
-    ans = pool(x, k_shape, padding, strides)
->>>>>>> ebe7ed4 (Separate avg pool and max pool and completed CPU implementation)
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
 
     x_tensor = to_tensor(x, lib)
     y_tensor = to_tensor(y, lib)
@@ -156,10 +126,6 @@ def test(
     workspace = torch.zeros(int(workspaceSize.value), dtype=torch.uint8).to(torch_device)
     workspace_ptr = ctypes.cast(workspace.data_ptr(), ctypes.POINTER(ctypes.c_uint8))
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
     for i in range(NUM_PRERUN if PROFILE else 1):
         lib.infiniopAvgPool(
             descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
@@ -172,14 +138,6 @@ def test(
             )
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")
-<<<<<<< HEAD
-=======
-    lib.infiniopAvgPool(
-        descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
-    )
->>>>>>> ebe7ed4 (Separate avg pool and max pool and completed CPU implementation)
-=======
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
 
     assert torch.allclose(y, ans, atol=0, rtol=1e-3)
     check_error(lib.infiniopDestroyAvgPoolDescriptor(descriptor))
@@ -217,19 +175,8 @@ def test_bang(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # x_shape, kernel_shape, padding, strides
-<<<<<<< HEAD
-<<<<<<< HEAD
         ((1, 1, 10), (3,), (1,), (1,)),
         ((32, 3, 224, 224), (3, 3), (1, 1), (2, 2)),
-=======
-        # ((), (), (), ()),
-        ((1, 1, 10), (3,), (1,), (1,)),
-        ((1, 3, 224, 224), (3, 3), (1, 1), (2, 2)),
->>>>>>> ebe7ed4 (Separate avg pool and max pool and completed CPU implementation)
-=======
-        ((1, 1, 10), (3,), (1,), (1,)),
-        ((32, 3, 224, 224), (3, 3), (1, 1), (2, 2)),
->>>>>>> d2ad734 (Add profiling in tests, add max_pool and avg_pool into infini_operators.h)
         ((1, 1, 16, 16, 16), (5, 5, 5), (2, 2, 2), (2, 2, 2)),
     ]
     args = get_args()

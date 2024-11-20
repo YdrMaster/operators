@@ -18,7 +18,7 @@ __C __export infiniopStatus_t infiniopCreateMaxPoolDescriptor(infiniopHandle_t h
                                                               uint64_t const *pads,
                                                               int64_t const *strides,
                                                               uint64_t n) {
-    infiniopPoolingDescriptor_t pooling_desc = new PoolingDescriptor{handle->device};
+    infiniopPoolingDescriptor_t pooling_desc;
     CHECK_STATUS(infiniopCreatePoolingDescriptor(handle, &pooling_desc, y, x, kernel_shape, pads, strides, n, 0), STATUS_SUCCESS);
     uint64_t workspace_size = 0;
     CHECK_STATUS(infiniopGetPoolingWorkspaceSize(pooling_desc, &workspace_size), STATUS_SUCCESS);
