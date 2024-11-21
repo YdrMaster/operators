@@ -56,8 +56,9 @@ def test(
             handle, ctypes.byref(descriptor), y_tensor.descriptor, x_tensor.descriptor
         )
     )
-    lib.infiniopRearrange(descriptor, y_tensor.data, x_tensor.data, None)
-    
+    check_error(
+        lib.infiniopRearrange(descriptor, y_tensor.data, x_tensor.data, None)
+    )
     assert torch.allclose(x, y, atol=0, rtol=1e-3)
     print("Test passed!")
     check_error(lib.infiniopDestroyRearrangeDescriptor(descriptor))
@@ -110,6 +111,9 @@ if __name__ == "__main__":
         (((2, 4, 32), None), ((2, 4, 32), (256, 64, 1))),
         (((32, 6, 64), (64, 2560, 1)), ((32, 6, 64), None)),
         (((4, 6, 64), (64, 2560, 1)), ((4, 6, 64), (131072, 64, 1))),
+        (((1, 32, 64), (2048, 64, 1)), ((1, 32, 64), (2048, 64, 1))),
+        (((32, 1, 64), (64, 2560, 1)), ((32, 1, 64), (64, 64, 1))),
+        (((4, 1, 64), (64, 2560, 1)), ((4, 1, 64), (64, 11264, 1))),
         ]
     lib = open_lib()
     lib.infiniopCreateRearrangeDescriptor.restype = c_int32
