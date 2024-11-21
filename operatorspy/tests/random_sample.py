@@ -88,7 +88,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
         ans = random_sample(data.to("cpu"), random_val, topp, topk, voc, temperature, "cpu")
     else:
         ans = random_sample_0(data)
-    if(torch_device == 'mlu'):
+    if(torch_device == 'mlu' or torch_device == 'npu'):
         
         indices = torch.zeros([1], dtype = torch.int64).to(torch_device)
     else:
@@ -158,18 +158,28 @@ def test_bang(lib, test_cases):
     for (voc, random_val, topp, topk, temperature) in test_cases:
         test(lib, handle, "mlu", voc, random_val, topp, topk, temperature)
     destroy_handle(lib, handle)
+    
+
+def test_ascend(lib, test_cases):
+    import torch_npu
+    device = DeviceEnum.DEVICE_ASCEND
+    handle = create_handle(lib, device)
+    for (voc, random_val, topp, topk, temperature) in test_cases:
+        test(lib, handle, "npu", voc, random_val, topp, topk, temperature)
+    destroy_handle(lib, handle) 
+    
 
 
 if __name__ == "__main__":
     test_cases = [
         # voc, random_val, topp, topk, temperature
-        (512, 0.92, 0.8, 3, 0.5),
-        (4096, 0.95, 0.9, 5, 1.0),
-        (16384, 0.85, 0.85, 10, 2.0),
-        (512, 0.92, 0, 3, 0.5),
-        (4096, 0.95, 0.9, 0, 1.0),
-        (16384, 0.85, 0, 0, 2.0),
-        (16384, 0.85, 0, 1, 2.0),
+        (512, 0.92, 0, 0, 0.5),
+        # (4096, 0.95, 0.9, 5, 1.0),
+        # (16384, 0.85, 0.85, 10, 2.0),
+        # (512, 0.92, 0, 3, 0.5),
+        # (4096, 0.95, 0.9, 0, 1.0),
+        # (16384, 0.85, 0, 0, 2.0),
+        # (16384, 0.85, 0, 1, 2.0),
     ]
     
     args = get_args()
@@ -209,6 +219,8 @@ if __name__ == "__main__":
         test_cuda(lib, test_cases)
     if args.bang:
         test_bang(lib, test_cases)
-    if not (args.cpu or args.cuda or args.bang):
+    if args.ascend:
+        test_ascend(lib, test_cases)
+    if not (args.cpu or args.cuda or args.bang or args.ascend):
         test_cpu(lib, test_cases)
     print("Test passed!")

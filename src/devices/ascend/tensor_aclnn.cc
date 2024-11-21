@@ -65,7 +65,7 @@ infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vecto
 //             return STATUS_BAD_TENSOR_STRIDES;
 //         }
 //     }
-//     // Treat the last non-zero-strided dimension as continuous 
+//     // Treat the last non-zero-strided dimension as continuous
 //     // All trilling zero-strided dimensions are treated as 1
 //     shape[bound - 1] = shape[bound - 1] * strides[bound - 1];
 //     strides[bound - 1] = 1;
@@ -77,22 +77,22 @@ infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vecto
 //         if (shape[i] > this->storageShape[i]){
 //                 return STATUS_BAD_TENSOR_STRIDES;
 //         }
-//         carry *= this->storageShape[i];  
+//         carry *= this->storageShape[i];
 //     }
 //     this->storageShape[0] = shape[0];
-    
+
 //     return STATUS_SUCCESS;
 // }
 
 
 /// @brief Infer storage shape. For now this ruturns a 1D shape of the total tensor storage size.
 /// We don't see why higher dimensional storage shape is ever needed. To change if necesary.
-infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
+infiniopStatus_t aclnnTensorDescriptor::inferStorageShape() {
     auto index = std::max_element(this->strides.begin(), this->strides.end());
     uint64_t max_stride_index = std::distance(this->strides.begin(), index);
     this->storageNdim = 1;
     this->storageShape = std::vector<int64_t>({this->shape[max_stride_index] * this->strides[max_stride_index]});
-    
+
     return STATUS_SUCCESS;
 }
 
