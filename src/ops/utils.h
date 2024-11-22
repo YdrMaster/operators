@@ -4,6 +4,7 @@
 #include "data_type.h"
 #include "tensor.h"
 #include <algorithm>
+#include <iostream>
 #include <numeric>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,21 +30,32 @@ inline void assert_true(int expr, const char *msg, const char *file, int line) {
 
 #define ROUND_UP_DIV(x, y) ((x + y - 1) / y)
 
-#define CHECK_ERROR(call, target, errCode)            \
-    do {                                              \
-        if (auto value = (call); value == (target)) { \
-            return (errCode);                         \
-        }                                             \
+#define CHECK_ERROR(call, target, errCode)                   \
+    do {                                                     \
+        if (auto value = (call); value == (target)) {        \
+            std::cerr << "Error: expected " << (target)      \
+                      << " but got " << value                \
+                      << " in file " << __FILE__             \
+                      << ", function " << __func__           \
+                      << ", line " << __LINE__ << std::endl; \
+            return (errCode);                                \
+        }                                                    \
     } while (0)
+
 #define CREATE_CHECK_ERROR(expr, value, target, errCode) \
     expr;                                                \
     CHECK_ERROR(value, target, errCode)
 
-#define CHECK_STATUS(call, target)                    \
-    do {                                              \
-        if (auto value = (call); value != (target)) { \
-            return value;                             \
-        }                                             \
+#define CHECK_STATUS(call, target)                           \
+    do {                                                     \
+        if (auto value = (call); value != (target)) {        \
+            std::cerr << "Error: expected " << (target)      \
+                      << " but got " << value                \
+                      << " in file " << __FILE__             \
+                      << ", function " << __func__           \
+                      << ", line " << __LINE__ << std::endl; \
+            return value;                                    \
+        }                                                    \
     } while (0)
 
 // check if two data layouts (types) are equal

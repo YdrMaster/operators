@@ -1,11 +1,20 @@
 import ctypes
+import inspect
 from .data_layout import *
 from .liboperators import infiniopTensorDescriptor_t, CTensor, infiniopHandle_t
 
 
 def check_error(status):
     if status != 0:
-        raise Exception("Error code " + str(status))
+        frame = inspect.currentframe()
+        caller = frame.f_back
+        filename = caller.f_code.co_filename
+        line_number = caller.f_lineno
+        function_name = caller.f_code.co_name
+
+        raise Exception(
+            f"Error code {status} in file {filename}, line {line_number}, function {function_name}"
+        )
 
 
 def to_tensor(tensor, lib):
