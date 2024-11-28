@@ -57,7 +57,7 @@ def test_out_of_place(
     if c_stride is not None:
         c = rearrange_tensor(c, c_stride)
     ans = swiglu(a, b)
-    
+
     if sync is not None:
         sync()
 
@@ -74,8 +74,12 @@ def test_out_of_place(
             b_tensor.descriptor,
         )
     )
-    lib.infiniopSwiGLU(descriptor, c_tensor.data, a_tensor.data, b_tensor.data, None)
-    
+    check_error(
+        lib.infiniopSwiGLU(
+            descriptor, c_tensor.data, a_tensor.data, b_tensor.data, None
+        )
+    )
+
     assert torch.allclose(c, ans, atol=1e-4, rtol=1e-2)
     print("out-of-place Test passed!")
 
@@ -100,7 +104,7 @@ def test_in_place1(
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
     ans = swiglu(a, b)
-    
+
     if sync is not None:
         sync()
 
@@ -116,9 +120,12 @@ def test_in_place1(
             b_tensor.descriptor,
         )
     )
-    lib.infiniopSwiGLU(descriptor, a_tensor.data, a_tensor.data, b_tensor.data, None)
-    
-    
+    check_error(
+        lib.infiniopSwiGLU(
+            descriptor, a_tensor.data, a_tensor.data, b_tensor.data, None
+        )
+    )
+
     assert torch.allclose(a, ans, atol=1e-4, rtol=1e-2)
     print("in-place1 Test passed!")
 
@@ -143,7 +150,7 @@ def test_in_place2(
     if b_stride is not None:
         b = rearrange_tensor(b, b_stride)
     ans = swiglu(a, b)
-    
+
     if sync is not None:
         sync()
 
@@ -159,8 +166,12 @@ def test_in_place2(
             b_tensor.descriptor,
         )
     )
-    lib.infiniopSwiGLU(descriptor, b_tensor.data, a_tensor.data, b_tensor.data, None)
-    
+    check_error(
+        lib.infiniopSwiGLU(
+            descriptor, b_tensor.data, a_tensor.data, b_tensor.data, None
+        )
+    )
+
     assert torch.allclose(b, ans, atol=1e-4, rtol=1e-2)
     print("in-place2 Test passed!")
 
@@ -208,7 +219,7 @@ def test_bang(lib, test_cases):
         test_in_place2(lib, handle, "mlu", shape, a_stride, b_stride, dtype)
 
     destroy_handle(lib, handle)
-    
+
 
 def test_ascend(lib, test_cases):
     import torch_npu

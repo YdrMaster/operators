@@ -76,7 +76,7 @@ def test(
     c = torch.ones(c_shape, dtype=dtype).to(torch_device)
 
     ans = matmul(c, beta, a, b, alpha)
-    
+
     if a_stride is not None:
         a = rearrange_tensor(a, a_stride)
     if b_stride is not None:
@@ -106,7 +106,6 @@ def test(
     )
     workspace = create_workspace(workspace_size.value, a.device)
 
-
     check_error(
         lib.infiniopMatmul(
             descriptor,
@@ -120,7 +119,7 @@ def test(
     )
 
     assert torch.allclose(c, ans, atol=0, rtol=1e-2)
-    
+
     if PROFILE:
         for i in range(NUM_PRERUN):
             _ = matmul(c, beta, a, b, alpha)
@@ -130,6 +129,7 @@ def test(
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"pytorch time: {elapsed :6f}")
         for i in range(NUM_PRERUN):
+            check_error(
                 lib.infiniopMatmul(
                     descriptor,
                     workspace.data_ptr() if workspace is not None else None,
@@ -138,9 +138,11 @@ def test(
                     a_tensor.data,
                     b_tensor.data,
                     None,
+                )
             )
         start_time = time.time()
         for i in range(NUM_ITERATIONS):
+            check_error(
                 lib.infiniopMatmul(
                     descriptor,
                     workspace.data_ptr() if workspace is not None else None,
@@ -149,6 +151,7 @@ def test(
                     a_tensor.data,
                     b_tensor.data,
                     None,
+                )
             )
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")

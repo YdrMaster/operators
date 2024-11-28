@@ -92,7 +92,7 @@ def test_bang(lib, test_cases):
         y_shape, y_stride = test_case[1]
         test(lib, handle, "mlu", x_shape, x_stride, y_shape, y_stride)
     destroy_handle(lib, handle)
-    
+
 def test_ascend(lib, test_cases):
     import torch_npu
 

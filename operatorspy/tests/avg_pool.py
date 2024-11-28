@@ -91,7 +91,7 @@ def test(
 
     x = torch.rand(x_shape, dtype=tensor_dtype).to(torch_device)
     y = torch.rand(inferShape(x_shape, k_shape, padding, strides), dtype=tensor_dtype).to(torch_device)
-    
+
     for i in range(NUM_PRERUN if PROFILE else 1):
         ans = pool(x, k_shape, padding, strides)
     if PROFILE:
@@ -100,7 +100,6 @@ def test(
             _ = pool(x, k_shape, padding, strides)
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"pytorch time: {elapsed :6f}")
-    
 
     x_tensor = to_tensor(x, lib)
     y_tensor = to_tensor(y, lib)
@@ -127,14 +126,28 @@ def test(
     workspace_ptr = ctypes.cast(workspace.data_ptr(), ctypes.POINTER(ctypes.c_uint8))
 
     for i in range(NUM_PRERUN if PROFILE else 1):
-        lib.infiniopAvgPool(
-            descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+        check_error(
+            lib.infiniopAvgPool(
+                descriptor,
+                workspace_ptr,
+                workspaceSize,
+                y_tensor.data,
+                x_tensor.data,
+                None,
+            )
         )
     if PROFILE:
         start_time = time.time()
         for i in range(NUM_ITERATIONS):
-            lib.infiniopAvgPool(
-                descriptor, workspace_ptr, workspaceSize, y_tensor.data, x_tensor.data, None
+            check_error(
+                lib.infiniopAvgPool(
+                    descriptor,
+                    workspace_ptr,
+                    workspaceSize,
+                    y_tensor.data,
+                    x_tensor.data,
+                    None,
+                )
             )
         elapsed = (time.time() - start_time) / NUM_ITERATIONS
         print(f"    lib time: {elapsed :6f}")
