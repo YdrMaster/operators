@@ -30,7 +30,7 @@ infiniopRandomSampleDescriptor_t = POINTER(RandomSampleDescriptor)
 
 
 def random_sample(data, random_val, topp, topk, voc, temperature, torch_device):
-    indices = torch.zeros([topk], dtype = torch.uint64)
+    indices = torch.zeros([topk], dtype = torch.int64)
     dataNp = data.clone().detach()
     sorted_indices = torch.arange(voc)
     
@@ -52,7 +52,7 @@ def random_sample(data, random_val, topp, topk, voc, temperature, torch_device):
     
     globalM = dataNp[0]
     dataNp = (dataNp - globalM) / temperature
-    dataNp = torch.softmax(dataNp, dim = 0)
+    dataNp = torch.softmax(dataNp.float(), dim = 0)
     sum_s = 0
     for end in range(topk):
         sum_s += dataNp[end]
@@ -96,7 +96,7 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
         indices = torch.zeros([1], dtype = torch.uint64).to(torch_device)
     x_tensor = to_tensor(data, lib)
     indices_tensor = to_tensor(indices, lib)
-    if(torch_device == 'mlu'):
+    if(torch_device == 'mlu' or torch_device == 'npu'):
         indices_tensor.descriptor.contents.dt = U64 # treat int64 as uint64
     
     
@@ -127,6 +127,9 @@ def test(lib, handle, torch_device, voc, random_val, topp, topk, temperature, x_
             None,
         )
     )
+    if torch_device == "npu":
+        torch.npu.synchronize()
+
     assert indices[0].type(ans.dtype) == ans or abs(data[indices[0]] - data[ans]) == 0.0, "compute error"
 
 
@@ -173,7 +176,7 @@ def test_ascend(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # voc, random_val, topp, topk, temperature
-        (512, 0.92, 0.8, 3, 0.5),
+        (128, 0.92, 0.8, 3, 0.5),
         (4096, 0.95, 0.9, 5, 1.0),
         (16384, 0.85, 0.85, 10, 2.0),
         (512, 0.92, 0, 3, 0.5),

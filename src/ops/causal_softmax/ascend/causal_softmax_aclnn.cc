@@ -118,7 +118,7 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     // malloc mask space
     auto &maskAddr = (*desc_ptr)->maskAddr;
     auto mask_size = numElements(maskDesc->shape.data(), maskDesc->ndim) * ele_size;
-    maskAddr = mallocWorkspace(mask_size);
+    CHECK_STATUS(mallocWorkspace(&maskAddr, mask_size), STATUS_SUCCESS);
 
     // copy mask matrix to device mem
     ret = aclrtMemcpy(maskAddr,
@@ -181,7 +181,7 @@ infiniopStatus_t aclnnDestroyCausalSoftmaxDescriptor(CausalSoftmaxAclnnDescripto
     delete desc->maskDesc;
     delete desc->outDesc;
     aclDestroyAclOpExecutor(desc->executor);
-    freeWorkspace(desc->maskAddr);
+    CHECK_STATUS(freeWorkspace(desc->maskAddr), STATUS_SUCCESS);
     delete desc;
     return STATUS_SUCCESS;
 }

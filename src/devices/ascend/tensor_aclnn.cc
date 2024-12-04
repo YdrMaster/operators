@@ -31,6 +31,25 @@ infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vecto
     return STATUS_SUCCESS;
 }
 
+infiniopStatus_t aclnnTensorDescriptor::setDescriptor(aclDataType dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides) {
+    if (shape.size() != strides.size()) {
+        return STATUS_BAD_PARAM;
+    }
+    this->ndim = shape.size();
+    this->shape = std::vector<int64_t>(shape);
+    this->strides = std::vector<int64_t>(strides);
+    this->dataType = dtype;
+
+    // Set format
+    // TODO: Support other format
+    aclFormat format = aclFormat::ACL_FORMAT_ND;
+    this->format = format;
+
+    CHECK_STATUS(this->inferStorageShape(), STATUS_SUCCESS);
+
+    return STATUS_SUCCESS;
+}
+
 // infiniopStatus_t aclnnTensorDescriptor::inferStorageShape(){
 //     auto shape = std::vector<int64_t>();
 //     auto strides = std::vector<int64_t>();
@@ -117,7 +136,7 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
 /// @param data Data ptr on device global mem.
 /// @param tensor Pointer of pointer of aclTensor.
 /// @return
-infiniopStatus_t aclnnTensorDescriptor::createTensor() {
+infiniopStatus_t aclnnTensorDescriptor::createTensor(void *data) {
     if (this->t) {
         return STATUS_SUCCESS;
     }
@@ -129,7 +148,7 @@ infiniopStatus_t aclnnTensorDescriptor::createTensor() {
                               this->format,
                               this->storageShape.data(),
                               this->storageNdim,
-                              nullptr);
+                              data);
     return STATUS_SUCCESS;
 }
 
