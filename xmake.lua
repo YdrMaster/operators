@@ -239,15 +239,20 @@ target("infiniop")
 
         -- Output messages with colors
         os.exec("echo -e '" .. GREEN .. "Compilation completed successfully." .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "Install the libraries with \"xmake install\" or set INFINI_ROOT=" .. current_dir .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "You can install the libraries with \"xmake install\"" .. NC .. "'")
     end)
     
-    on_install(function (target) 
-        local home_dir = os.getenv("HOME")
-        local infini_dir = home_dir .. "/.infini/"
+    on_install(function (target)
+        print("Installing libraries...")
+        if os.getenv("INFINI_ROOT") == nil then
+            print(YELLOW .. "INFINI_ROOT not set, installation path default to ~/.infini".. NC)
+            print(YELLOW .. "It is recommended to set INFINI_ROOT as an environment variable." .. NC)
+            os.setenv("INFINI_ROOT", os.getenv("HOME") .. "/.infini")
+        end
+        local infini_dir = os.getenv("INFINI_ROOT")
 
         if os.isdir(infini_dir) then
-            print("~/.infini/ detected, duplicated contents will be overwritten.")
+            print("INFINI_ROOT already exists, duplicated contents will be overwritten.")
         else
             os.mkdir(infini_dir)
         end
@@ -256,10 +261,10 @@ target("infiniop")
         local GREEN = '\27[0;32m'
         local YELLOW = '\27[1;33m'
         local NC = '\27[0m'  -- No Color
-        os.exec("echo -e '" .. GREEN .. "Installation completed successfully at ~/.infini/." .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "To set the environment variables, please run the following command:" .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "echo \"export INFINI_ROOT=~/.infini/\" >> ~/.bashrc" .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "echo \"export LD_LIBRARY_PATH=:~/.infini/lib:$LD_LIBRARY_PATH\" >> ~/.bashrc" .. NC .. "'")
+        os.exec("echo -e '" .. GREEN .. "Installation completed successfully at " .. infini_dir .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "To set the environment variables, you can run the following command:" .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "export INFINI_ROOT=" .. infini_dir .. NC .. "'")
+        os.exec("echo -e '" .. YELLOW .. "export LD_LIBRARY_PATH=:$INFINI_ROOT/lib:$LD_LIBRARY_PATH" .. NC .. "'")
     end)
 
 target_end()
