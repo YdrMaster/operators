@@ -246,12 +246,12 @@ target("infiniop")
         local YELLOW = '\27[1;33m'
         local NC = '\27[0m'  -- No Color
 
-        if os.getenv("INFINI_ROOT") == nil then
+        local infini_dir = os.getenv("INFINI_ROOT")
+        if infini_dir == nil then
             print(YELLOW .. "INFINI_ROOT not set, installation path default to ~/.infini".. NC)
             print(YELLOW .. "It is recommended to set INFINI_ROOT as an environment variable." .. NC)
-            os.setenv("INFINI_ROOT", os.getenv("HOME") .. "/.infini")
+            infini_dir = os.getenv("HOME") .. "/.infini"
         end
-        local infini_dir = os.getenv("INFINI_ROOT")
 
         if os.isdir(infini_dir) then
             print("INFINI_ROOT already exists, duplicated contents will be overwritten.")
