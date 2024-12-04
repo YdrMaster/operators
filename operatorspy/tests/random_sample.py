@@ -176,7 +176,7 @@ def test_ascend(lib, test_cases):
 if __name__ == "__main__":
     test_cases = [
         # voc, random_val, topp, topk, temperature
-        (128, 0.92, 0.8, 3, 0.5),
+        (512, 0.92, 0.8, 3, 0.5),
         (4096, 0.95, 0.9, 5, 1.0),
         (16384, 0.85, 0.85, 10, 2.0),
         (512, 0.92, 0, 3, 0.5),
