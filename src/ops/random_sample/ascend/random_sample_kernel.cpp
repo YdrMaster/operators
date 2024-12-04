@@ -117,7 +117,7 @@ private:
 
         DataCopy(pLocal, pGm, vocAligned);
         DataCopy(topkValLocal, topkGm, topkAligned);
-        DataCopy(topkIdxLocal, topkIdxGm, topkAligned);
+        DataCopy(topkIdxLocal, topkIdxGm, topkIdxAligned);
 
         pQue.EnQue(pLocal);
         topkQue.EnQue(topkValLocal);
