@@ -16,6 +16,7 @@ public:
         topp = topp_;
         temperature = temper_;
         random = random_;
+        blockSize = 256 * 2;
 
         // CumSumInfo
         if (sizeof(T) == sizeof(float)) {
@@ -37,11 +38,11 @@ public:
         pipe.InitBuffer(pQue, 1, vocAligned * sizeof(T));
         pipe.InitBuffer(topkQue, 1, topkAligned * sizeof(T));
         pipe.InitBuffer(topkIdxQue, 1, topkIdxAligned * sizeof(int64_t));
-        pipe.InitBuffer(resQue, 1, 32); // 32 bytes for aligned
+        pipe.InitBuffer(resQue, 1, 32);// 32 bytes for aligned
 
-        pipe.InitBuffer(softMaxBuf1, vocAligned * sizeof(T));
-        pipe.InitBuffer(softMaxBuf2, vocAligned * sizeof(T));
-        pipe.InitBuffer(softMaxBuf3, vocAligned * sizeof(T));
+        pipe.InitBuffer(softMaxBuf1, blockSize);
+        pipe.InitBuffer(softMaxBuf2, blockSize);
+        pipe.InitBuffer(softMaxBuf3, blockSize);
         pipe.InitBuffer(softMaxOutBuf, topkAligned * sizeof(T));
 
         pipe.InitBuffer(inclusiveSumOutBuf, topkAligned * sizeof(T));
@@ -57,17 +58,35 @@ private:
     __aicore__ inline void SoftMax(LocalTensor<T> &valIn,
                                    LocalTensor<T> &topkValIn,
                                    LocalTensor<T> &softMaxOut) {
+        int32_t repeatTimes = vocAligned * sizeof(T) / blockSize;
+        int32_t remainder = vocAligned * sizeof(T) % blockSize / sizeof(T);
+        int32_t tileLength = blockSize / sizeof(T);
+        float negMax = -static_cast<float>(topkValIn(0));
+        float invTemperature = 1.0f / temperature;
+        float sum = 0.f;
+        float sum_s = 0.f;
         LocalTensor<T> tmpBuffer = softMaxBuf1.Get<T>();
         LocalTensor<T> tmpBuffer2 = softMaxBuf2.Get<T>();
         LocalTensor<T> tmpBuffer3 = softMaxBuf3.Get<T>();
-        float negMax = -static_cast<float>(topkValIn(0));
-        float invTemperature = 1.0f / temperature;
-        Adds(tmpBuffer, valIn, static_cast<T>(negMax), voc);
-        Muls(tmpBuffer2, tmpBuffer, static_cast<T>(invTemperature), voc);
-        Exp(tmpBuffer3, tmpBuffer2, voc);
-        float sum = 0.f;
-        for (int i = 0; i < voc; ++i) {
-            sum += static_cast<float>(tmpBuffer3(i));
+        for (int32_t i = 0; i < repeatTimes; i++) {
+            Adds(tmpBuffer, valIn[i * tileLength], static_cast<T>(negMax), tileLength);
+            Muls(tmpBuffer2, tmpBuffer, static_cast<T>(invTemperature), tileLength);
+            Exp(tmpBuffer3, tmpBuffer2, tileLength);
+            sum_s = 0.f;
+            for (int j = 0; j < tileLength; ++j) {
+                sum_s += static_cast<float>(tmpBuffer3(j));
+            }
+            sum += sum_s;
+        }
+        if (remainder != 0) {
+            Adds(tmpBuffer, valIn[repeatTimes * tileLength], static_cast<T>(negMax), remainder);
+            Muls(tmpBuffer2, tmpBuffer, static_cast<T>(invTemperature), remainder);
+            Exp(tmpBuffer3, tmpBuffer2, remainder);
+            sum_s = 0.f;
+            for (int i = 0; i < remainder; ++i) {
+                sum_s += static_cast<float>(tmpBuffer3(i));
+            }
+            sum += sum_s;
         }
         float invSum = 1.0f / sum;
         Adds(tmpBuffer, topkValIn, static_cast<T>(negMax), topk);
@@ -183,6 +202,7 @@ private:
     int32_t topkAligned;
     int32_t topkIdxAligned;
     int32_t vocAligned;
+    int32_t blockSize;
 };
 
 extern "C" __global__ __aicore__ void
