@@ -125,7 +125,7 @@ if has_config("cambricon-mlu") then
             table.insert(target:objectfiles(), objectfile)
         end)
 
-rule_end()
+    rule_end()
 
 
     target("cambricon-mlu")
@@ -179,7 +179,7 @@ if has_config("ascend-npu") then
             os.rm(builddir.. "/libascend_kernels.a")
             
         end)
-        rule_end()
+    rule_end()
 
     target("ascend-npu")
         -- Other configs
@@ -226,9 +226,6 @@ target("infiniop")
             get_config("mode")
         )
 
-        os.exec("mkdir -p $(projectdir)/lib/")
-        os.exec("cp " ..builddir.. "/libinfiniop.so $(projectdir)/lib/")
-        os.exec("cp -r $(projectdir)/include $(projectdir)/lib/")
         -- Define color codes
         local GREEN = '\27[0;32m'
         local YELLOW = '\27[1;33m'
@@ -244,23 +241,35 @@ target("infiniop")
     
     on_install(function (target)
         print("Installing libraries...")
-        if os.getenv("INFINI_ROOT") == nil then
+
+        local GREEN = '\27[0;32m'
+        local YELLOW = '\27[1;33m'
+        local NC = '\27[0m'  -- No Color
+
+        local infini_dir = os.getenv("INFINI_ROOT")
+        if infini_dir == nil then
             print(YELLOW .. "INFINI_ROOT not set, installation path default to ~/.infini".. NC)
             print(YELLOW .. "It is recommended to set INFINI_ROOT as an environment variable." .. NC)
-            os.setenv("INFINI_ROOT", os.getenv("HOME") .. "/.infini")
+            infini_dir = os.getenv("HOME") .. "/.infini"
         end
-        local infini_dir = os.getenv("INFINI_ROOT")
 
         if os.isdir(infini_dir) then
             print("INFINI_ROOT already exists, duplicated contents will be overwritten.")
         else
             os.mkdir(infini_dir)
         end
-        os.exec("cp -r " .. "$(projectdir)/lib " .. infini_dir)
 
-        local GREEN = '\27[0;32m'
-        local YELLOW = '\27[1;33m'
-        local NC = '\27[0m'  -- No Color
+        local builddir = string.format(
+            "%s/build/%s/%s/%s",
+            os.projectdir(),
+            get_config("plat"),
+            get_config("arch"),
+            get_config("mode")
+        )        
+        os.exec("mkdir -p " .. infini_dir .. "/lib")
+        os.exec("cp " ..builddir.. "/libinfiniop.so " .. infini_dir .. "/lib/")
+        os.exec("cp -r $(projectdir)/include " .. infini_dir .. "/include")        
+
         os.exec("echo -e '" .. GREEN .. "Installation completed successfully at " .. infini_dir .. NC .. "'")
         os.exec("echo -e '" .. YELLOW .. "To set the environment variables, you can run the following command:" .. NC .. "'")
         os.exec("echo -e '" .. YELLOW .. "export INFINI_ROOT=" .. infini_dir .. NC .. "'")
