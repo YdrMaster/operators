@@ -1,4 +1,8 @@
 add_rules("mode.debug", "mode.release")
+-- Define color codes
+local GREEN = '\27[0;32m'
+local YELLOW = '\27[1;33m'
+local NC = '\27[0m'  -- No Color
 
 add_includedirs("include")
 
@@ -116,7 +120,7 @@ if has_config("cambricon-mlu") then
 
             local includedirs = table.concat(target:get("includedirs"), " ")
             local args = {"-c", sourcefile, "-o", objectfile, "-I/usr/local/neuware/include", "--bang-mlu-arch=mtp_592", "-O3", "-fPIC", "-Wall", "-Werror", "-std=c++17", "-pthread"}
-            
+
             for _, includedir in ipairs(target:get("includedirs")) do
                 table.insert(args, "-I" .. includedir)
             end
@@ -126,7 +130,6 @@ if has_config("cambricon-mlu") then
         end)
 
     rule_end()
-
 
     target("cambricon-mlu")
         set_kind("static")
@@ -152,7 +155,7 @@ if has_config("ascend-npu") then
     add_links("libascendcl.so")
     add_links("libnnopbase.so")
     add_links("libopapi.so")
-    add_links("libruntime.so")  
+    add_links("libruntime.so")
     add_linkdirs(ASCEND_HOME .. "/../../driver/lib64/driver")
     add_links("libascend_hal.so")
     local builddir = string.format(
@@ -169,7 +172,7 @@ if has_config("ascend-npu") then
             os.exec("make")
             os.exec("cp $(projectdir)/src/devices/ascend/build/lib/libascend_kernels.a "..builddir.."/")
             os.cd(os.projectdir())
-            
+
         end)
         after_clean(function ()
             local ascend_build_dir = path.join(os.projectdir(), "src/devices/ascend")
@@ -177,7 +180,7 @@ if has_config("ascend-npu") then
             os.exec("make clean")
             os.cd(os.projectdir())
             os.rm(builddir.. "/libascend_kernels.a")
-            
+
         end)
     rule_end()
 
@@ -190,7 +193,7 @@ if has_config("ascend-npu") then
         add_files("src/devices/ascend/*.cc", "src/ops/*/ascend/*.cc")
         add_cxflags("-lstdc++ -Wall -Werror -fPIC")
 
-        -- Add operator 
+        -- Add operator
         add_rules("ascend-kernels")
         add_links(builddir.."/libascend_kernels.a")
 
@@ -216,64 +219,10 @@ target("infiniop")
     add_files("src/devices/handle.cc")
     add_files("src/ops/*/operator.cc")
     add_files("src/tensor/*.cc")
+    after_build(function (target) print(YELLOW .. "You can install the libraries with \"xmake install\"" .. NC) end)
 
-    after_build(function (target) 
-        local builddir = string.format(
-            "%s/build/%s/%s/%s",
-            os.projectdir(),
-            get_config("plat"),
-            get_config("arch"),
-            get_config("mode")
-        )
-
-        -- Define color codes
-        local GREEN = '\27[0;32m'
-        local YELLOW = '\27[1;33m'
-        local NC = '\27[0m'  -- No Color
-
-        -- Get the current directory
-        local current_dir = os.curdir()
-
-        -- Output messages with colors
-        os.exec("echo -e '" .. GREEN .. "Compilation completed successfully." .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "You can install the libraries with \"xmake install\"" .. NC .. "'")
-    end)
-    
-    on_install(function (target)
-        print("Installing libraries...")
-
-        local GREEN = '\27[0;32m'
-        local YELLOW = '\27[1;33m'
-        local NC = '\27[0m'  -- No Color
-
-        local infini_dir = os.getenv("INFINI_ROOT")
-        if infini_dir == nil then
-            print(YELLOW .. "INFINI_ROOT not set, installation path default to ~/.infini".. NC)
-            print(YELLOW .. "It is recommended to set INFINI_ROOT as an environment variable." .. NC)
-            infini_dir = os.getenv("HOME") .. "/.infini"
-        end
-
-        if os.isdir(infini_dir) then
-            print("INFINI_ROOT already exists, duplicated contents will be overwritten.")
-        else
-            os.mkdir(infini_dir)
-        end
-
-        local builddir = string.format(
-            "%s/build/%s/%s/%s",
-            os.projectdir(),
-            get_config("plat"),
-            get_config("arch"),
-            get_config("mode")
-        )        
-        os.exec("mkdir -p " .. infini_dir .. "/lib")
-        os.exec("cp " ..builddir.. "/libinfiniop.so " .. infini_dir .. "/lib/")
-        os.exec("cp -r $(projectdir)/include " .. infini_dir .. "/include")        
-
-        os.exec("echo -e '" .. GREEN .. "Installation completed successfully at " .. infini_dir .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "To set the environment variables, you can run the following command:" .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "export INFINI_ROOT=" .. infini_dir .. NC .. "'")
-        os.exec("echo -e '" .. YELLOW .. "export LD_LIBRARY_PATH=:$INFINI_ROOT/lib:$LD_LIBRARY_PATH" .. NC .. "'")
-    end)
+    set_installdir(os.getenv("INFINI_ROOT") or (os.getenv(is_host("windows") and "HOMEPATH" or "HOME") .. "/.infini"))
+    add_installfiles("include/(**/*.h)", {prefixdir = "include"})
+    add_installfiles("include/*.h", {prefixdir = "include"})
 
 target_end()
