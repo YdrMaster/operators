@@ -191,7 +191,8 @@ void _pooling_cpu(PoolingCpuDescriptor_t desc, void *workspace, uint64_t workspa
                   Ydata *y, Xdata const *x) {
     if (desc->padded_x_size > 0) {
         auto padded_x = reinterpret_cast<Xdata *>(workspace);
-        uint64_t padded_shape[desc->ndim];
+        std::vector<uint64_t> padded_shape_(desc->ndim);
+        auto padded_shape = padded_shape_.data();
         std::fill(padded_x, padded_x + desc->padded_x_size, 0);
         getPaddedShape(desc->ndim, desc->x_shape, desc->pads, padded_shape);
         fillPaddedInput<Xdata>(desc, padded_shape, padded_x, x, desc->pads, 0, 0, 0);
