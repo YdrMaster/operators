@@ -53,13 +53,25 @@ infiniopStatus_t ascendRandomSample(RandomSampleAscendDescriptor_t desc,
                                     int topk,
                                     float temperature,
                                     void *stream) {
+    if (topk <= 0 || topp < 0 || topp > 1.0) {
+        return STATUS_BAD_PARAM;
+    }
+
+    if (random_val < 0 || random_val >= 1.0) {
+        return STATUS_BAD_PARAM;
+    }
+
     auto &pDesc = desc->pDesc;
     auto &topkIdxDesc = desc->topkIdxDesc;
     auto &topkValDesc = desc->topkValDesc;
     auto ndim = static_cast<int64_t>(pDesc->ndim);
+    auto voc = pDesc->shape[0];
+    auto topk_ = topk <= voc ? topk : voc;
+    bool doSample = topk_ > 1 && temperature != 0 && topp != 0;
 
     auto topkShape = std::vector<int64_t>(pDesc->shape);
-    topkShape[ndim - 1] = topk > 1 ? topk : 1;
+    topkShape[ndim - 1] = doSample ? topk_ : 1;
+
     auto topkStrides = std::vector<int64_t>(pDesc->strides);
     // Infer contiguous strides
     topkStrides[ndim - 1] = 1;
@@ -82,7 +94,7 @@ infiniopStatus_t ascendRandomSample(RandomSampleAscendDescriptor_t desc,
     CHECK_STATUS(pDesc->createTensor(pAddr), STATUS_SUCCESS);
     CHECK_STATUS(topkValDesc->createTensor(topkValAddr), STATUS_SUCCESS);
     CHECK_STATUS(topkIdxDesc->createTensor(topkIdxAddr), STATUS_SUCCESS);
-    if (topk <= 1) {
+    if (!doSample) {
         CHECK_STATUS(desc->resDesc->createTensor(result), STATUS_SUCCESS);
     }
 
@@ -90,13 +102,12 @@ infiniopStatus_t ascendRandomSample(RandomSampleAscendDescriptor_t desc,
     uint64_t topkWorkspaceSize = 0;
     aclOpExecutor *topkExecutor = nullptr;
     auto ret = aclnnTopkGetWorkspaceSize(pDesc->t,
-                                         topk > 1 ? topk : 1,
+                                         topkShape[ndim - 1],
                                          ndim - 1,
                                          true,
                                          true,
                                          topkValDesc->t,
-                                         //  topkIdxDesc->t,
-                                         topk > 1 ? topkIdxDesc->t
+                                         doSample ? topkIdxDesc->t
                                                   : desc->resDesc->t,
                                          &topkWorkspaceSize,
                                          &topkExecutor);
@@ -114,7 +125,7 @@ infiniopStatus_t ascendRandomSample(RandomSampleAscendDescriptor_t desc,
               return STATUS_EXECUTION_FAILED);
     CHECK_STATUS(freeWorkspace(topkWorkspace), STATUS_SUCCESS);
 
-    if (topk > 1) {
+    if (doSample) {
         // Do softmax and topp random sample
         CHECK_STATUS(random_sample_do(
                          pAddr,
