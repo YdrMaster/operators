@@ -36,5 +36,6 @@ const char *dataTypeToString(aclDataType dtype);
 const char *formatToString(aclFormat format);
 infiniopStatus_t mallocWorkspace(void **workspaceAddr, uint64_t workspaceSize);
 infiniopStatus_t freeWorkspace(void *workspaceAddr);
+aclDataType toAclDataType(DT dt);
 
 #endif

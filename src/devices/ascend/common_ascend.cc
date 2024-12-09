@@ -30,6 +30,36 @@ infiniopStatus_t freeWorkspace(void *workspaceAddr) {
     return STATUS_SUCCESS;
 }
 
+aclDataType toAclDataType(DT dt) {
+    if (dt == I8)
+        return aclDataType::ACL_INT8;
+    else if (dt == I16)
+        return aclDataType::ACL_INT16;
+    else if (dt == I32)
+        return aclDataType::ACL_INT32;
+    else if (dt == I64)
+        return aclDataType::ACL_INT64;
+    else if (dt == U8)
+        return aclDataType::ACL_UINT8;
+    else if (dt == U16)
+        return aclDataType::ACL_UINT16;
+    else if (dt == U32)
+        return aclDataType::ACL_UINT32;
+    else if (dt == U64)
+        return aclDataType::ACL_UINT64;
+    else if (dt == F16)
+        return aclDataType::ACL_FLOAT16;
+    else if (dt == BF16)
+        return aclDataType::ACL_BF16;
+    else if (dt == F32)
+        return aclDataType::ACL_FLOAT;
+    else if (dt == F64)
+        return aclDataType::ACL_DOUBLE;
+    else
+        return aclDataType::ACL_DT_UNDEFINED;
+}
+
+
 const char *dataTypeToString(aclDataType dtype) {
     switch (dtype) {
         case ACL_DT_UNDEFINED:

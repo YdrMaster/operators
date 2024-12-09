@@ -2,35 +2,6 @@
 #include "../../ops/utils.h"
 #include <algorithm>
 
-infiniopStatus_t aclnnTensorDescriptor::setDescriptor(DT dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides) {
-    if (shape.size() != strides.size()) {
-        return STATUS_BAD_PARAM;
-    }
-    this->ndim = shape.size();
-    this->shape = std::vector<int64_t>(shape);
-    this->strides = std::vector<int64_t>(strides);
-
-    if (dtype_eq(dtype, F16)) {
-        this->dataType = aclDataType::ACL_FLOAT16;
-    } else if (dtype_eq(dtype, F32)) {
-        this->dataType = aclDataType::ACL_FLOAT;
-    } else if (dtype_eq(dtype, U64)) {
-        this->dataType = aclDataType::ACL_UINT64;
-    } else if (dtype_eq(dtype, I64)) {
-        this->dataType = aclDataType::ACL_INT64;
-    } else {
-        return STATUS_BAD_TENSOR_DTYPE;
-    }
-    // Set format
-    // TODO: Support other format
-    aclFormat format = aclFormat::ACL_FORMAT_ND;
-    this->format = format;
-
-    CHECK_STATUS(this->inferStorageShape(), STATUS_SUCCESS);
-
-    return STATUS_SUCCESS;
-}
-
 infiniopStatus_t aclnnTensorDescriptor::setDescriptor(aclDataType dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides) {
     if (shape.size() != strides.size()) {
         return STATUS_BAD_PARAM;
@@ -74,7 +45,7 @@ infiniopStatus_t aclnnTensorDescriptor::fromInfiniOpTensorDescriptor(infiniopTen
         shape[i] = static_cast<int64_t>(y->shape[i]);
         strides[i] = y->strides[i];
     }
-    return setDescriptor(y->dt, shape, strides);
+    return setDescriptor(toAclDataType(y->dt), shape, strides);
 }
 
 /// @brief Wrapper of aclCreateTensor. Create aclTensor.
