@@ -12,7 +12,7 @@
 #include "bang/random_sample_bang.h"
 #endif
 #ifdef ENABLE_ASCEND_NPU
-#include "ascend/random_sample_aclnn.h"
+#include "ascend/random_sample.h"
 #endif
 
 __C infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handle, infiniopRandomSampleDescriptor_t *desc_ptr, infiniopTensorDescriptor_t result, infiniopTensorDescriptor_t probs) {
@@ -34,8 +34,8 @@ __C infiniopStatus_t infiniopCreateRandomSampleDescriptor(infiniopHandle_t handl
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            return aclnnCreateRandomSampleDescriptor((AscendHandle_t) handle,
-                                                     (RandomSampleAclnnDescriptor_t *) desc_ptr, result, probs);
+            return ascendCreateRandomSampleDescriptor((AscendHandle_t) handle,
+                                                     (RandomSampleAscendDescriptor_t *) desc_ptr, result, probs);
         }
 #endif
     }
@@ -62,7 +62,7 @@ __C infiniopStatus_t infiniopGetRandomSampleWorkspaceSize(infiniopRandomSampleDe
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            return aclnnGetRandomSampleWorkspaceSize((RandomSampleAclnnDescriptor_t) desc, size);
+            return ascendGetRandomSampleWorkspaceSize((RandomSampleAscendDescriptor_t) desc, size);
         }
 #endif
     }
@@ -95,7 +95,7 @@ __C infiniopStatus_t infiniopRandomSample(infiniopRandomSampleDescriptor_t desc,
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            return aclnnRandomSample((RandomSampleAclnnDescriptor_t) desc, workspace, workspace_size, result, probs, random_val, topp, topk, temperature, stream);
+            return ascendRandomSample((RandomSampleAscendDescriptor_t) desc, workspace, workspace_size, result, probs, random_val, topp, topk, temperature, stream);
         }
 #endif
     }
@@ -119,7 +119,7 @@ __C infiniopStatus_t infiniopDestroyRandomSampleDescriptor(infiniopRandomSampleD
 #endif
 #ifdef ENABLE_ASCEND_NPU
         case DevAscendNpu: {
-            return aclnnDestroyRandomSampleDescriptor((RandomSampleAclnnDescriptor_t) desc);
+            return ascendDestroyRandomSampleDescriptor((RandomSampleAscendDescriptor_t) desc);
         }
 #endif
     }

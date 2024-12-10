@@ -62,7 +62,7 @@ infiniopStatus_t aclnnCreateRMSNormDescriptor(AscendHandle_t handle,
     for (int64_t i = xDesc->ndim - 2; i >= 0; --i) {
         rstd_strides[i] = rstd_strides[i + 1] * rstd_shape[i + 1];
     }
-    CHECK_STATUS(rstdDesc->setDescriptor(F32, rstd_shape, rstd_strides), STATUS_SUCCESS);
+    CHECK_STATUS(rstdDesc->setDescriptor(toAclDataType(F32), rstd_shape, rstd_strides), STATUS_SUCCESS);
 
     if (wDesc->dataType != xDesc->dataType) {
         castDesc = new aclnnTensorDescriptor();

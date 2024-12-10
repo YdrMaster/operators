@@ -2,9 +2,9 @@
 #define __ACLNN_TENSOR__
 
 #include "./common_ascend.h"
-#include "tensor/tensor_descriptor.h"
 #include "operators.h"
 #include "tensor.h"
+#include "tensor/tensor_descriptor.h"
 #include <acl/acl.h>
 #include <acl/acl_base.h>
 #include <aclnn/acl_meta.h>
@@ -24,11 +24,12 @@ struct aclnnTensorDescriptor {
 
     aclTensor *t;
 
-    infiniopStatus_t setDescriptor(DT dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides);
+    // Transfer from infiniOp DT to aclDataType
+    infiniopStatus_t setDescriptor(aclDataType dtype, const std::vector<int64_t> &shape, const std::vector<int64_t> &strides);
     infiniopStatus_t inferStorageShape();
     // Convert form InfiniOpTensorDescriptor
     infiniopStatus_t fromInfiniOpTensorDescriptor(infiniopTensorDescriptor_t y_desc);
-    infiniopStatus_t createTensor();
+    infiniopStatus_t createTensor(void *data = nullptr);
     infiniopStatus_t destroyTensor();
     ~aclnnTensorDescriptor();
 

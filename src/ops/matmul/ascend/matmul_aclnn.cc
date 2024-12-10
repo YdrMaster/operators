@@ -45,9 +45,9 @@ infiniopStatus_t aclnnCreateMatmulDescriptor(AscendHandle_t handle,
     auto &bDesc = (*desc_ptr)->bDesc;
 
     // Treat A, B, C as 2D matrix, reuse aclnnTensorDescriptor for batched operation
-    CHECK_STATUS(cDesc->setDescriptor(c_desc->dt, {info->c_matrix.rows, info->c_matrix.cols}, {info->c_matrix.row_stride, info->c_matrix.col_stride}), STATUS_SUCCESS);
-    CHECK_STATUS(aDesc->setDescriptor(a_desc->dt, {info->a_matrix.rows, info->a_matrix.cols}, {info->a_matrix.row_stride, info->a_matrix.col_stride}), STATUS_SUCCESS);
-    CHECK_STATUS(bDesc->setDescriptor(b_desc->dt, {info->b_matrix.rows, info->b_matrix.cols}, {info->b_matrix.row_stride, info->b_matrix.col_stride}), STATUS_SUCCESS);
+    CHECK_STATUS(cDesc->setDescriptor(toAclDataType(c_desc->dt), {info->c_matrix.rows, info->c_matrix.cols}, {info->c_matrix.row_stride, info->c_matrix.col_stride}), STATUS_SUCCESS);
+    CHECK_STATUS(aDesc->setDescriptor(toAclDataType(a_desc->dt), {info->a_matrix.rows, info->a_matrix.cols}, {info->a_matrix.row_stride, info->a_matrix.col_stride}), STATUS_SUCCESS);
+    CHECK_STATUS(bDesc->setDescriptor(toAclDataType(b_desc->dt), {info->b_matrix.rows, info->b_matrix.cols}, {info->b_matrix.row_stride, info->b_matrix.col_stride}), STATUS_SUCCESS);
 
     CHECK_STATUS(cDesc->createTensor(), STATUS_SUCCESS);
     CHECK_STATUS(aDesc->createTensor(), STATUS_SUCCESS);

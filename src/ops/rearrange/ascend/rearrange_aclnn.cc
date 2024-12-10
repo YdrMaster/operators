@@ -56,24 +56,24 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
 
     /// TODO: something is wrong with aclSetTensorAddr, do all the preparation here for now
     desc->dstDesc->t = aclCreateTensor(desc->dstDesc->shape.data(),
-                              desc->dstDesc->ndim,
-                              desc->dstDesc->dataType,
-                              desc->dstDesc->strides.data(),
-                              desc->dstDesc->offset,
-                              desc->dstDesc->format,
-                              desc->dstDesc->storageShape.data(),
-                              desc->dstDesc->storageNdim,
-                              dst);
+                                       desc->dstDesc->ndim,
+                                       desc->dstDesc->dataType,
+                                       desc->dstDesc->strides.data(),
+                                       desc->dstDesc->offset,
+                                       desc->dstDesc->format,
+                                       desc->dstDesc->storageShape.data(),
+                                       desc->dstDesc->storageNdim,
+                                       dst);
     desc->srcDesc->t = aclCreateTensor(desc->srcDesc->shape.data(),
-                              desc->srcDesc->ndim,
-                              desc->srcDesc->dataType,
-                              desc->srcDesc->strides.data(),
-                              desc->srcDesc->offset,
-                              desc->srcDesc->format,
-                              desc->srcDesc->storageShape.data(),
-                              desc->srcDesc->storageNdim,
-                              (void*)src);
-    
+                                       desc->srcDesc->ndim,
+                                       desc->srcDesc->dataType,
+                                       desc->srcDesc->strides.data(),
+                                       desc->srcDesc->offset,
+                                       desc->srcDesc->format,
+                                       desc->srcDesc->storageShape.data(),
+                                       desc->srcDesc->storageNdim,
+                                       (void *) src);
+
     aclTensor *td = desc->dstDesc->t;
     aclTensor *ts = desc->srcDesc->t;
     aclOpExecutor *executor;
@@ -82,7 +82,7 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
                                      ts,
                                      &workspaceSize,
                                      &executor);
-    desc->workspaceAddr = mallocWorkspace(workspaceSize);
+    CHECK_STATUS(mallocWorkspace(&(desc->workspaceAddr), workspaceSize), STATUS_SUCCESS);
 
 
     // AclSetTensorAddr(executor, 0, td, dst);
@@ -97,7 +97,7 @@ infiniopStatus_t aclnnRearrange(RearrangeAclnnDescriptor_t desc,
 
     desc->dstDesc->destroyTensor();
     desc->srcDesc->destroyTensor();
-    freeWorkspace(desc->workspaceAddr);
+    CHECK_STATUS(freeWorkspace(desc->workspaceAddr), STATUS_SUCCESS);
     return STATUS_SUCCESS;
 }
 

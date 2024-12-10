@@ -54,8 +54,8 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
         aclnn_strides[i] = aclnn_shape[i + 1] * aclnn_strides[i + 1];
     }
 
-    CHECK_STATUS(aDesc->setDescriptor(y->dt, aclnn_shape, aclnn_strides), STATUS_SUCCESS);
-    CHECK_STATUS(outDesc->setDescriptor(y->dt, aclnn_shape, aclnn_strides), STATUS_SUCCESS);
+    CHECK_STATUS(aDesc->setDescriptor(toAclDataType(y->dt), aclnn_shape, aclnn_strides), STATUS_SUCCESS);
+    CHECK_STATUS(outDesc->setDescriptor(toAclDataType(y->dt), aclnn_shape, aclnn_strides), STATUS_SUCCESS);
 
     // Set mask Desc
     auto &maskDesc = (*desc_ptr)->maskDesc;
@@ -70,7 +70,7 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     }
     auto mask_strides = std::vector<int64_t>{total_seq_len * seq_len, total_seq_len, 1};
 
-    CHECK_STATUS(maskDesc->setDescriptor(y->dt, mask_shape, mask_strides), STATUS_SUCCESS);
+    CHECK_STATUS(maskDesc->setDescriptor(toAclDataType(y->dt), mask_shape, mask_strides), STATUS_SUCCESS);
 
     // Create aclTensor
     CHECK_STATUS(aDesc->createTensor(), STATUS_SUCCESS);
@@ -118,7 +118,7 @@ infiniopStatus_t aclnnCreateCausalSoftmaxDescriptor(AscendHandle_t handle,
     // malloc mask space
     auto &maskAddr = (*desc_ptr)->maskAddr;
     auto mask_size = numElements(maskDesc->shape.data(), maskDesc->ndim) * ele_size;
-    maskAddr = mallocWorkspace(mask_size);
+    CHECK_STATUS(mallocWorkspace(&maskAddr, mask_size), STATUS_SUCCESS);
 
     // copy mask matrix to device mem
     ret = aclrtMemcpy(maskAddr,
@@ -181,7 +181,7 @@ infiniopStatus_t aclnnDestroyCausalSoftmaxDescriptor(CausalSoftmaxAclnnDescripto
     delete desc->maskDesc;
     delete desc->outDesc;
     aclDestroyAclOpExecutor(desc->executor);
-    freeWorkspace(desc->maskAddr);
+    CHECK_STATUS(freeWorkspace(desc->maskAddr), STATUS_SUCCESS);
     delete desc;
     return STATUS_SUCCESS;
 }
