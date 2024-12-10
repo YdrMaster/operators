@@ -40,7 +40,7 @@ typedef struct DTCudnnMapping {
 } DTCudnnMapping;
 
 // DT cudnnDataType_t mapping table
-constexpr DTCudnnMapping dtMappings[] = {
+const DTCudnnMapping dtMappings[] = {
     {F16, CUDNN_DATA_HALF},
     {F32, CUDNN_DATA_FLOAT},
     {F64, CUDNN_DATA_DOUBLE},

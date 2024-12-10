@@ -91,16 +91,13 @@ infiniopStatus_t cudaCreatePoolingDescriptor(CudaHandle_t handle,
             beta,
         };
     } else {
-        int x_shape[ndim];
-        int x_strides[ndim];
-        int y_shape[ndim];
-        int y_strides[ndim];
-        int k_shape[ndim - 2];
-        int pads_int[ndim - 2];
-        int strides_int[ndim - 2];
-        const auto kernel_ = reinterpret_cast<uint64_t const *>(kernel_shape);
-        const auto pads_ = reinterpret_cast<uint64_t const *>(pads);
-        const auto strides_ = reinterpret_cast<int64_t const *>(strides);
+        std::vector<int> x_shape(ndim);
+        std::vector<int> x_strides(ndim);
+        std::vector<int> y_shape(ndim);
+        std::vector<int> y_strides(ndim);
+        std::vector<int> k_shape(ndim - 2);
+        std::vector<int> pads_int(ndim - 2);
+        std::vector<int> strides_int(ndim - 2);
 
 #pragma omp parallel for
         for (size_t i = 0; i < ndim; ++i) {
@@ -109,9 +106,9 @@ infiniopStatus_t cudaCreatePoolingDescriptor(CudaHandle_t handle,
             y_shape[i] = static_cast<int>(y->shape[i]);
             y_strides[i] = static_cast<int>(y->strides[i]);
             if (i < ndim - 2) {
-                k_shape[i] = static_cast<int>(kernel_[i]);
-                pads_int[i] = static_cast<int>(pads_[i]);
-                strides_int[i] = static_cast<int>(strides_[i]);
+                k_shape[i] = static_cast<int>(kernel_shape[i]);
+                pads_int[i] = static_cast<int>(pads[i]);
+                strides_int[i] = static_cast<int>(strides[i]);
             }
         }
 
@@ -121,7 +118,7 @@ infiniopStatus_t cudaCreatePoolingDescriptor(CudaHandle_t handle,
         // create and set tensor descriptors for x
         cudnnTensorDescriptor_t x_desc;
         checkCudnnError(cudnnCreateTensorDescriptor(&x_desc));
-        checkCudnnError(cudnnSetTensorNdDescriptor(x_desc, static_cast<cudnnDataType_t>(tensor_dt), ndim, x_shape, x_strides));
+        checkCudnnError(cudnnSetTensorNdDescriptor(x_desc, static_cast<cudnnDataType_t>(tensor_dt), ndim, x_shape.data(), x_strides.data()));
 
         // Create and set pooling descriptor for average pooling
         cudnnPoolingDescriptor_t pool_desc;
@@ -130,14 +127,14 @@ infiniopStatus_t cudaCreatePoolingDescriptor(CudaHandle_t handle,
                                                     getPoolingMode(pooling_type),
                                                     CUDNN_NOT_PROPAGATE_NAN,
                                                     ndim - 2,
-                                                    k_shape,
-                                                    pads_int,
-                                                    strides_int));
+                                                    k_shape.data(),
+                                                    pads_int.data(),
+                                                    strides_int.data()));
         // create and set tensor descriptors for y
         cudnnTensorDescriptor_t y_desc;
         checkCudnnError(cudnnCreateTensorDescriptor(&y_desc));
-        checkCudnnError(cudnnGetPoolingNdForwardOutputDim(pool_desc, x_desc, ndim, y_shape));
-        checkCudnnError(cudnnSetTensorNdDescriptor(y_desc, static_cast<cudnnDataType_t>(tensor_dt), ndim, y_shape, y_strides));
+        checkCudnnError(cudnnGetPoolingNdForwardOutputDim(pool_desc, x_desc, ndim, y_shape.data()));
+        checkCudnnError(cudnnSetTensorNdDescriptor(y_desc, static_cast<cudnnDataType_t>(tensor_dt), ndim, y_shape.data(), y_strides.data()));
 
         *desc_ptr = new PoolingCudaDescriptor{
             DevNvGpu,
