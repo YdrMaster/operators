@@ -57,7 +57,7 @@ infiniopStatus_t ascendRandomSample(RandomSampleAscendDescriptor_t desc,
         return STATUS_BAD_PARAM;
     }
 
-    if (random_val < 0 || random_val >= 1.0) {
+    if (random_val < 0 || random_val > 1.0) {
         return STATUS_BAD_PARAM;
     }
 

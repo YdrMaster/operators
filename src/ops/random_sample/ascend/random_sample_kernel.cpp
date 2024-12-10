@@ -124,9 +124,10 @@ private:
         for (int i = 0; i < end; i++) {
             if (randomVal < static_cast<float>(valIn(i))) {
                 result(0) = Index(i);
-                break;
+                return;
             }
         }
+        result(0) = Index(end - 1);
     }
 
     __aicore__ inline void CopyIn() {
