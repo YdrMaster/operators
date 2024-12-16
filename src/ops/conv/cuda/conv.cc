@@ -25,7 +25,7 @@ infiniopStatus_t cudaCreateConvDescriptor(CudaHandle_t handle,
         return STATUS_BAD_TENSOR_DTYPE;
     }
 
-    const auto new_ndim = std::max(ndim, 4ull);
+    const uint64_t new_ndim = std::max(ndim, (uint64_t)4);
     // convert pads, strides, dilations into int32[]
     int32_t *pad = new int32_t[new_ndim];
     int32_t *stride = new int32_t[new_ndim];
