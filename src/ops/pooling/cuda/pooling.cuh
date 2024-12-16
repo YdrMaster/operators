@@ -3,6 +3,7 @@
 
 #include "../../../devices/cuda/cuda_handle.h"
 #include "operators.h"
+#include <vector>
 
 struct PoolingCudaDescriptor {
     Device device;
