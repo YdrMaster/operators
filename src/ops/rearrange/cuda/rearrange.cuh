@@ -7,12 +7,8 @@
 struct RearrangeCudaDescriptor {
     Device device;
     int device_id;
-    uint64_t rsa;
-    uint64_t rsb;
-    uint64_t csa;
-    uint64_t csb;
-    uint64_t r, c, b;
-    uint64_t bytes_per_thread;
+    uint64_t unit, r, c;
+    int64_t dst_rs, dst_cs, src_rs, src_cs;
 };
 
 typedef struct RearrangeCudaDescriptor *RearrangeCudaDescriptor_t;
