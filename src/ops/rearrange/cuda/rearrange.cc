@@ -10,10 +10,11 @@ infiniopStatus_t cudaCreateRearrangeDescriptor(CudaHandle_t handle,
     if (!dtype_eq(dst->dt, src->dt)) {
         return STATUS_BAD_TENSOR_DTYPE;
     }
-    if (dst->ndim != src->ndim || dst->ndim < 2) {
+
+    auto ndim = dst->ndim;
+    if (src->ndim != ndim || ndim == 0) {
         return STATUS_BAD_TENSOR_SHAPE;
     }
-    auto ndim = dst->ndim;
     for (int i = 0; i < ndim; ++i) {
         if (dst->shape[i] != src->shape[i]) {
             return STATUS_BAD_TENSOR_SHAPE;
@@ -22,6 +23,17 @@ infiniopStatus_t cudaCreateRearrangeDescriptor(CudaHandle_t handle,
     if (dst->strides[ndim - 1] != 1 || src->strides[ndim - 1] != 1) {
         return STATUS_BAD_TENSOR_STRIDES;
     }
+
+    if (ndim == 1) {
+        *desc_ptr = new RearrangeCudaDescriptor{
+            handle->device,
+            handle->device_id,
+            0, 0, 0, 0,
+            1, 1, 1,
+            static_cast<unsigned long>(dst->shape[0] * dst->dt.size)};
+        return STATUS_SUCCESS;
+    }
+
     unsigned int r = 0, c = 0, b = 0;
     unsigned int rsa = 0, csa = 0, rsb = 0, csb = 0;
     if (ndim == 2) {
@@ -61,7 +73,7 @@ infiniopStatus_t cudaCreateRearrangeDescriptor(CudaHandle_t handle,
     }
     *desc_ptr = new RearrangeCudaDescriptor{
         handle->device,
-		handle->device_id,
+        handle->device_id,
         rsa,
         rsb,
         csa,

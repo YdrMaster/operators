@@ -23,8 +23,13 @@ static __global__ void rearrange(
     reinterpret_cast<Tmem *>(dst)[i] = reinterpret_cast<Tmem const *>(src)[j];
 }
 
-
 void rearrange_nv_gpu(RearrangeCudaDescriptor_t desc, void *y, void const *x, void *stream) {
+    auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
+    if (desc->r == 1 && desc->c == 1 && desc->b == 1) {
+        cudaMemcpyAsync(y, x, desc->bytes_per_thread, cudaMemcpyDeviceToDevice, cuda_stream);
+        return;
+    }
+
     unsigned long int rsa = desc->rsa, csa = desc->csa, rsb = desc->rsb, csb = desc->csb;
     unsigned int r = desc->r, c = desc->c, b = desc->b, bytes_per_thread = desc->bytes_per_thread;
     auto dst_ptr = static_cast<void *>(reinterpret_cast<uint8_t *>(y));
@@ -33,7 +38,6 @@ void rearrange_nv_gpu(RearrangeCudaDescriptor_t desc, void *y, void const *x, vo
     auto src_ptr = static_cast<void const *>(reinterpret_cast<uint8_t const *>(x));
     rsb /= b;
     csb /= b;
-    auto cuda_stream = reinterpret_cast<cudaStream_t>(stream);
     dim3 grid_dims = dim3((c + MAX_WARP_PER_BLOCK - 1) / MAX_WARP_PER_BLOCK, r);
     dim3 block_dims = dim3(WARP_SIZE, (c + grid_dims.x - 1) / grid_dims.x);
     switch (bytes_per_thread) {
