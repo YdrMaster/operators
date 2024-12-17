@@ -30,7 +30,7 @@ void rearrange_nv_gpu(RearrangeCudaDescriptor_t desc, void *y, void const *x, vo
         return;
     }
 
-    unsigned long int rsa = desc->rsa, csa = desc->csa, rsb = desc->rsb, csb = desc->csb;
+    uint64_t rsa = desc->rsa, csa = desc->csa, rsb = desc->rsb, csb = desc->csb;
     unsigned int r = desc->r, c = desc->c, b = desc->b, bytes_per_thread = desc->bytes_per_thread;
     auto dst_ptr = static_cast<void *>(reinterpret_cast<uint8_t *>(y));
     rsa /= b;
